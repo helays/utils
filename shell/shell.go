@@ -14,6 +14,24 @@ import (
 	"strings"
 )
 
+type CmdResponse struct {
+	Stdout, StdErr []byte
+}
+
+// CmdRun 执行 shell语句,并返回 response 结构
+func CmdRun(name string, args ...string) (CmdResponse, error) {
+	cmd := exec.Command(name, args...)
+	var stdOut, stdErr = bytes.NewBuffer(nil), bytes.NewBuffer(nil)
+	cmd.Stdout = stdOut
+	cmd.Stderr = stdErr
+	ulogs.Log("[ExecReturnBytes]", "shell 执行命令", cmd.String())
+	err := cmd.Run()
+	return CmdResponse{
+		Stdout: stdOut.Bytes(),
+		StdErr: stdErr.Bytes(),
+	}, err
+}
+
 // ExecShell 执行 shell语句
 func ExecShell(name string, s ...string) (string, error) {
 	cmd := exec.Command(name, s...)
