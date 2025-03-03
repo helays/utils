@@ -44,6 +44,7 @@ func (this *Saver) Write(p string, src io.Reader, existIgnores ...bool) error {
 	}
 }
 
+// Read 读取文件
 func (this *Saver) Read(p string) (io.ReadCloser, error) {
 	p = path.Join(this.Root, p)
 	switch strings.ToLower(this.StorageType) {
