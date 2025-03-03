@@ -19,6 +19,9 @@ type Config struct {
 	User           string `json:"user" yaml:"user" ini:"user"`
 	Pwd            string `json:"pwd" yaml:"pwd" ini:"pwd"`                                  // 密码|密钥
 	Authentication string `json:"authentication" yaml:"authentication" ini:"authentication"` // 认证方式 ，默认passwd,可选public_key
+
+	sshClient  *ssh.Client
+	sftpClient *sftp.Client
 }
 
 func (this Config) Value() (driver.Value, error) {
@@ -38,35 +41,30 @@ func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 }
 
 // Write 写入文件
-func (this Config) Write(p string, src io.Reader, existIgnores ...bool) error {
-	sshClient, sftpClient, err := this.Login()
-	defer func() {
-		vclose.Close(sftpClient)
-		vclose.Close(sshClient)
-	}()
-	if err != nil {
+func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) error {
+	if err := this.LoginSftp(); err != nil {
 		return err
 	}
-	filePath, err := SetPath(sftpClient, p)
+	filePath, err := SetPath(this.sftpClient, p)
 	if err != nil {
 		return err
 	}
 	// 判断是否需要覆盖写入
 	if len(existIgnores) > 0 && existIgnores[0] {
-		if ok, err := Exist(sftpClient, filePath); ok {
+		if ok, _err := Exist(this.sftpClient, filePath); ok {
 			return nil
-		} else if err != nil {
-			return err
+		} else if _err != nil {
+			return _err
 		}
 	}
 
 	dir := path.Dir(filePath)
 	// 首先判断这个路径是否存在，然后创建
-	if err = Mkdir(sftpClient, dir); err != nil {
+	if err = Mkdir(this.sftpClient, dir); err != nil {
 		return err
 	}
 	// 文件夹存在后，就开始创建文件
-	file, err := sftpClient.Create(filePath)
+	file, err := this.sftpClient.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("创建文件%s失败：%s", filePath, err.Error())
 	}
@@ -77,9 +75,11 @@ func (this Config) Write(p string, src io.Reader, existIgnores ...bool) error {
 	return nil
 }
 
-// Login ssh登录
-// @return *ssh.Client, *sftp.Client, error
-func (this Config) Login() (*ssh.Client, *sftp.Client, error) {
+// LoginSsh 登录 ssh
+func (this *Config) LoginSsh() error {
+	if this.sshClient != nil {
+		return nil
+	}
 	// 首先连接 ssh client
 	clientConfig := &ssh.ClientConfig{
 		User:            this.User,
@@ -92,18 +92,65 @@ func (this Config) Login() (*ssh.Client, *sftp.Client, error) {
 		var signer ssh.Signer
 		signer, err := ssh.ParsePrivateKey([]byte(this.Pwd))
 		if err != nil {
-			return nil, nil, fmt.Errorf("ssh密钥解析失败：%s", err.Error())
+			return fmt.Errorf("ssh密钥解析失败：%s", err.Error())
 		}
 		auth = ssh.PublicKeys(signer)
 	}
 	clientConfig.Auth = []ssh.AuthMethod{auth}
-	sshClient, err := ssh.Dial("tcp", this.Host, clientConfig)
+	var err error
+	this.sshClient, err = ssh.Dial("tcp", this.Host, clientConfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("ssh连接失败：%s", err.Error())
+		return fmt.Errorf("ssh连接失败：%s", err.Error())
 	}
-	sftpClient, err := sftp.NewClient(sshClient)
+	return nil
+}
+
+// LoginSftp ssh登录
+// @return , error
+func (this *Config) LoginSftp() error {
+	if err := this.LoginSsh(); err != nil {
+		return err
+	}
+	if this.sftpClient == nil {
+		var err error
+		this.sftpClient, err = sftp.NewClient(this.sshClient)
+		if err != nil {
+			return fmt.Errorf("sftp连接失败：%s", err.Error())
+		}
+	}
+	return nil
+}
+
+// Read 读取文件
+func (this *Config) Read(p string) (io.ReadCloser, error) {
+	if err := this.LoginSftp(); err != nil {
+		return nil, err
+	}
+	file, err := this.sftpClient.Open(p)
 	if err != nil {
-		return nil, nil, fmt.Errorf("sftp连接失败：%s", err.Error())
+		return nil, fmt.Errorf("打开文件%s失败：%s", p, err.Error())
 	}
-	return sshClient, sftpClient, nil
+	return file, nil
+}
+
+// CloseSsh 关闭 ssh
+func (this *Config) CloseSsh() {
+	if this.sshClient != nil {
+		vclose.Close(this.sshClient)
+		this.sshClient = nil
+	}
+}
+
+// CloseSftp 关闭 sftp
+func (this *Config) CloseSftp() {
+	if this.sftpClient != nil {
+		vclose.Close(this.sftpClient)
+		this.sftpClient = nil
+	}
+}
+
+// Close 关闭 ssh 和 sftp
+func (this *Config) Close() {
+	this.CloseSftp()
+	this.CloseSsh()
 }

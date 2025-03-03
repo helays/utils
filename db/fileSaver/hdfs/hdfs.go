@@ -70,6 +70,18 @@ func (this *Config) Write(filePath string, src io.Reader, existIgnores ...bool) 
 	return nil
 }
 
+// Read 读取文件
+func (this *Config) Read(filePath string) (io.ReadCloser, error) {
+	if err := this.login(); err != nil {
+		return nil, err
+	}
+	remoteFile, err := this.client.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("打开文件%s失败: %s", filePath, err.Error())
+	}
+	return remoteFile, nil
+}
+
 // login 登录
 func (this *Config) login() error {
 	if this.client != nil {

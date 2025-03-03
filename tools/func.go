@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/helays/utils/close/osClose"
 	"github.com/helays/utils/config"
+	"github.com/helays/utils/logger/ulogs"
 	"io"
 	"math"
 	"math/rand"
@@ -541,6 +542,10 @@ func FileAbsWithCurrent(current, cpath string) string {
 		return cpath
 	}
 	return filepath.Join(current, cpath)
+}
+
+func RemoveAll(path string) {
+	ulogs.Checkerr(os.RemoveAll(path), "删除文件失败")
 }
 
 var defaultLetters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")

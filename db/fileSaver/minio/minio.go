@@ -60,6 +60,17 @@ func (this *Config) Write(filePath string, src io.Reader, options Options) error
 	return nil
 }
 
+func (this *Config) Read(filePath string) (io.ReadCloser, error) {
+	if err := this.login(); err != nil {
+		return nil, err
+	}
+	if obj, err := this.client.GetObject(this.ctx, this.options.Bucket, filePath, minio.GetObjectOptions{}); err != nil {
+		return nil, fmt.Errorf("打开文件%s失败：%s", filePath, err.Error())
+	} else {
+		return obj, nil
+	}
+}
+
 // 登录
 func (this *Config) login() error {
 	if this.client != nil {

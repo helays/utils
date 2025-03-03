@@ -114,7 +114,7 @@ const (
 	FileTypeLocal = "local"
 	FileTypeOss   = "oss"
 	FileTypeMinio = "minio"
-	FileType      = "hdfs"
+	FileTypeHdfs  = "hdfs"
 )
 
 // 集群类型

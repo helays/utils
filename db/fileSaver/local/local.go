@@ -2,6 +2,7 @@ package local
 
 import (
 	"fmt"
+	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/tools"
 	"io"
 	"os"
@@ -36,4 +37,14 @@ func (this Local) Write(p string, src io.Reader, existIgnores ...bool) error {
 		return fmt.Errorf("写入文件%s失败: %s", filePath, err.Error())
 	}
 	return nil
+}
+
+func (this Local) Read(p string) (io.ReadCloser, error) {
+	filePath := tools.Fileabs(p)
+	file, err := os.Open(filePath)
+	defer vclose.Close(file)
+	if err != nil {
+		return nil, fmt.Errorf("打开文件%s失败: %s", filePath, err.Error())
+	}
+	return file, nil
 }
