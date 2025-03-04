@@ -101,14 +101,26 @@ const (
 
 // 消息队列
 const (
+	QueueTypeName     = "消息队列"
 	QueueTypeKafka    = "kafka" // kafka消息队列
 	QueueTypeRabbit   = "rabbit"
 	QueueTypeRocketmq = "rocketmq"
 	QueueTypeRabbitmq = "rabbitmq"
 )
 
+const (
+	QueueKafkaProducer = "kafka_producer" // kafka生产者
+	QueueKafkaConsumer = "kafka_consumer" // kafka消费者
+)
+
+const (
+	QueueRoleAsync = "async" // 异步
+	QueueRoleSync  = "sync"  // 同步
+)
+
 // 文件存储
 const (
+	FileTypeName  = "文件"
 	FileTypeFtp   = "ftp"
 	FileTypeSftp  = "sftp"
 	FileTypeLocal = "local"
