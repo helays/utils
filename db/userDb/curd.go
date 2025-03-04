@@ -3,23 +3,19 @@ package userDb
 import (
 	"errors"
 	"fmt"
-	"github.com/helays/utils/config"
 	"gorm.io/gorm"
 	"regexp"
 )
 
 type Model interface {
-	Valid() error // 验证
+	Valid(tx *gorm.DB) error // 验证
 }
 
 // Create 通用创建函数（使用泛型）
 func Create[T Model](tx *gorm.DB, src T) error {
 	// 调用 Valid 方法进行验证
-	if err := src.Valid(); err != nil {
+	if err := src.Valid(tx); err != nil {
 		return fmt.Errorf("验证失败：%s", err.Error())
-	}
-	if config.Dbg {
-		tx = tx.Debug()
 	}
 	// 使用 GORM 的 Create 方法插入数据
 	if err := tx.Create(src).Error; err != nil {
@@ -51,12 +47,9 @@ type Curd struct {
 // Update 通用更新函数，使用泛型
 func Update[T Model](tx *gorm.DB, src T, c Curd) error {
 	// 调用 Valid 方法进行验证
-	err := src.Valid()
+	err := src.Valid(tx)
 	if err != nil {
 		return fmt.Errorf("验证失败：%s", err.Error())
-	}
-	if config.Dbg {
-		tx = tx.Debug()
 	}
 	if c.ValidExist {
 		// 搜索数据是否存在
