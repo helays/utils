@@ -9,7 +9,6 @@ import (
 )
 
 type KafkaConfig struct {
-	GroupName   string        `json:"group_name" yaml:"group_name" ini:"group_name"`
 	Addrs       []string      `yaml:"addrs" json:"addrs" ini:"addrs,omitempty"`
 	Version     string        `yaml:"version" json:"version" ini:"version"` // kafka版本
 	Sasl        bool          `yaml:"sasl" json:"sasl" ini:"sasl"`
@@ -20,6 +19,11 @@ type KafkaConfig struct {
 	MaxRetry    int           `yaml:"max_retry" json:"max_retry" ini:"max_retry"`       // 生产消息失败，默认重试3次
 	Timeout     time.Duration `json:"timeout" yaml:"timeout" ini:"timeout"`             // 超时时间
 	Compression bool          `json:"compression" yaml:"compression" ini:"compression"` // 发送消息是否开启压缩
+	// 这里的kafka无复杂业务，可以用下方的相关配置
+
+	// 生产者配置
+	//消费者配置
+	GroupName string `json:"group_name" yaml:"group_name" ini:"group_name"`
 }
 
 func (this KafkaConfig) Value() (driver.Value, error) {
