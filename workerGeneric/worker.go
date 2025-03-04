@@ -62,8 +62,9 @@ func (s *StartWorker[T]) Run(j *Job[T]) {
 }
 
 // Close 关闭所有worker
-func (s *StartWorker[T]) Close() {
+func (s *StartWorker[T]) Close() error {
 	for _, w := range s.workers {
 		w.cancel()
 	}
+	return nil
 }
