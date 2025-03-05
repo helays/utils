@@ -20,10 +20,17 @@ type KafkaConfig struct {
 	Timeout     time.Duration `json:"timeout" yaml:"timeout" ini:"timeout"`             // 超时时间
 	Compression bool          `json:"compression" yaml:"compression" ini:"compression"` // 发送消息是否开启压缩
 	// 这里的kafka无复杂业务，可以用下方的相关配置
-
+	ProducerMessage ProducerMessage `json:"producer_message" yaml:"producer_message" ini:"producer_message"`
 	// 生产者配置
 	//消费者配置
 	GroupName string `json:"group_name" yaml:"group_name" ini:"group_name"`
+}
+
+type ProducerMessage struct {
+	Topic  string            `json:"topic" yaml:"topic" ini:"topic"`
+	Key    string            `json:"key" yaml:"key" ini:"key"`
+	Header map[string]string `json:"header" yaml:"header" ini:"header"`
+	Role   string            `json:"role" yaml:"role" ini:"role"` // 同步生产者 或者异步生产者
 }
 
 func (this KafkaConfig) Value() (driver.Value, error) {

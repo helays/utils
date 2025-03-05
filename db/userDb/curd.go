@@ -18,7 +18,7 @@ func Create[T Model](tx *gorm.DB, src T) error {
 		return fmt.Errorf("验证失败：%s", err.Error())
 	}
 	// 使用 GORM 的 Create 方法插入数据
-	if err := tx.Create(src).Error; err != nil {
+	if err := tx.Session(&gorm.Session{}).Create(src).Error; err != nil {
 		return fmt.Errorf("插入数据失败：%s", err.Error())
 	}
 
@@ -47,7 +47,7 @@ type Curd struct {
 // Update 通用更新函数，使用泛型
 func Update[T Model](tx *gorm.DB, src T, c Curd) error {
 	// 调用 Valid 方法进行验证
-	err := src.Valid(tx)
+	err := src.Valid(tx.Session(&gorm.Session{}))
 	if err != nil {
 		return fmt.Errorf("验证失败：%s", err.Error())
 	}
@@ -63,7 +63,7 @@ func Update[T Model](tx *gorm.DB, src T, c Curd) error {
 		}
 	}
 
-	_tx := tx.Where(c.Where.Query, c.Where.Args...)
+	_tx := tx.Session(&gorm.Session{}).Where(c.Where.Query, c.Where.Args...)
 	if c.Omit != nil && len(c.Omit) > 0 {
 		_tx.Omit(c.Omit...)
 	}
@@ -79,7 +79,7 @@ func Update[T Model](tx *gorm.DB, src T, c Curd) error {
 
 // UpdateWithoutValid 通过更新状态字段，实现通用软删除
 func UpdateWithoutValid[T any](tx *gorm.DB, opt Curd) (err error) {
-	_tx := tx.Model(new(T)).Where(opt.Where.Query, opt.Where.Args...)
+	_tx := tx.Session(&gorm.Session{}).Model(new(T)).Where(opt.Where.Query, opt.Where.Args...)
 	if len(opt.Omit) > 0 {
 		_tx.Omit(opt.Omit...)
 	}
@@ -96,7 +96,7 @@ func UpdateWithoutValid[T any](tx *gorm.DB, opt Curd) (err error) {
 
 // FindOne 查询某个对象
 func FindOne[T any](tx *gorm.DB, opts Curd) (T, error) {
-	_tx := tx.Where(opts.Where.Query, opts.Where.Args...)
+	_tx := tx.Session(&gorm.Session{}).Where(opts.Where.Query, opts.Where.Args...)
 	if opts.Table != "" {
 		_tx.Table(opts.Table)
 	}
@@ -112,4 +112,23 @@ func FindOne[T any](tx *gorm.DB, opts Curd) (T, error) {
 	var data T
 	err := _tx.Take(&data).Error
 	return data, err
+}
+
+// Query 查询多个对象
+func Query[T any](tx *gorm.DB, opts Curd) (res []T, err error) {
+	_tx := tx.Session(&gorm.Session{}).Where(opts.Where.Query, opts.Where.Args...)
+	if opts.Table != "" {
+		_tx.Table(opts.Table)
+	}
+	if opts.Select.Query != "" {
+		_tx.Select(opts.Select.Query, opts.Select.Args...)
+	}
+	if len(opts.Omit) > 0 {
+		_tx.Omit(opts.Omit...)
+	}
+	for _, item := range opts.Preload {
+		_tx.Preload(item.Query)
+	}
+	err = _tx.Find(&res).Error
+	return
 }
