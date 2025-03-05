@@ -28,10 +28,10 @@ type HttpClient struct {
 	TLSHandshakeTimeout    time.Duration `json:"tls_handshake_timeout" yaml:"tls_handshake_timeout" ini:"tls_handshake_timeout"`       // tls握手超时时间
 	DisableKeepAlives      bool          `json:"disable_keep_alives" yaml:"disable_keep_alives" ini:"disable_keep_alives"`             // 是否禁用keepalives
 	DisableCompression     bool          `json:"disable_compression" yaml:"disable_compression" ini:"disable_compression"`             // 是否禁用压缩
-	MaxIdleConns           int           `json:"max_idle_conns" yaml:"max_idle_conns" ini:"max_idle_conns"`                            // 最大空闲连接数
-	MaxIdleConnsPerHost    int           `json:"max_idle_conns_per_host" yaml:"max_idle_conns_per_host" ini:"max_idle_conns_per_host"` // 最大空闲连接数
-	MaxConnsPerHost        int           `json:"max_conns_per_host" yaml:"max_conns_per_host" ini:"max_conns_per_host"`
-	IdleConnTimeout        time.Duration `json:"idle_conn_timeout" yaml:"idle_conn_timeout" ini:"idle_conn_timeout"`
+	MaxIdleConns           int           `json:"max_idle_conns" yaml:"max_idle_conns" ini:"max_idle_conns"`                            // 控制整个客户端的最大空闲连接数。值为0表示没有限制。
+	MaxIdleConnsPerHost    int           `json:"max_idle_conns_per_host" yaml:"max_idle_conns_per_host" ini:"max_idle_conns_per_host"` // 限制每个主机的最大空闲连接数。同样地，0表示没有限制。
+	MaxConnsPerHost        int           `json:"max_conns_per_host" yaml:"max_conns_per_host" ini:"max_conns_per_host"`                // 每个主机的最大连接数（包括活跃和空闲）。0表示无限制。
+	IdleConnTimeout        time.Duration `json:"idle_conn_timeout" yaml:"idle_conn_timeout" ini:"idle_conn_timeout"`                   // 设置空闲连接在被关闭前等待新请求的时间长度。0表示不主动关闭空闲连接。
 	ResponseHeaderTimeout  time.Duration `json:"response_header_timeout" yaml:"response_header_timeout" ini:"response_header_timeout"`
 	ExpectContinueTimeout  time.Duration `json:"expect_continue_timeout" yaml:"expect_continue_timeout" ini:"expect_continue_timeout"`
 	MaxResponseHeaderBytes int64         `json:"max_response_header_bytes" yaml:"max_response_header_bytes" ini:"max_response_header_bytes"`
