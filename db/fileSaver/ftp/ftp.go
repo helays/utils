@@ -41,8 +41,7 @@ func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 
 // Write 写入文件
 func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) error {
-	err := this.Login()
-	if err != nil {
+	if err := this.Login(); err != nil {
 		return err
 	}
 	filePath, err := SetPath(this.client, p)
@@ -51,10 +50,10 @@ func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) error {
 	}
 	// 判断是否需要覆盖写入
 	if len(existIgnores) > 0 && existIgnores[0] {
-		if ok, err := Exist(this.client, filePath); ok {
+		if ok, _err := Exist(this.client, filePath); ok {
 			return nil
-		} else if err != nil {
-			return err
+		} else if _err != nil {
+			return _err
 		}
 	}
 	dir := path.Dir(filePath)
