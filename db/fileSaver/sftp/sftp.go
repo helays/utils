@@ -135,18 +135,14 @@ func (this *Config) Read(p string) (io.ReadCloser, error) {
 
 // CloseSsh 关闭 ssh
 func (this *Config) CloseSsh() {
-	if this.sshClient != nil {
-		vclose.Close(this.sshClient)
-		this.sshClient = nil
-	}
+	vclose.Close(this.sshClient)
+	this.sshClient = nil
 }
 
 // CloseSftp 关闭 sftp
 func (this *Config) CloseSftp() {
-	if this.sftpClient != nil {
-		vclose.Close(this.sftpClient)
-		this.sftpClient = nil
-	}
+	vclose.Close(this.sftpClient)
+	this.sftpClient = nil
 }
 
 // Close 关闭 ssh 和 sftp
