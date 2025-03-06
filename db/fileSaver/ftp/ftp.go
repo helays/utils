@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/helays/utils/close/ftpClose"
 	"github.com/helays/utils/dataType"
+	"github.com/helays/utils/dataType/customWriter"
 	"github.com/jlaffaye/ftp"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -40,31 +41,33 @@ func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 }
 
 // Write 写入文件
-func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) error {
+func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) (int64, error) {
 	if err := this.Login(); err != nil {
-		return err
+		return 0, err
 	}
 	filePath, err := SetPath(this.client, p)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	// 判断是否需要覆盖写入
 	if len(existIgnores) > 0 && existIgnores[0] {
 		if ok, _err := Exist(this.client, filePath); ok {
-			return nil
+			return 0, nil
 		} else if _err != nil {
-			return _err
+			return 0, _err
 		}
 	}
 	dir := path.Dir(filePath)
 	// 首先判断这个路径是否存在，然后创建
 	if err = Mkdir(this.client, dir); err != nil {
-		return err
+		return 0, err
 	}
-	if err = this.client.Stor(filePath, src); err != nil {
-		return fmt.Errorf("写入文件%s失败：%s", filePath, err.Error())
+	counter := &customWriter.SizeCounter{}
+	teeReader := io.TeeReader(src, counter)
+	if err = this.client.Stor(filePath, teeReader); err != nil {
+		return counter.TotalSize, fmt.Errorf("写入文件%s失败：%s", filePath, err.Error())
 	}
-	return nil
+	return counter.TotalSize, nil
 }
 
 func (this *Config) Read(p string) (io.ReadCloser, error) {

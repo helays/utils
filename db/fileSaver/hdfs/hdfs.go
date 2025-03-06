@@ -35,9 +35,9 @@ func (this *Config) Close() {
 }
 
 // Write 写入文件
-func (this *Config) Write(filePath string, src io.Reader, existIgnores ...bool) error {
+func (this *Config) Write(filePath string, src io.Reader, existIgnores ...bool) (int64, error) {
 	if err := this.login(); err != nil {
-		return err
+		return 0, err
 	}
 	if !path.IsAbs(filePath) {
 		filePath = path.Join("/", filePath)
@@ -45,29 +45,30 @@ func (this *Config) Write(filePath string, src io.Reader, existIgnores ...bool) 
 	if ok, err := this.exist(filePath); ok {
 		if len(existIgnores) > 0 && existIgnores[0] {
 			// 忽略写入
-			return nil
+			return 0, nil
 		}
 		// 删除文件，重写
 		if err = this.client.Remove(filePath); err != nil {
-			return fmt.Errorf("删除文件%s失败: %s", filePath, err.Error())
+			return 0, fmt.Errorf("删除文件%s失败: %s", filePath, err.Error())
 		}
 	} else if err != nil {
-		return err
+		return 0, err
 	}
 	dir := path.Dir(filePath)
 	if err := this.client.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("创建目录%s失败: %s", dir, err.Error())
+		return 0, fmt.Errorf("创建目录%s失败: %s", dir, err.Error())
 	}
 
 	remoteFile, err := this.client.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("创建文件%s失败: %s", filePath, err.Error())
+		return 0, fmt.Errorf("创建文件%s失败: %s", filePath, err.Error())
 	}
 	defer vclose.Close(remoteFile)
-	if _, err = io.Copy(remoteFile, src); err != nil {
-		return fmt.Errorf("写入文件%s失败: %s", filePath, err.Error())
+	var written int64
+	if written, err = io.Copy(remoteFile, src); err != nil {
+		return written, fmt.Errorf("写入文件%s失败: %s", filePath, err.Error())
 	}
-	return nil
+	return written, nil
 }
 
 // Read 读取文件

@@ -37,27 +37,28 @@ func (this *Config) Close() {
 }
 
 // 写入文件
-func (this *Config) Write(filePath string, src io.Reader, options Options) error {
+func (this *Config) Write(filePath string, src io.Reader, options Options) (int64, error) {
 	if err := this.login(); err != nil {
-		return err
+		return 0, err
 	}
 	this.options = options
 	if err := this.createBucket(); err != nil {
-		return err
+		return 0, err
 	}
 	if this.options.ExistIgnore {
 		_, err := this.client.StatObject(this.ctx, this.options.Bucket, filePath, minio.StatObjectOptions{})
 		if err == nil {
-			return nil
+			return 0, nil
 		} else if _err := err.Error(); !strings.Contains(_err, "key does not exist") {
-			return fmt.Errorf("判断文件%s是否存在失败：%s", filePath, _err)
+			return 0, fmt.Errorf("判断文件%s是否存在失败：%s", filePath, _err)
 		}
 		// 下面就是文件不存在，支持继续处理
 	}
-	if _, err := this.client.PutObject(this.ctx, this.options.Bucket, filePath, src, -1, minio.PutObjectOptions{}); err != nil {
-		return fmt.Errorf("上传文件%s失败：%s", filePath, err.Error())
+	if info, err := this.client.PutObject(this.ctx, this.options.Bucket, filePath, src, -1, minio.PutObjectOptions{}); err != nil {
+		return 0, fmt.Errorf("上传文件%s失败：%s", filePath, err.Error())
+	} else {
+		return info.Size, nil
 	}
-	return nil
 }
 
 func (this *Config) Read(filePath string) (io.ReadCloser, error) {

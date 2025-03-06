@@ -40,39 +40,57 @@ func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return dataType.JsonDbDataType(db, field)
 }
 
-// Write 写入文件
-func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) error {
+// Read 读取文件
+func (this *Config) Read(p string) (io.ReadCloser, error) {
 	if err := this.LoginSftp(); err != nil {
-		return err
+		return nil, err
 	}
 	filePath, err := SetPath(this.sftpClient, p)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	fmt.Println(filePath)
+	file, err := this.sftpClient.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("打开文件%s失败：%s", p, err.Error())
+	}
+	return file, nil
+}
+
+// Write 写入文件
+func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) (int64, error) {
+	if err := this.LoginSftp(); err != nil {
+		return 0, err
+	}
+	filePath, err := SetPath(this.sftpClient, p)
+	if err != nil {
+		return 0, err
 	}
 	// 判断是否需要覆盖写入
 	if len(existIgnores) > 0 && existIgnores[0] {
 		if ok, _err := Exist(this.sftpClient, filePath); ok {
-			return nil
+			return 0, nil
 		} else if _err != nil {
-			return _err
+			return 0, _err
 		}
 	}
 
 	dir := path.Dir(filePath)
 	// 首先判断这个路径是否存在，然后创建
 	if err = Mkdir(this.sftpClient, dir); err != nil {
-		return err
+		return 0, err
 	}
 	// 文件夹存在后，就开始创建文件
 	file, err := this.sftpClient.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("创建文件%s失败：%s", filePath, err.Error())
+		return 0, fmt.Errorf("创建文件%s失败：%s", filePath, err.Error())
 	}
 	defer vclose.Close(file)
-	if _, err = io.Copy(file, src); err != nil {
-		return fmt.Errorf("写入文件%s失败：%s", filePath, err.Error())
+	var written int64
+	if written, err = io.Copy(file, src); err != nil {
+		return written, fmt.Errorf("写入文件%s失败：%s", filePath, err.Error())
 	}
-	return nil
+	return written, nil
 }
 
 // LoginSsh 登录 ssh
@@ -119,18 +137,6 @@ func (this *Config) LoginSftp() error {
 		}
 	}
 	return nil
-}
-
-// Read 读取文件
-func (this *Config) Read(p string) (io.ReadCloser, error) {
-	if err := this.LoginSftp(); err != nil {
-		return nil, err
-	}
-	file, err := this.sftpClient.Open(p)
-	if err != nil {
-		return nil, fmt.Errorf("打开文件%s失败：%s", p, err.Error())
-	}
-	return file, nil
 }
 
 // CloseSsh 关闭 ssh

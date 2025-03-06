@@ -26,7 +26,7 @@ type Saver struct {
 }
 
 // Write 写入文件
-func (this *Saver) Write(p string, src io.Reader, existIgnores ...bool) error {
+func (this *Saver) Write(p string, src io.Reader, existIgnores ...bool) (int64, error) {
 	p = path.Join(this.Root, p)
 	switch strings.ToLower(this.StorageType) {
 	case config.FileTypeLocal: // 本地文件系统
@@ -40,7 +40,7 @@ func (this *Saver) Write(p string, src io.Reader, existIgnores ...bool) error {
 	case config.FileTypeMinio:
 		return this.MinioConfig.Write(p, src, this.MinioOptions)
 	default:
-		return fmt.Errorf("不支持的存储类型: %s", this.StorageType)
+		return 0, fmt.Errorf("不支持的存储类型: %s", this.StorageType)
 	}
 }
 

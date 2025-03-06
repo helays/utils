@@ -11,9 +11,9 @@ import (
 // sPath 如果是绝对路径，那么直接返回sPath
 // 如果是相对路径，会跟上当前目录
 func SetPath(sftpClient *sftp.Client, sPath string) (string, error) {
-	if path.IsAbs(sPath) {
-		return sPath, nil
-	}
+	//if path.IsAbs(sPath) {
+	//	return sPath, nil
+	//}
 	// 判断当前目录是否是根目录
 	current, err := sftpClient.Getwd()
 	if err != nil {
