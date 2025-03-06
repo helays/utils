@@ -63,3 +63,12 @@ func SetDisposition(w http.ResponseWriter, filename string) {
 	contentDisposition := fmt.Sprintf("attachment; filename=\"%s\"; filename*=UTF-8''%s", encodedFileName, encodedFileName)
 	w.Header().Set("Content-Disposition", contentDisposition)
 }
+
+// RespCloneHeader 响应复制header
+func RespCloneHeader(w http.ResponseWriter, header http.Header) {
+	for k, v := range header {
+		for _, vv := range v {
+			w.Header().Add(k, vv)
+		}
+	}
+}
