@@ -1,4 +1,4 @@
-package SyncMapWrapper
+package syncMapWrapper
 
 import (
 	"sync"
