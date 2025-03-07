@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"database/sql/driver"
+	"github.com/helays/utils/config"
 	"github.com/helays/utils/dataType"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -51,4 +52,18 @@ func (KafkaConfig) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 
 func (this *KafkaConfig) RemovePasswd() {
 	this.Password = ""
+}
+
+func (this *KafkaConfig) SetInfo(args ...any) {
+	if len(args) != 2 {
+		return
+	}
+	switch args[0].(string) {
+	case config.ClientInfoHost:
+		this.Addrs = args[1].([]string)
+	case config.ClientInfoUser:
+		this.User = args[1].(string)
+	case config.ClientInfoPasswd:
+		this.Password = args[1].(string)
+	}
 }

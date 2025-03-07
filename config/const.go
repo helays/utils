@@ -135,3 +135,9 @@ const (
 	ClusterNacos     = "nacos"
 	ClusterZookeeper = "zookeeper"
 )
+
+const (
+	ClientInfoHost   = "host"
+	ClientInfoUser   = "user"
+	ClientInfoPasswd = "passwd"
+)

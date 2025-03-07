@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/config"
 	"github.com/helays/utils/dataType"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -26,6 +27,20 @@ type Config struct {
 
 func (this *Config) RemovePasswd() {
 	this.Pwd = ""
+}
+
+func (this *Config) SetInfo(args ...any) {
+	if len(args) != 2 {
+		return
+	}
+	switch args[0].(string) {
+	case config.ClientInfoHost:
+		this.Host = args[1].(string)
+	case config.ClientInfoUser:
+		this.User = args[1].(string)
+	case config.ClientInfoPasswd:
+		this.Pwd = args[1].(string)
+	}
 }
 
 func (this Config) Value() (driver.Value, error) {

@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"github.com/helays/utils/close/ftpClose"
+	"github.com/helays/utils/config"
 	"github.com/helays/utils/dataType"
 	"github.com/helays/utils/dataType/customWriter"
 	"github.com/jlaffaye/ftp"
@@ -42,6 +43,20 @@ func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 
 func (this *Config) RemovePasswd() {
 	this.Pwd = ""
+}
+
+func (this *Config) SetInfo(args ...any) {
+	if len(args) != 2 {
+		return
+	}
+	switch args[0].(string) {
+	case config.ClientInfoHost:
+		this.Host = args[1].(string)
+	case config.ClientInfoUser:
+		this.User = args[1].(string)
+	case config.ClientInfoPasswd:
+		this.Pwd = args[1].(string)
+	}
 }
 
 // Write 写入文件

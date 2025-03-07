@@ -3,6 +3,7 @@ package minio
 import (
 	"context"
 	"fmt"
+	"github.com/helays/utils/config"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
@@ -30,6 +31,20 @@ type Config struct {
 
 func (this *Config) RemovePasswd() {
 	this.SecretAccessKey = ""
+}
+
+func (this *Config) SetInfo(args ...any) {
+	if len(args) != 2 {
+		return
+	}
+	switch args[0].(string) {
+	case config.ClientInfoHost:
+		this.Endpoint = args[1].(string)
+	case config.ClientInfoUser:
+		this.AccessKeyID = args[1].(string)
+	case config.ClientInfoPasswd:
+		this.SecretAccessKey = args[1].(string)
+	}
 }
 
 func (this *Config) Close() {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/config"
 	"io"
 	"os"
 	"path"
@@ -23,6 +24,18 @@ type Config struct {
 	DataTransferProtection string `json:"data_transfer_protection" yaml:"data_transfer_protection" ini:"data_transfer_protection"`
 
 	client *hdfs.Client
+}
+
+func (this *Config) SetInfo(args ...any) {
+	if len(args) != 2 {
+		return
+	}
+	switch args[0].(string) {
+	case config.ClientInfoHost:
+		this.Addresses = args[1].([]string)
+	case config.ClientInfoUser:
+		this.User = args[1].(string)
+	}
 }
 
 // Close 关闭 hdfs client
@@ -76,9 +89,12 @@ func (this *Config) Read(filePath string) (io.ReadCloser, error) {
 	if err := this.login(); err != nil {
 		return nil, err
 	}
+	if !path.IsAbs(filePath) {
+		filePath = path.Join("/", filePath)
+	}
 	remoteFile, err := this.client.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("打开文件%s失败: %s", filePath, err.Error())
+		return nil, err
 	}
 	return remoteFile, nil
 }

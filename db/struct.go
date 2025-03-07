@@ -100,6 +100,20 @@ func (this *Dbbase) RemovePasswd() {
 	this.Pwd = ""
 }
 
+func (this *Dbbase) SetInfo(args ...any) {
+	if len(args) != 2 {
+		return
+	}
+	switch args[0].(string) {
+	case config.ClientInfoHost:
+		this.Host = args[1].([]string)
+	case config.ClientInfoUser:
+		this.User = args[1].(string)
+	case config.ClientInfoPasswd:
+		this.Pwd = args[1].(string)
+	}
+}
+
 // TableDefaultField 用于快速定义默认的表结构字段，包含id 创建时间 更新时间
 type TableDefaultField struct {
 	Id         int                 `json:"id,omitempty" gorm:"primaryKey;not null;autoIncrement;comment:行ID" form:"id"`
