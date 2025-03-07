@@ -49,7 +49,6 @@ func (this *Config) Read(p string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(filePath)
 	file, err := this.sftpClient.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("打开文件%s失败：%s", p, err.Error())
