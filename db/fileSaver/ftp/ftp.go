@@ -40,6 +40,10 @@ func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return dataType.JsonDbDataType(db, field)
 }
 
+func (this *Config) RemovePasswd() {
+	this.Pwd = ""
+}
+
 // Write 写入文件
 func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) (int64, error) {
 	if err := this.Login(); err != nil {

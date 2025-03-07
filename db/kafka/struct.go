@@ -48,3 +48,7 @@ func (this KafkaConfig) GormDataType() string {
 func (KafkaConfig) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return dataType.JsonDbDataType(db, field)
 }
+
+func (this *KafkaConfig) RemovePasswd() {
+	this.Password = ""
+}

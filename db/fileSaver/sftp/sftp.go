@@ -24,6 +24,10 @@ type Config struct {
 	sftpClient *sftp.Client
 }
 
+func (this *Config) RemovePasswd() {
+	this.Pwd = ""
+}
+
 func (this Config) Value() (driver.Value, error) {
 	return dataType.DriverValueWithJson(this)
 }

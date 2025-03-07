@@ -28,6 +28,10 @@ type Config struct {
 	client *minio.Client
 }
 
+func (this *Config) RemovePasswd() {
+	this.SecretAccessKey = ""
+}
+
 func (this *Config) Close() {
 	if this.client == nil {
 		return

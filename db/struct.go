@@ -96,6 +96,10 @@ func (this Dbbase) Dsn() string {
 	return ""
 }
 
+func (this *Dbbase) RemovePasswd() {
+	this.Pwd = ""
+}
+
 // TableDefaultField 用于快速定义默认的表结构字段，包含id 创建时间 更新时间
 type TableDefaultField struct {
 	Id         int                 `json:"id,omitempty" gorm:"primaryKey;not null;autoIncrement;comment:行ID" form:"id"`
