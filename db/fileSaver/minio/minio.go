@@ -61,10 +61,11 @@ func (this *Config) Write(filePath string, src io.Reader, options Options) (int6
 	}
 }
 
-func (this *Config) Read(filePath string) (io.ReadCloser, error) {
+func (this *Config) Read(filePath string, options Options) (io.ReadCloser, error) {
 	if err := this.login(); err != nil {
 		return nil, err
 	}
+	this.options = options
 	if obj, err := this.client.GetObject(this.ctx, this.options.Bucket, filePath, minio.GetObjectOptions{}); err != nil {
 		return nil, fmt.Errorf("打开文件%s失败：%s", filePath, err.Error())
 	} else {
