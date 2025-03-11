@@ -69,27 +69,13 @@ func (h *HttpServer) HttpServerStart() {
 		}
 	}
 
-	server := &http.Server{
-		Addr:              h.ListenAddr,
-		TLSConfig:         nil,
-		ReadTimeout:       0,
-		ReadHeaderTimeout: 0,
-		WriteTimeout:      0,
-		IdleTimeout:       0,
-		MaxHeaderBytes:    0,
-		TLSNextProto:      nil,
-		ConnState:         nil,
-		ErrorLog:          nil,
-		// BaseContext:       nil,
-		// ConnContext:       nil,
-	}
+	server := &http.Server{Addr: h.ListenAddr}
 	if h.EnableGzip {
 		server.Handler = handlers.CompressHandler(mux)
 	} else {
 		server.Handler = mux
 	}
 	defer Closehttpserver(server)
-
 	ulogs.Log("启动Http(s) Server", h.ListenAddr)
 	if h.Ssl {
 		server.TLSConfig = &tls.Config{
@@ -114,7 +100,7 @@ func (h *HttpServer) HttpServerStart() {
 			server.TLSConfig.ClientCAs = pool
 			server.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 		}
-		if err := server.ListenAndServeTLS(tools.Fileabs(h.Crt), tools.Fileabs(h.Key)); err != nil {
+		if err = server.ListenAndServeTLS(tools.Fileabs(h.Crt), tools.Fileabs(h.Key)); err != nil {
 			ulogs.Error("HTTPS Service 服务启动失败", server.Addr, err)
 			os.Exit(1)
 		}
