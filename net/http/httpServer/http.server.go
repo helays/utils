@@ -7,10 +7,12 @@ import (
 	"errors"
 	"github.com/gorilla/handlers"
 	"github.com/helays/utils/close/httpClose"
+	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/crypto/md5"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/logger/zaploger"
+	"github.com/helays/utils/net/ipAccess"
 	"github.com/helays/utils/tools"
 	"go.uber.org/zap"
 	"golang.org/x/net/websocket"
@@ -43,6 +45,17 @@ func (h *HttpServer) HttpServerStart() {
 		h.logger, err = zaploger.New(&h.Logger)
 		ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
 	}
+	var err error
+	if len(h.Allowip) > 0 {
+		h.allowIpList, err = ipAccess.NewIPList(h.Allowip...)
+		ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
+		h.enableCheckIpAccess = true
+	}
+	if len(h.Denyip) > 0 {
+		h.denyIpList, err = ipAccess.NewIPList(h.Denyip...)
+		ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
+		h.enableCheckIpAccess = true
+	}
 
 	if h.Route != nil {
 		for u, funcName := range h.Route {
@@ -51,7 +64,8 @@ func (h *HttpServer) HttpServerStart() {
 	}
 	if h.RouteSocket != nil {
 		for u, funcName := range h.RouteSocket {
-			mux.Handle(u, websocket.Handler(funcName))
+			//mux.Handle(u, websocket.Handler(funcName))
+			h.socketMiddleware(mux, u, funcName)
 		}
 	}
 
@@ -124,57 +138,36 @@ func (h *HttpServer) middleware(mux *http.ServeMux, u string, f func(w http.Resp
 	mux.Handle(u, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer httpClose.CloseReq(r)
 		if len(h.serverNameMap) > 0 {
-			// 需要验证请求的host是否绑定了
-			_host := strings.Split(strings.ToLower(r.Host), ":")
-			if len(_host) > 0 {
-				if _, ok := h.serverNameMap[_host[0]]; !ok {
-					w.WriteHeader(http.StatusBadGateway)
-					return
-				}
+			// 提取并转换为小写的host（忽略端口部分）
+			host := strings.ToLower(strings.SplitN(r.Host, ":", 2)[0])
+			if _, ok := h.serverNameMap[host]; !ok {
+				w.WriteHeader(http.StatusBadGateway)
+				return
 			}
 		}
-		if h.logger != nil {
-			// 这里输出info 级别的请求日志
-			h.logger.Info(context.Background(),
-				Getip(r),
-				zap.String(r.Method, r.URL.String()),
-				zap.String("http_user_agent", r.Header.Get("User-Agent")),
-			)
-		} else {
-			ulogs.Debug("请求地址", r.URL.String(), "IP", Getip(r))
-		}
+		start := time.Now()
+		defer func() {
+			ua := r.Header.Get("User-Agent")
+			elapsed := time.Since(start).Milliseconds() // 耗时
+			if h.logger != nil {
+				// 这里输出info 级别的请求日志
+				h.logger.Info(context.Background(),
+					Getip(r),
+					zap.String(r.Method, r.URL.String()),
+					zap.String("http_user_agent", ua),
+					zap.Int64("elapsed", elapsed),
+				)
+			} else {
+				ulogs.Debug(Getip(r), r.Method, r.URL.String(), ua, elapsed)
+			}
+		}()
 
 		// add header
 		w.Header().Set("server", "vs/1.0")
 		w.Header().Set("connection", "keep-alive")
 		// 白名单验证
-		if len(h.Allowip) > 0 {
-			// 存在白名单，只允许白
-			//名单中存在的访问
-			addr := r.RemoteAddr
-			al := strings.Index(addr, ":")
-			if al < 0 {
-				Forbidden(w, "")
-				return
-			}
-			addr = addr[0:al]
-			if tools.Searchslice(addr, h.Allowip) == false {
-				Forbidden(w, "")
-				return
-			}
-		} else if len(h.Denyip) > 0 {
-			// 存在黑名单的话，再黑名单中的 IP禁止访问
-			addr := r.RemoteAddr
-			al := strings.Index(addr, ":")
-			if al < 0 {
-				Forbidden(w, "")
-				return
-			}
-			addr = addr[0:al]
-			if tools.Searchslice(addr, h.Denyip) == true {
-				Forbidden(w, "")
-				return
-			}
+		if h.enableCheckIpAccess && !h.checkIpAccess(w, r) {
+			return
 		}
 
 		if h.CommonCallback != nil && !h.CommonCallback(w, r) {
@@ -182,6 +175,72 @@ func (h *HttpServer) middleware(mux *http.ServeMux, u string, f func(w http.Resp
 		}
 		http.HandlerFunc(f).ServeHTTP(w, r)
 	}))
+}
+
+func (h *HttpServer) socketMiddleware(mux *http.ServeMux, u string, f func(ws *websocket.Conn)) {
+	handler := websocket.Handler(func(ws *websocket.Conn) {
+		defer vclose.Close(ws)
+		// 提取并转换为小写的host（忽略端口部分）
+		host := strings.ToLower(strings.SplitN(ws.Request().Host, ":", 2)[0])
+		if _, ok := h.serverNameMap[host]; !ok {
+			// 对于WebSocket，我们可能不能直接返回HTTP状态码，但可以决定是否关闭连接
+			vclose.Close(ws)
+			return
+		}
+		start := time.Now()
+		ua := ws.Request().Header.Get("User-Agent")
+		defer func() {
+			elapsed := time.Since(start).Milliseconds() // 耗时
+			if h.logger != nil {
+				// 这里输出info级别的请求日志
+				h.logger.Info(context.Background(),
+					Getip(ws.Request()),
+					zap.String("method", "WEBSOCKET"),
+					zap.String("url", u),
+					zap.String("http_user_agent", ua),
+					zap.Int64("elapsed", elapsed),
+				)
+			} else {
+				ulogs.Debug(Getip(ws.Request()), "WEBSOCKET", u, ua, elapsed)
+			}
+		}()
+		// 白名单验证
+		if h.enableCheckIpAccess && !h.checkIpAccess(nil, ws.Request()) {
+			vclose.Close(ws)
+			return
+		}
+
+		// 如果有通用回调并且该回调不允许继续，则不进行后续处理
+		if h.CommonCallback != nil && !h.CommonCallback(nil, ws.Request()) {
+			vclose.Close(ws)
+			return
+		}
+		f(ws)
+	})
+	mux.Handle(u, handler)
+}
+
+// 检测ip白名单和黑名单
+func (this *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bool {
+	addr := r.RemoteAddr
+	al := strings.Index(addr, ":")
+	if al < 0 {
+		Forbidden(w, "invalid address format")
+		return false
+	}
+	ip := addr[0:al]
+	if this.allowIpList != nil {
+		if !this.allowIpList.Contains(ip) {
+			Forbidden(w, "你的IP不在系统白名单内")
+			return false
+		}
+		return true
+	}
+	if this.denyIpList != nil && this.denyIpList.Contains(ip) {
+		Forbidden(w, "你的IP已被监管")
+		return false
+	}
+	return true
 }
 
 // SetRequestDefaultPage 设置 打开的默认页面

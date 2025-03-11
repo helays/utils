@@ -27,6 +27,7 @@ func Load[T any](i T) {
 		if err = loadFirst(i); err == nil {
 			return
 		}
+		ulogs.Error(err, "配置文件默认解析器计息失败，开始尝试其他解析器")
 	}
 	for _, v := range loadFunc {
 		err = v(i)

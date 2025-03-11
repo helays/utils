@@ -8,7 +8,7 @@ import (
 	"errors"
 	"github.com/helays/utils/close/gzipClose"
 	"github.com/helays/utils/close/httpClose"
-	"github.com/helays/utils/http/httpTools"
+	"github.com/helays/utils/net/http/httpTools"
 	"gopkg.in/iconv.v1"
 	"io"
 	"net"

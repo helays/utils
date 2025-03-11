@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/db/userDb"
-	"github.com/helays/utils/http/httpServer"
+	"github.com/helays/utils/net/http/httpServer"
 	"gorm.io/gorm"
 	"net/http"
 	"strings"
@@ -44,7 +44,7 @@ func ListMethodGet[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, c
 	if c.Omit != nil && len(c.Omit) > 0 {
 		_tx.Omit(c.Omit...)
 	}
-	for _,item:=range c.Preload{
+	for _, item := range c.Preload {
 		_tx.Preload(item.Query, item.Args...)
 	}
 	var list []T

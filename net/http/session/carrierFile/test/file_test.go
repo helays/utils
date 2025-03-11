@@ -1,8 +1,8 @@
 package test
 
 import (
-	"github.com/helays/utils/http/session"
-	"github.com/helays/utils/http/session/carrierFile"
+	session2 "github.com/helays/utils/net/http/session"
+	"github.com/helays/utils/net/http/session/carrierFile"
 	"time"
 )
 
@@ -34,19 +34,19 @@ import (
 //
 
 var (
-	store = &session.Store{}
+	store = &session2.Store{}
 )
 
 type User struct{}
 
 func run() {
-	defer session.Close(store)
+	defer session2.Close(store)
 	engine, _ := carrierFile.New(carrierFile.Instance{Path: "runtime/session"})
 	// 在session中需要存储User 结构体数据，需要将结构体注册进去
 	// 需要在session 初始化之前进行注册
 	engine.Register(User{})
 
-	store = session.Init(engine, &session.Options{
+	store = session2.Init(engine, &session2.Options{
 		CookieName:    "vsclub.ltd",
 		CheckInterval: time.Hour,
 		Carrier:       "cookie",

@@ -1,15 +1,18 @@
-package carrierRedis
+package carrierFile
 
 import (
-	"bytes"
 	"context"
 	"encoding/gob"
 	"fmt"
+	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/dataType"
-	"github.com/helays/utils/http/session"
-	"github.com/redis/go-redis/v9"
+	session2 "github.com/helays/utils/net/http/session"
+	"github.com/helays/utils/tools"
 	"net/http"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -37,31 +40,36 @@ import (
 //
 //
 // User helay
-// Date: 2024/12/8 17:27
+// Date: 2024/12/8 1:50
 //
 
-// redis 引擎，可以使用ttl作为超时自动回收
-// 无需手动调用删除，session超时后会自动删除
-
-// redis.UniversalClient
+//var (
+//	db *badger.DB
+//)
 
 // Instance session 实例
 type Instance struct {
-	option *session.Options
-	rdb    redis.UniversalClient
+	option *session2.Options
+	Path   string `json:"path" yaml:"path" ini:"path"` // db路径
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // New 初始化 session 内存 实例
-func New(rdb redis.UniversalClient) *Instance {
+func New(opt ...Instance) (*Instance, error) {
 	ins := &Instance{
-		rdb: rdb,
+		Path: "runtime/session",
 	}
-	return ins
-}
+	if len(opt) > 0 {
+		ins.Path = opt[0].Path
+	}
+	ins.Path = tools.Fileabs(ins.Path)
+	err := tools.Mkdir(ins.Path)
+	if err != nil {
+		return nil, fmt.Errorf("创建session文件存放目录失败")
+	}
 
-// Apply 应用配置
-func (this *Instance) Apply(options *session.Options) {
-	this.option = options
+	return ins, nil
 }
 
 // Register 注册结构定义
@@ -75,55 +83,101 @@ func (this *Instance) Register(value ...any) {
 	}
 }
 
+// Apply 应用配置
+func (this *Instance) Apply(options *session2.Options) {
+	this.option = options
+	this.ctx, this.cancel = context.WithCancel(context.Background())
+	tools.RunAsyncTickerProbabilityFunc(this.ctx, !this.option.DisableGc, this.option.CheckInterval, this.option.GcProbability, this.gc)
+}
+
 // Close 关闭 db
 func (this *Instance) Close() error {
+	this.cancel()
 	return nil
 }
 
-// 从redis中读取session 数据
-func (this *Instance) get(w http.ResponseWriter, r *http.Request, name string) (*session.Session, string, error) {
-	sessionId, err := session.GetSessionId(w, r, this.option) // 这一步一般不会失败
+// gc 垃圾回收
+func (this *Instance) gc() {
+	files, err := os.ReadDir(this.Path)
+	if err != nil {
+		return
+	}
+	// 循环所有文件
+	// 如果是文件夹，就直接删除
+	// 如果文件打开失败，跳过处理
+	// 如果解析失败，就删除
+	// 判断是否过期，过期也直接删除
+	for _, file := range files {
+		// 读取所有session文件
+		sessionPath := filepath.Join(this.Path, file.Name())
+		if file.IsDir() {
+			this.del(sessionPath)
+			continue
+		}
+		sessionVal := &session2.Session{}
+
+		f, err := os.Open(sessionPath)
+		if err != nil {
+			vclose.Close(f)
+			continue
+		}
+		if err = gob.NewDecoder(f).Decode(sessionVal); err != nil {
+			vclose.Close(f)
+			this.del(sessionPath)
+			continue
+		}
+		vclose.Close(f)
+		if time.Time(sessionVal.ExpireTime).Before(time.Now()) {
+			this.del(sessionPath)
+		}
+	}
+}
+
+// 从session 文件中读取session 数据
+func (this *Instance) get(w http.ResponseWriter, r *http.Request, name string) (*session2.Session, string, error) {
+	sessionId, err := session2.GetSessionId(w, r, this.option) // 这一步一般不会失败
 	if err != nil {
 		return nil, "", err // 从cookie中获取sessionId失败
 	}
-	_k := session.GetSessionName(sessionId, name)
-
-	val, err := this.rdb.Get(context.Background(), _k).Bytes()
+	_k := session2.GetSessionName(sessionId, name)
+	// 从文件中读取数据
+	sessionPath := filepath.Join(this.Path, _k)
+	f, err := os.Open(sessionPath)
+	defer vclose.Close(f)
 	if err != nil {
 		return nil, "", err
 	}
-	sessionVal := &session.Session{}
-	if err = gob.NewDecoder(bytes.NewReader(val)).Decode(sessionVal); err != nil {
+	sessionVal := &session2.Session{}
+	if err = gob.NewDecoder(f).Decode(sessionVal); err != nil {
+		vclose.Close(f)
 		// session 数据解析失败，删除session文件
-		this.del(sessionId, name)
+		this.del(sessionPath)
 		return nil, "", err
 	}
+	vclose.Close(f)
 	if time.Time(sessionVal.ExpireTime).Before(time.Now()) {
-		this.del(sessionId, name)
+		this.del(sessionPath)
 		// session已过期
-		return nil, "", session.ErrNotFound
+		return nil, "", session2.ErrNotFound
 	}
 	return sessionVal, _k, nil
 }
 
 // 设置session，将其通过gob 写入文件
-func (this *Instance) set(w http.ResponseWriter, r *http.Request, dst session.Session) error {
-	_k := session.GetSessionName(dst.Id, dst.Name)
-
-	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(dst)
+func (this *Instance) set(w http.ResponseWriter, r *http.Request, dst session2.Session) error {
+	_k := session2.GetSessionName(dst.Id, dst.Name)
+	sessionPath := filepath.Join(this.Path, _k)
+	f, err := os.OpenFile(sessionPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	defer vclose.Close(f)
 	if err != nil {
 		return err
 	}
-	// 将key单独存储，方便后续删除
-	this.rdb.HSet(context.Background(), dst.Id, _k, _k)
-	return this.rdb.Set(context.Background(), _k, buf.Bytes(), dst.Duration).Err()
+	return gob.NewEncoder(f).Encode(dst)
 }
 
-// 从redis删除 session 数据
-func (this *Instance) del(sessionId, _k string) {
-	this.rdb.Del(context.Background(), _k)
-	this.rdb.HDel(context.Background(), sessionId, _k)
+// 删除具体的session 文件
+func (this *Instance) del(path string) {
+	_ = os.RemoveAll(path)
 }
 
 // Get 获取session
@@ -207,11 +261,11 @@ func (this *Instance) Flashes(w http.ResponseWriter, r *http.Request, name strin
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return fmt.Errorf("dst must be a pointer")
 	}
-	sessionVal, _, err := this.get(w, r, name)
+	sessionVal, _k, err := this.get(w, r, name)
+	this.del(filepath.Join(this.Path, _k))
 	if err != nil {
 		return err
 	}
-	this.del(sessionVal.Id, name)
 	v.Elem().Set(reflect.ValueOf(sessionVal.Values.Val))
 	return nil
 }
@@ -223,50 +277,49 @@ func (this *Instance) Flashes(w http.ResponseWriter, r *http.Request, name strin
 // value session 值
 // duration session 过期时间，默认为24小时
 func (this *Instance) Set(w http.ResponseWriter, r *http.Request, name string, value any, duration ...time.Duration) error {
-	sessionId, _ := session.GetSessionId(w, r, this.option)
-	sessionVal := session.Session{
+	sessionId, _ := session2.GetSessionId(w, r, this.option)
+	now := time.Now()
+	sessionVal := session2.Session{
 		Id:         sessionId,
 		Name:       name,
-		Values:     session.SessionValue{Val: value},
-		CreateTime: dataType.CustomTime{},
+		Values:     session2.SessionValue{Val: value},
+		CreateTime: dataType.CustomTime(now),
 		ExpireTime: dataType.CustomTime{},
-		Duration:   session.ExpireTime,
+		Duration:   session2.ExpireTime,
 	}
 	if len(duration) > 0 {
 		sessionVal.Duration = duration[0]
 	}
-	now := time.Now()
-	sessionVal.Id = sessionId                                                 // 设置sessionId
-	sessionVal.CreateTime = dataType.CustomTime(now)                          // 设置创建时间
 	sessionVal.ExpireTime = dataType.CustomTime(now.Add(sessionVal.Duration)) // 设置过期时间
 	return this.set(w, r, sessionVal)
 }
 
 // Del 删除session
 func (this *Instance) Del(w http.ResponseWriter, r *http.Request, name string) error {
-	sessionId, _ := session.GetSessionId(w, r, this.option)
-	_k := session.GetSessionName(sessionId, name)
-	this.del(sessionId, _k)
+	sessionId, _ := session2.GetSessionId(w, r, this.option)
+	_k := session2.GetSessionName(sessionId, name)
+	this.del(filepath.Join(this.Path, _k))
 	return nil
 }
 
 // Destroy 销毁session
 func (this *Instance) Destroy(w http.ResponseWriter, r *http.Request) error {
-	sessionId, err := session.GetSessionId(w, r, this.option)
+	sessionId, err := session2.GetSessionId(w, r, this.option)
 	if err != nil {
 		return err // 从cookie中获取sessionId失败
 	}
 	// 需要删除 cookie 或者 header
-	session.DeleteSessionId(w, this.option)
-	res := this.rdb.HGetAll(context.Background(), sessionId)
-	m, err := res.Result()
+	session2.DeleteSessionId(w, this.option)
+	// 删除所有以 sessionId 为前缀的 key
+	files, err := os.ReadDir(this.Path)
 	if err != nil {
 		return err
 	}
-	for k, _ := range m {
-		this.rdb.Del(context.Background(), k)
+	for _, file := range files {
+		if strings.HasPrefix(file.Name(), sessionId) {
+			filePath := filepath.Join(this.Path, file.Name())
+			this.del(filePath)
+		}
 	}
-	this.rdb.Del(context.Background(), sessionId)
-	// 删除当前 sessionid的所有key
 	return nil
 }

@@ -8,9 +8,9 @@ import (
 	"github.com/go-playground/form/v4"
 	"github.com/helays/utils/close/osClose"
 	"github.com/helays/utils/close/vclose"
-	"github.com/helays/utils/http/httpTools"
-	"github.com/helays/utils/http/mime"
 	"github.com/helays/utils/logger/ulogs"
+	"github.com/helays/utils/net/http/httpTools"
+	mime2 "github.com/helays/utils/net/http/mime"
 	"github.com/helays/utils/tools"
 	"io"
 	"log"
@@ -88,7 +88,7 @@ func Play(path string, w http.ResponseWriter, r *http.Request, args ...any) {
 		totalSize = rangeEnd
 	}
 	total := strconv.Itoa(fileSize)
-	m := mime.MimeMap[fType]
+	m := mime2.MimeMap[fType]
 	if m == "" {
 		m = "text/html;charset=utf-8"
 	}
@@ -265,12 +265,13 @@ func SetReturnFile(w http.ResponseWriter, r *http.Request, file string) {
 		SetReturnError(w, r, err, http.StatusForbidden, "模板下载失败")
 	}
 	// 设置响应头
-	mimeType, _ := mime.GetFilePathMimeType(file)
+	mimeType, _ := mime2.GetFilePathMimeType(file)
 	w.Header().Set("Content-Type", mimeType)
 	// 对文件名进行URL转义，以支持中文等非ASCII字符
 	fileName := filepath.Base(file)
 	httpTools.SetDisposition(w, fileName)
 	_, _ = io.Copy(w, f)
+
 }
 
 // SetDownloadBytes 下载来源是字节数组
@@ -281,7 +282,7 @@ func SetDownloadBytes(w http.ResponseWriter, r *http.Request, b *[]byte, fileNam
 	} else {
 		rd = bytes.NewReader(*b)
 	}
-	_m, err := mime.GetFileMimeType(rd)
+	_m, err := mime2.GetFileMimeType(rd)
 	if err != nil {
 		SetReturnError(w, r, err, http.StatusInternalServerError, "下载失败")
 		return
@@ -289,7 +290,9 @@ func SetDownloadBytes(w http.ResponseWriter, r *http.Request, b *[]byte, fileNam
 
 	w.Header().Set("Content-Type", _m)
 	httpTools.SetDisposition(w, fileName)
+	w.Header().Set("Content-Length", strconv.Itoa(len(*b)))
 	_, _ = w.Write(*b)
+
 }
 
 // SetReturnError 错误信息会记录下来，同时也会反馈给前端
@@ -363,9 +366,9 @@ func Getip(r *http.Request) string {
 	remoteAddr := r.RemoteAddr
 	if ip := r.Header.Get("HTTP_CLIENT_IP"); ip != "" {
 		remoteAddr = ip
-	} else if ip := r.Header.Get("HTTP_X_FORWARDED_FOR"); ip != "" {
+	} else if ip = r.Header.Get("HTTP_X_FORWARDED_FOR"); ip != "" {
 		remoteAddr = ip
-	} else if ip := r.Header.Get("X-Real-IP"); ip != "" {
+	} else if ip = r.Header.Get("X-Real-IP"); ip != "" {
 		remoteAddr = ip
 	} else {
 		remoteAddr, _, _ = net.SplitHostPort(remoteAddr)

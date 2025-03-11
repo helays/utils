@@ -1,8 +1,8 @@
 package test
 
 import (
-	"github.com/helays/utils/http/session"
-	"github.com/helays/utils/http/session/carrierMemory"
+	session2 "github.com/helays/utils/net/http/session"
+	"github.com/helays/utils/net/http/session/carrierMemory"
 	"time"
 )
 
@@ -34,12 +34,12 @@ import (
 //
 
 var (
-	store = &session.Store{}
+	store = &session2.Store{}
 )
 
 func run() {
-	defer session.Close(store)
-	store = session.Init(carrierMemory.New(), &session.Options{
+	defer session2.Close(store)
+	store = session2.Init(carrierMemory.New(), &session2.Options{
 		CookieName:    "vsclub.ltd",
 		CheckInterval: time.Hour,
 		Carrier:       "cookie",
