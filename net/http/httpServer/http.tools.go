@@ -542,7 +542,7 @@ func QueryFieldWithValidRegexp(w http.ResponseWriter, r *http.Request, field str
 }
 
 // ParseRequestBodyAsAnySliceAndLength 解析请求体为any切片,同时获取请求体长度
-func ParseRequestBodyAsAnySliceAndLength(w http.ResponseWriter, r *http.Request) ([]any, int, bool) {
+func ParseRequestBodyAsAnySliceAndLength(w http.ResponseWriter, r *http.Request) ([]any, int, error) {
 	var (
 		_postData any
 		counter   = &customWriter.SizeCounter{}
@@ -553,12 +553,17 @@ func ParseRequestBodyAsAnySliceAndLength(w http.ResponseWriter, r *http.Request)
 	dec := json.NewDecoder(teeReader)
 	dec.UseNumber()
 	if err := dec.Decode(&_postData); err != nil {
-		SetReturnCode(w, r, http.StatusInternalServerError, err)
-		return nil, int(counter.TotalSize), false
+		if err == io.EOF {
+			SetReturnCode(w, r, http.StatusInternalServerError, fmt.Errorf("请求体为空"))
+		} else {
+			SetReturnCode(w, r, http.StatusInternalServerError, err)
+		}
+
+		return nil, int(counter.TotalSize), err
 	}
 
 	if postData, ok = _postData.([]any); !ok {
 		postData = []any{_postData}
 	}
-	return postData, int(counter.TotalSize), true
+	return postData, int(counter.TotalSize), nil
 }
