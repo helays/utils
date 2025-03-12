@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/form/v4"
 	"github.com/helays/utils/close/osClose"
 	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/dataType/customWriter"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/net/http/httpTools"
 	mime2 "github.com/helays/utils/net/http/mime"
@@ -538,4 +539,26 @@ func QueryFieldWithValidRegexp(w http.ResponseWriter, r *http.Request, field str
 		return "", false
 	}
 	return id, true
+}
+
+// ParseRequestBodyAsAnySliceAndLength 解析请求体为any切片,同时获取请求体长度
+func ParseRequestBodyAsAnySliceAndLength(w http.ResponseWriter, r *http.Request) ([]any, int, bool) {
+	var (
+		_postData any
+		counter   = &customWriter.SizeCounter{}
+		postData  []any
+		ok        bool
+	)
+	teeReader := io.TeeReader(r.Body, counter)
+	dec := json.NewDecoder(teeReader)
+	dec.UseNumber()
+	if err := dec.Decode(&_postData); err != nil {
+		SetReturnCode(w, r, http.StatusInternalServerError, err)
+		return nil, int(counter.TotalSize), false
+	}
+
+	if postData, ok = _postData.([]any); !ok {
+		postData = []any{_postData}
+	}
+	return postData, int(counter.TotalSize), true
 }
