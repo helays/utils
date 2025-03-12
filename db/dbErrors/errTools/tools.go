@@ -24,6 +24,8 @@ func doPostgres(err *pgconn.PgError, info dbErrors.DbError) error {
 	switch info.Code {
 	case "42703":
 		return errors.New(err.Message)
+	case "22001":
+		return fmt.Errorf("超长导致%s", info.ZH)
 	}
 	return fmt.Errorf("%s：%s", info.ZH, err.Message)
 }

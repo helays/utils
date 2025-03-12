@@ -3,6 +3,7 @@ package userDb
 import (
 	"errors"
 	"fmt"
+	"github.com/helays/utils/db/dbErrors/errTools"
 	"gorm.io/gorm"
 	"regexp"
 )
@@ -19,7 +20,7 @@ func Create[T Model](tx *gorm.DB, src T) error {
 	}
 	// 使用 GORM 的 Create 方法插入数据
 	if err := tx.Session(&gorm.Session{}).Create(src).Error; err != nil {
-		return fmt.Errorf("插入数据失败：%s", err.Error())
+		return fmt.Errorf("插入数据失败：%s", errTools.Error(err).Error())
 	}
 
 	return nil
@@ -72,7 +73,7 @@ func Update[T Model](tx *gorm.DB, src T, c Curd) error {
 	}
 	// 使用 GORM 的 Update 方法更新数据
 	if err = _tx.Save(src).Error; err != nil {
-		return fmt.Errorf("更新数据失败：%s", err.Error())
+		return fmt.Errorf("更新数据失败：%w", errTools.Error(err))
 	}
 	return nil
 }
@@ -90,6 +91,9 @@ func UpdateWithoutValid[T any](tx *gorm.DB, opt Curd) (err error) {
 		err = _tx.Update(opt.Update[0].(string), opt.Update[1]).Error
 	} else {
 		err = _tx.Updates(opt.Updates).Error
+	}
+	if err != nil {
+		return errTools.Error(err)
 	}
 	return
 }
@@ -111,6 +115,9 @@ func FindOne[T any](tx *gorm.DB, opts Curd) (T, error) {
 	}
 	var data T
 	err := _tx.Take(&data).Error
+	if err != nil {
+		err = errTools.Error(err)
+	}
 	return data, err
 }
 
@@ -130,5 +137,8 @@ func Query[T any](tx *gorm.DB, opts Curd) (res []T, err error) {
 		_tx.Preload(item.Query)
 	}
 	err = _tx.Find(&res).Error
+	if err != nil {
+		err = errTools.Error(err)
+	}
 	return
 }
