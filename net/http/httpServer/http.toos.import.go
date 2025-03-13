@@ -3,9 +3,11 @@ package httpServer
 import (
 	"bufio"
 	"fmt"
+	"github.com/helays/utils/dataType/customWriter"
 	"github.com/helays/utils/excelTools"
 	"github.com/helays/utils/tools"
 	"github.com/xuri/excelize/v2"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -17,33 +19,36 @@ type Import struct {
 	Sep      string `json:"sep"`       // csv 分割符
 }
 
-func (this Import) Import(r *http.Request) ([]any, error) {
+func (this Import) Import(r *http.Request) ([]any, int64, error) {
 	switch this.FileType {
 	case "excel":
 		return this.ImportExcel(r)
 	case "csv":
 		return this.ImportCsv(r)
 	default:
-		return nil, fmt.Errorf("不支持的文件类型：%s", this.FileType)
+		return nil, 0, fmt.Errorf("不支持的文件类型：%s", this.FileType)
 	}
 }
 
 // ImportExcel 获取excel内容
-func (this Import) ImportExcel(r *http.Request) ([]any, error) {
+func (this Import) ImportExcel(r *http.Request) ([]any, int64, error) {
 	if err := this.valid(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	excel, err := excelize.OpenReader(r.Body)
+	counter := &customWriter.SizeCounter{}
+	teeReader := io.TeeReader(r.Body, counter)
+
+	excel, err := excelize.OpenReader(teeReader)
 	defer excelTools.CloseExcel(excel)
 	if err != nil {
-		return nil, fmt.Errorf("excel文件打开失败：%s", err.Error())
+		return nil, counter.TotalSize, fmt.Errorf("excel文件打开失败：%s", err.Error())
 	}
 	rows, err := excel.GetRows(excel.GetSheetName(0))
 	if err != nil {
-		return nil, fmt.Errorf("sheet读取失败：%s", err.Error())
+		return nil, counter.TotalSize, fmt.Errorf("sheet读取失败：%s", err.Error())
 	}
 	if len(rows) < this.DataRow {
-		return nil, fmt.Errorf("未读取到有效数据")
+		return nil, counter.TotalSize, fmt.Errorf("未读取到有效数据")
 	}
 	var (
 		data        []any
@@ -57,15 +62,17 @@ func (this Import) ImportExcel(r *http.Request) ([]any, error) {
 		}
 		data = append(data, tools.Slice2MapWithHeader(row, fieldRowMap))
 	}
-	return data, nil
+	return data, counter.TotalSize, nil
 }
 
-func (this Import) ImportCsv(r *http.Request) ([]any, error) {
+func (this Import) ImportCsv(r *http.Request) ([]any, int64, error) {
 	if err := this.valid(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
+	counter := &customWriter.SizeCounter{}
+	teeReader := io.TeeReader(r.Body, counter)
 	var (
-		scanner   = bufio.NewScanner(r.Body)
+		scanner   = bufio.NewScanner(teeReader)
 		idx       int
 		fieldRows []string
 		data      []any
@@ -84,7 +91,7 @@ func (this Import) ImportCsv(r *http.Request) ([]any, error) {
 		}
 		data = append(data, tools.Slice2MapWithHeader(lineRows, fieldRows))
 	}
-	return data, nil
+	return data, counter.TotalSize, nil
 }
 
 // 参数验证
