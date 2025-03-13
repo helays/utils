@@ -535,7 +535,7 @@ func PostQueryFieldWithValidRegexp(w http.ResponseWriter, r *http.Request, field
 func QueryFieldWithValidRegexp(w http.ResponseWriter, r *http.Request, field string, rule *regexp.Regexp) (string, bool) {
 	id, err := httpTools.QueryValid(r.URL.Query(), field, rule)
 	if err != nil {
-		SetReturnErrorDisableLog(w, err, http.StatusBadRequest, err.Error())
+		SetReturnErrorDisableLog(w, err, http.StatusBadRequest)
 		return "", false
 	}
 	return id, true

@@ -1,7 +1,9 @@
 package kafka
 
 import (
+	"context"
 	"github.com/IBM/sarama"
+	"github.com/helays/utils/logger/ulogs"
 )
 
 type ConsumerGroupHander struct {
@@ -29,6 +31,21 @@ func (h *ConsumerGroupHander) ConsumeClaim(session sarama.ConsumerGroupSession, 
 		case <-session.Context().Done():
 			// 消费者组会话结束；返回上下文错误
 			return session.Context().Err()
+		}
+	}
+}
+
+// ConsumerGroupHandler 消费者组消费，通用处理器
+func ConsumerGroupHandler(client sarama.ConsumerGroup, topics []string, ctx context.Context, handler *ConsumerGroupHander) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if err := client.Consume(ctx, topics, handler); err != nil {
+				ulogs.Error(err, "消费组消费失败", "topic", topics)
+			}
+
 		}
 	}
 }
