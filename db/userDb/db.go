@@ -5,6 +5,7 @@ import (
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/tools"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -85,7 +86,129 @@ func FilterWhereString(r *http.Request, query string, field string, like bool) f
 	}
 }
 
+type stackItem struct {
+	s     any    // model struct
+	alias string // 设置的别名
+}
+
+// FilterWhereByDbModel 通过DB 实例设置的model 自动映射查询字段
+func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, likes ...map[string]string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		stack := []stackItem{{db.Statement.Model, alias}}
+		query := r.URL.Query()
+		conditions := make([]clause.Expression, 0) // 收集所有查询条件
+		for len(stack) > 0 {
+			item := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+
+			t := reflect.TypeOf(item.s)
+			if t.Kind() == reflect.Ptr {
+				t = t.Elem()
+			}
+			if t.Kind() != reflect.Struct {
+				continue
+			}
+
+			tableName := item.alias
+			v := reflect.ValueOf(item.s)
+			if tableName == "" {
+				tbName := v.MethodByName("TableName")
+				if tbName.IsValid() {
+					tableName = tbName.Call([]reflect.Value{})[0].String()
+				} else {
+					tableName = tools.SnakeString(t.Name())
+				}
+
+				item.alias = tableName
+			}
+			if v.Kind() == reflect.Ptr {
+				v = v.Elem()
+			}
+
+			for i := 0; i < t.NumField(); i++ {
+				field := t.Field(i)
+				tagName := field.Tag.Get("json")
+				// 处理嵌套结构体
+				if field.Type.Kind() == reflect.Struct && field.Tag.Get("gorm") == "" && tagName == "" {
+					stack = append(stack, stackItem{v.Field(i).Interface(), item.alias})
+					continue
+				}
+				// 检查字段类型
+				fieldType := field.Type.String()
+				if fieldType != "int" && fieldType != "string" {
+					continue
+				}
+				if tagName == "" {
+					continue
+				}
+				val := query.Get(strings.Split(tagName, ",")[0])
+				if val == "" {
+					if !enableDefault {
+						continue
+					}
+					// 如果没有传值，判断是否有默认值
+					if val = field.Tag.Get("default"); val == "" {
+						continue
+					}
+				}
+				// 这里还需要解析出字段本身的名字，去数据库进行查询，通过将结构体转成蛇形方式。
+				fieldName := tableName + "." + tools.SnakeString(field.Name)
+
+				if fieldType == "int" {
+					valList := strings.Split(val, ",")
+					if len(valList) > 1 {
+						conditions = append(conditions, clause.IN{Column: fieldName, Values: toInterfaceSlice(valList)})
+					} else {
+						conditions = append(conditions, clause.Eq{Column: fieldName, Value: val})
+					}
+				} else {
+					lastVal := applyLikes(val, field.Tag.Get("dblike"), likes, fieldName)
+					conditions = append(conditions, clause.Like{Column: fieldName, Value: lastVal})
+				}
+			}
+		}
+		// 一次性应用所有查询条件
+		if len(conditions) > 0 {
+			db.Clauses(conditions...)
+		}
+		return db
+	}
+}
+
+// applyLikes 处理 like 查询的值
+func applyLikes(val, dblikeTag string, likes []map[string]string, fieldName string) string {
+	lastVal := val
+	if dblikeTag == "%" {
+		lastVal = "%" + val + "%"
+	}
+	if len(likes) > 0 {
+		if custom, ok := likes[0][fieldName]; ok {
+			switch custom {
+			case "%%":
+				lastVal = "%" + val + "%"
+			case "-%":
+				lastVal = val + "%"
+			case "%-":
+				lastVal = "%" + val
+			default:
+				lastVal = val
+			}
+		}
+	}
+	return lastVal
+}
+
+// toInterfaceSlice 将字符串切片转换为 interface{} 切片
+func toInterfaceSlice(strs []string) []any {
+	result := make([]any, len(strs))
+	for i, v := range strs {
+		result[i] = v
+	}
+	return result
+}
+
 // FilterWhereStruct 通过结构体 自动映射查询字段
+// Deprecated: 在FilterWhereByDbModel出来后，尽量通过这个函数来实现通过结构体 自动处理query 参数 转换到 sql where里面
 func FilterWhereStruct(s any, alias string, enableDefault bool, r *http.Request, likes ...map[string]string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		t := reflect.TypeOf(s)
@@ -168,7 +291,6 @@ func FilterWhereStruct(s any, alias string, enableDefault bool, r *http.Request,
 		}
 		return db
 	}
-
 }
 
 func FilterWhereData(data any, tableName ...string) func(db *gorm.DB) *gorm.DB {
