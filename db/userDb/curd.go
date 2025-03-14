@@ -33,16 +33,18 @@ type QueryOpt struct {
 
 // Curd 通用curd函数，配置结构
 type Curd struct {
-	Table      string
-	Select     QueryOpt
-	Where      QueryOpt
-	Preload    []QueryOpt
-	Omit       []string
-	Pk         string                    // 主键字段 id row_Id
-	MustField  map[string]*regexp.Regexp // 必填字段，正则校验
-	ValidExist bool                      // 存在校验,true 需要校验目标是否存在，false 忽略校验
-	Update     []any                     // 更新
-	Updates    any                       // 更新
+	Table         string
+	Select        QueryOpt
+	Where         QueryOpt
+	Preload       []QueryOpt
+	Omit          []string
+	Pk            string                    // 主键字段 id row_Id
+	MustField     map[string]*regexp.Regexp // 必填字段，正则校验
+	ValidExist    bool                      // 存在校验,true 需要校验目标是否存在，false 忽略校验
+	Update        []any                     // 更新
+	Updates       any                       // 更新
+	EnableDefault bool
+	Joins         []QueryOpt
 }
 
 // Update 通用更新函数，使用泛型
