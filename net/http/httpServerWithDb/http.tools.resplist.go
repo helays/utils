@@ -9,7 +9,6 @@ import (
 	"github.com/helays/utils/tools"
 	"gorm.io/gorm"
 	"net/http"
-	"reflect"
 	"strings"
 )
 
@@ -107,19 +106,19 @@ func ListMethodGet[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, c
 	if !ok {
 		return
 	}
-
+	resp := make([]T, 0)
 	switch strings.ToLower(c.Pk) {
 	case "id":
-		RespListsPkId(w, r, _tx, p)
+		RespListsPkId(w, r, _tx, resp, p)
 	case "row_id":
-		RespListsPkRowId(w, r, _tx, p)
+		RespListsPkRowId(w, r, _tx, resp, p)
 	default:
 		return
 	}
 }
 
 // RespListsPkRowId 通用查询列表 主键 row_id
-func RespListsPkRowId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager ...Pager) {
+func RespListsPkRowId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, resp any, pager ...Pager) {
 	var (
 		pageField     = PageField     // 页面默认字段
 		pageSizeField = PageSizeField // 页面呈现数量默认字段
@@ -133,7 +132,7 @@ func RespListsPkRowId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager
 		pageSize = tools.Ternary(_pager.PageSize < 1, pageSize, _pager.PageSize)
 		order = tools.Ternary(_pager.Order == "", order, _pager.Order)
 	}
-	respLists(w, r, tx, Pager{
+	respLists(w, r, tx, resp, Pager{
 		PageSize:      pageSize,
 		PageSizeField: pageSizeField,
 		PageField:     pageField,
@@ -150,7 +149,7 @@ func RespListsPkRowId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager
 //	tx: *gorm.DB，数据库事务对象，用于执行数据库查询。
 //	respData: T，响应数据的结构体，用于存储查询结果。
 //	pager: ...Pager，可变参数，用于自定义分页和排序行为。
-func RespListsPkId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager ...Pager) {
+func RespListsPkId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, resp any, pager ...Pager) {
 	var (
 		pageField     = PageField     // 页面默认字段
 		pageSizeField = PageSizeField // 页面呈现数量默认字段
@@ -164,7 +163,7 @@ func RespListsPkId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager ..
 		pageSize = tools.Ternary(_pager.PageSize < 1, pageSize, _pager.PageSize)
 		order = tools.Ternary(_pager.Order == "", order, _pager.Order)
 	}
-	respLists(w, r, tx, Pager{
+	respLists(w, r, tx, resp, Pager{
 		PageSize:      pageSize,
 		PageSizeField: pageSizeField,
 		PageField:     pageField,
@@ -173,18 +172,19 @@ func RespListsPkId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager ..
 }
 
 // respLists 通用查询列表
-func respLists(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager Pager) {
+func respLists(w http.ResponseWriter, r *http.Request, tx *gorm.DB, resp any, pager Pager) {
 	var totals int64
 	tx.Scopes(userDb.QueryDateTimeRange(r))
 	tx.Count(&totals)
 	tx.Order(pager.Order)
-	modelType := reflect.TypeOf(tx.Statement.Model) // 直接获取 tx 里面指向的模型
-	// 创建一个与 model 类型相同的切片
-	lst := reflect.MakeSlice(reflect.SliceOf(modelType), 0, 0).Interface()
-	if err := tx.Scopes(userDb.Paginate(r, pager.PageField, pager.PageSizeField, pager.PageSize)).Find(&lst).Error; err != nil {
+	// 下面用反射创建 slice ，貌似开销较大
+	//modelType := reflect.TypeOf(tx.Statement.Model) // 直接获取 tx 里面指向的模型
+	//// 创建一个与 model 类型相同的切片
+	//lst := reflect.MakeSlice(reflect.SliceOf(modelType), 0, 0).Interface()
+	if err := tx.Scopes(userDb.Paginate(r, pager.PageField, pager.PageSizeField, pager.PageSize)).Find(&resp).Error; err != nil {
 		httpServer.SetReturn(w, 1, "数据查询失败")
 		ulogs.Error(err, r.URL.Path, r.URL.RawQuery, "respLists", "tx.Find")
 		return
 	}
-	httpServer.SetReturnData(w, 0, "成功", pageListResp{Lists: lst, Total: totals})
+	httpServer.SetReturnData(w, 0, "成功", pageListResp{Lists: resp, Total: totals})
 }
