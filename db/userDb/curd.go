@@ -34,6 +34,7 @@ type QueryOpt struct {
 // Curd 通用curd函数，配置结构
 type Curd struct {
 	Table         string
+	Alias         string
 	Select        QueryOpt
 	Where         QueryOpt
 	Preload       []QueryOpt

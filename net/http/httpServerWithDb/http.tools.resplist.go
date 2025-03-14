@@ -1,12 +1,16 @@
 package httpServerWithDb
 
 import (
+	"fmt"
+	"github.com/helays/utils/config"
 	"github.com/helays/utils/db/userDb"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/net/http/httpServer"
 	"github.com/helays/utils/tools"
 	"gorm.io/gorm"
 	"net/http"
+	"reflect"
+	"strings"
 )
 
 const (
@@ -27,44 +31,95 @@ type RespFilter interface {
 	RespFilter()
 }
 
-type RespDataStruct[T any] struct {
-	Lists T     `json:"lists"`
+type pageListResp struct {
+	Lists any   `json:"lists"`
 	Total int64 `json:"total"`
 }
 
 // RespListsWithFilter 是一个通用的查询列表函数，有默认的数据过滤函数
-func RespListsWithFilter[T RespFilter](w http.ResponseWriter, r *http.Request, tx *gorm.DB, respData T, pager Pager) {
+func RespListsWithFilter[B any, T RespFilter](w http.ResponseWriter, r *http.Request, tx *gorm.DB, c userDb.Curd, p Pager) {
+	_tx, ok := queryBase(w, r, tx, new(B), c)
+	if !ok {
+		return
+	}
+	_tx.Scopes(userDb.QueryDateTimeRange(r))
 	var totals int64
-	tx.Scopes(userDb.QueryDateTimeRange(r))
-	tx.Count(&totals)
-	tx.Order(pager.Order)
-	if err := tx.Scopes(userDb.Paginate(r, pager.PageField, pager.PageSizeField, pager.PageSize)).Find(&respData).Error; err != nil {
+	_tx.Count(&totals)
+	_tx.Order(p.Order)
+	var respData T
+	if err := _tx.Scopes(userDb.Paginate(r, p.PageField, p.PageSizeField, p.PageSize)).Find(&respData).Error; err != nil {
 		httpServer.SetReturn(w, 1, "数据查询失败")
 		ulogs.Error(err, r.URL.Path, r.URL.RawQuery, "respLists", "tx.Find")
 		return
 	}
 	// 调用 FiltterDatas 方法
 	respData.RespFilter()
-	httpServer.SetReturnData(w, 0, "成功", RespDataStruct[T]{Lists: respData, Total: totals})
+	httpServer.SetReturnData(w, 0, "成功", pageListResp{Lists: respData, Total: totals})
 }
 
-// respLists 通用查询列表
-func respLists[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, respData T, pager Pager) {
-	var totals int64
-	tx.Scopes(userDb.QueryDateTimeRange(r))
-	tx.Count(&totals)
-	tx.Order(pager.Order)
-	if err := tx.Scopes(userDb.Paginate(r, pager.PageField, pager.PageSizeField, pager.PageSize)).Find(&respData).Error; err != nil {
-		httpServer.SetReturn(w, 1, "数据查询失败")
-		ulogs.Error(err, r.URL.Path, r.URL.RawQuery, "respLists", "tx.Find")
+// 查询返回数据列 base
+func queryBase(w http.ResponseWriter, r *http.Request, tx *gorm.DB, model any, c userDb.Curd) (*gorm.DB, bool) {
+	session := tx.Session(&gorm.Session{})
+	if config.Dbg {
+		session = tx.Debug()
+	}
+	query := r.URL.Query()
+	if c.MustField != nil {
+		for k, rule := range c.MustField {
+			v := query.Get(k)
+			if !rule.MatchString(v) {
+				httpServer.SetReturnErrorDisableLog(w, fmt.Errorf("参数%s值格式错误", k), http.StatusBadRequest, "参数错误")
+				return nil, false
+			}
+		}
+	}
+	_tx := session.Model(model)
+	_tx.Scopes(userDb.FilterWhereByDbModel(c.Alias, c.EnableDefault, r))
+	if c.Select.Query != "" {
+		_tx.Select(c.Select.Query, c.Select.Args...)
+	}
+	for _, join := range c.Joins {
+		_tx.Joins(join.Query, join.Args...)
+	}
+	if c.Where.Query != "" {
+		_tx.Where(c.Where.Query, c.Where.Args...)
+	}
+	if c.Omit != nil && len(c.Omit) > 0 {
+		_tx.Omit(c.Omit...)
+	}
+	for _, item := range c.Preload {
+		_tx.Preload(item.Query, item.Args...)
+	}
+	return _tx, true
+}
+
+// ListMethodGet 是一个通用的列表查询方法，用于根据不同的条件获取数据库中的记录。
+// 它使用了泛型 T，允许任何类型的列表查询。
+// 参数:
+//
+//	w http.ResponseWriter: 用于写入HTTP响应。
+//	r *http.Request: 包含当前HTTP请求的详细信息。
+//	tx *gorm.DB: GORM数据库连接对象，用于执行数据库操作。
+//	c userDb.Curd: 查询配置，包含了查询所需的配置信息，如选择查询、条件查询等。
+//	p Pager: 分页配置，用于指定查询的分页信息。
+func ListMethodGet[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, c userDb.Curd, p Pager) {
+	_tx, ok := queryBase(w, r, tx, new(T), c)
+	if !ok {
 		return
 	}
 
-	httpServer.SetReturnData(w, 0, "成功", RespDataStruct[T]{Lists: respData, Total: totals})
+	switch strings.ToLower(c.Pk) {
+	case "id":
+		RespListsPkId(w, r, _tx, p)
+	case "row_id":
+		RespListsPkRowId(w, r, _tx, p)
+	default:
+		return
+	}
 }
 
 // RespListsPkRowId 通用查询列表 主键 row_id
-func RespListsPkRowId[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, respData T, pager ...Pager) {
+func RespListsPkRowId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager ...Pager) {
 	var (
 		pageField     = PageField     // 页面默认字段
 		pageSizeField = PageSizeField // 页面呈现数量默认字段
@@ -78,7 +133,7 @@ func RespListsPkRowId[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB
 		pageSize = tools.Ternary(_pager.PageSize < 1, pageSize, _pager.PageSize)
 		order = tools.Ternary(_pager.Order == "", order, _pager.Order)
 	}
-	respLists(w, r, tx, respData, Pager{
+	respLists(w, r, tx, Pager{
 		PageSize:      pageSize,
 		PageSizeField: pageSizeField,
 		PageField:     pageField,
@@ -95,7 +150,7 @@ func RespListsPkRowId[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB
 //	tx: *gorm.DB，数据库事务对象，用于执行数据库查询。
 //	respData: T，响应数据的结构体，用于存储查询结果。
 //	pager: ...Pager，可变参数，用于自定义分页和排序行为。
-func RespListsPkId[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, respData T, pager ...Pager) {
+func RespListsPkId(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager ...Pager) {
 	var (
 		pageField     = PageField     // 页面默认字段
 		pageSizeField = PageSizeField // 页面呈现数量默认字段
@@ -109,10 +164,27 @@ func RespListsPkId[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, r
 		pageSize = tools.Ternary(_pager.PageSize < 1, pageSize, _pager.PageSize)
 		order = tools.Ternary(_pager.Order == "", order, _pager.Order)
 	}
-	respLists(w, r, tx, respData, Pager{
+	respLists(w, r, tx, Pager{
 		PageSize:      pageSize,
 		PageSizeField: pageSizeField,
 		PageField:     pageField,
 		Order:         order,
 	})
+}
+
+// respLists 通用查询列表
+func respLists(w http.ResponseWriter, r *http.Request, tx *gorm.DB, pager Pager) {
+	var totals int64
+	tx.Scopes(userDb.QueryDateTimeRange(r))
+	tx.Count(&totals)
+	tx.Order(pager.Order)
+	modelType := reflect.TypeOf(tx.Statement.Model) // 直接获取 tx 里面指向的模型
+	// 创建一个与 model 类型相同的切片
+	lst := reflect.MakeSlice(reflect.SliceOf(modelType), 0, 0).Interface()
+	if err := tx.Scopes(userDb.Paginate(r, pager.PageField, pager.PageSizeField, pager.PageSize)).Find(&lst).Error; err != nil {
+		httpServer.SetReturn(w, 1, "数据查询失败")
+		ulogs.Error(err, r.URL.Path, r.URL.RawQuery, "respLists", "tx.Find")
+		return
+	}
+	httpServer.SetReturnData(w, 0, "成功", pageListResp{Lists: lst, Total: totals})
 }
