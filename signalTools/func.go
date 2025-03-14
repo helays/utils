@@ -28,7 +28,7 @@ func exit(funds ...func()) {
 		f()
 	}
 	ulogs.Log("各个组件关闭完成，系统即将自动关闭", os.Getpid())
-	if config.EnableHttpserver {
+	if config.GetIsEnableHttpServer() {
 		config.CloseHttpserverSig <- 1
 		_ = <-config.CloseHttpserverSig
 	}

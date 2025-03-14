@@ -1,6 +1,7 @@
 package config
 
 import (
+	"sync"
 	"time"
 )
 
@@ -15,7 +16,24 @@ var (
 	PublicKeyByt  []byte // 公钥
 	PrivateKeyByt []byte // 私钥
 
-	EnableHttpserver     bool
 	CloseHttpserverSig   = make(chan byte, 1)
 	EnableParseParamsLog = true
 )
+
+// 用于控制 是否启用http server的
+var (
+	enableHttpserver   bool
+	enableHttpserverMu sync.RWMutex
+)
+
+func GetIsEnableHttpServer() bool {
+	enableHttpserverMu.RLock()
+	defer enableHttpserverMu.RUnlock()
+	return enableHttpserver
+}
+
+func SetEnableHttpServer(b bool) {
+	enableHttpserverMu.Lock()
+	defer enableHttpserverMu.Unlock()
+	enableHttpserver = b
+}

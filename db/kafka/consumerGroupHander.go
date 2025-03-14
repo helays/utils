@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/IBM/sarama"
 	"github.com/helays/utils/logger/ulogs"
+	"github.com/helays/utils/tools/backoff"
+	"time"
 )
 
 type ConsumerGroupHander struct {
@@ -37,6 +39,7 @@ func (h *ConsumerGroupHander) ConsumeClaim(session sarama.ConsumerGroupSession, 
 
 // ConsumerGroupHandler 消费者组消费，通用处理器
 func ConsumerGroupHandler(client sarama.ConsumerGroup, topics []string, ctx context.Context, handler *ConsumerGroupHander) {
+	b := backoff.NewBackoff(backoff.Exponential, time.Nanosecond, 10*time.Second, 2.0) // 失败等待时间指数递增，基数2.0
 	for {
 		select {
 		case <-ctx.Done():
@@ -44,6 +47,9 @@ func ConsumerGroupHandler(client sarama.ConsumerGroup, topics []string, ctx cont
 		default:
 			if err := client.Consume(ctx, topics, handler); err != nil {
 				ulogs.Error(err, "消费组消费失败", "topic", topics)
+				time.Sleep(b.Next())
+			} else {
+				b.Reset()
 			}
 
 		}

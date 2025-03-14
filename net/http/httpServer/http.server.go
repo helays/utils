@@ -329,7 +329,7 @@ func (this HttpServer) hash() string {
 }
 
 func (this HttpServer) stopServer(server *http.Server, isQuit *bool) {
-	config.EnableHttpserver = true
+	config.SetEnableHttpServer(true)
 	_ = <-config.CloseHttpserverSig
 	*isQuit = true
 	ulogs.Log("http server已关闭")
