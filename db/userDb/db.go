@@ -92,6 +92,7 @@ type stackItem struct {
 }
 
 // FilterWhereByDbModel 通过DB 实例设置的model 自动映射查询字段
+// 这里是通过 栈的模式，避免函数递归调用
 func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, likes ...map[string]string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		stack := []stackItem{{db.Statement.Model, alias}}
@@ -353,11 +354,17 @@ func QueryDateTimeRange(r *http.Request, filed ...string) func(db *gorm.DB) *gor
 		if len(filed) > 0 {
 			sField = filed[0]
 		}
+		// 构建查询条件
+		conditions := make([]clause.Expression, 0)
 		if sTime != "" {
-			db.Where(sField+" > ?", sTime)
+			conditions = append(conditions, clause.Gt{Column: sField, Value: sTime})
 		}
 		if eTime != "" {
-			db.Where(sField+" <= ?", eTime)
+			conditions = append(conditions, clause.Lte{Column: sField, Value: eTime})
+		}
+		// 应用查询条件
+		if len(conditions) > 0 {
+			db.Clauses(conditions...)
 		}
 		return db
 	}
