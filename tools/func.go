@@ -25,6 +25,15 @@ import (
 	"time"
 )
 
+// NestedMapSet 自动初始化嵌套 map 并设置值
+// 如果内层map不存在，会自动创建
+func NestedMapSet[K comparable, V comparable, T any](m map[K]map[V]T, outerKey K, innerKey V, value T) {
+	if _, ok := m[outerKey]; !ok {
+		m[outerKey] = make(map[V]T)
+	}
+	m[outerKey][innerKey] = value
+}
+
 // PadRight 在字符串后面补齐固定字符，并达到n个长度
 func PadRight(str string, padStr string, lenght int) string {
 	if len(str) >= lenght {

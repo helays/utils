@@ -76,6 +76,11 @@ func init() {
 	}
 }
 
+const (
+	DbClientGorm = "gorm"
+	DbClientEs   = "es"
+)
+
 // 关系数据库
 const (
 	DbTypeMysql      = "mysql"
