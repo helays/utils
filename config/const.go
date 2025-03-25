@@ -146,3 +146,8 @@ const (
 	ClientInfoUser   = "user"
 	ClientInfoPasswd = "passwd"
 )
+
+const (
+	ExportFileTypeExcel = "excel"
+	ExportFileTypeCsv   = "csv"
+)
