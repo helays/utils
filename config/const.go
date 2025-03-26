@@ -99,9 +99,9 @@ const (
 	DbTypeRedis = "redis"
 )
 
-// 搜索数据库
+// DbTypeEs 搜索数据库
 const (
-	DbTypeEs = "es" // es存储
+	DbTypeEs = "elastic" // es存储
 )
 
 // 消息队列

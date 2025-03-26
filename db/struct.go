@@ -15,11 +15,12 @@ import (
 var (
 	// SupportedDbType 支持的数据库类型
 	SupportedDbType = []map[string]string{
-		{"type": "mysql", "value": "mysql"},
-		{"type": "pg", "value": "postgres"},
-		{"type": "kafka", "value": "kafka"},
-		{"type": "ftp", "value": "ftp"},
-		{"type": "sftp", "value": "sftp"},
+		{"type": config.DbTypeMysql, "value": config.DbTypeMysql},
+		{"type": config.DbTypePg, "value": config.DbTypePostgres},
+		{"type": config.DbTypeEs, "value": config.DbTypeEs},
+		{"type": config.QueueTypeKafka, "value": config.QueueTypeKafka},
+		{"type": config.FileTypeFtp, "value": config.FileTypeFtp},
+		{"type": config.FileTypeSftp, "value": config.FileTypeSftp},
 	}
 	// FTPEpsv ftp模式
 	FTPEpsv = []map[string]any{

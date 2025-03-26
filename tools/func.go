@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/helays/utils/close/osClose"
+	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/logger/ulogs"
 	"io"
@@ -170,11 +171,11 @@ func FileAppendContents(path, content string) error {
 
 // FileGetContents 快速简易读取文件
 func FileGetContents(path string) ([]byte, error) {
-	file, err := os.OpenFile(path, os.O_RDONLY, 0755)
+	file, err := os.Open(path)
+	defer vclose.Close(file)
 	if err != nil {
 		return nil, err
 	}
-	defer osClose.CloseFile(file)
 	return io.ReadAll(file)
 }
 
@@ -464,11 +465,9 @@ func ByteFormat(s int) string {
 }
 
 // MapDeepCopy map 深拷贝
-func MapDeepCopy(src map[string]interface{}) map[string]interface{} {
+func MapDeepCopy[T any](src T, dst *T) {
 	byt, _ := json.Marshal(src)
-	var _tmp = new(map[string]interface{})
-	_ = json.Unmarshal(byt, _tmp)
-	return *_tmp
+	_ = json.Unmarshal(byt, dst)
 }
 
 // SearchIntSlice 在整数切片中搜索指定的元素，并返回是否找到。
