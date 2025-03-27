@@ -25,17 +25,25 @@ func (this IlmPolicy) Create(client *elasticsearch.Client) error {
 	if err := this.exists(client); err == nil || !errors.Is(err, config.ErrNotFound) {
 		return err
 	}
+	var rollover = make(map[string]any)
+	if this.MaxAge != "" {
+		rollover["max_age"] = this.MaxAge
+	}
+	if this.MaxPrimaryShardSize != "" {
+		rollover["max_primary_shard_size"] = this.MaxPrimaryShardSize
+	}
+	if this.MaxPrimaryShardDocs > 0 {
+		rollover["max_primary_shard_docs"] = this.MaxPrimaryShardDocs
+	}
+	if this.MaxDocs > 0 {
+		rollover["max_docs"] = this.MaxDocs
+	}
 	policy := map[string]any{
 		"policy": map[string]any{
 			"phases": map[string]any{
 				"hot": map[string]any{
 					"actions": map[string]any{
-						"rollover": map[string]any{
-							"max_age":                this.MaxAge,
-							"max_primary_shard_size": this.MaxPrimaryShardSize,
-							"max_primary_shard_docs": this.MaxPrimaryShardDocs,
-							"max_docs":               this.MaxDocs,
-						},
+						"rollover": rollover,
 					},
 					"min_age": "0ms",
 				},
