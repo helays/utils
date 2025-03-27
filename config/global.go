@@ -1,6 +1,8 @@
 package config
 
 import (
+	"errors"
+	"net/http"
 	"sync"
 	"time"
 )
@@ -24,6 +26,10 @@ var (
 var (
 	enableHttpserver   bool
 	enableHttpserverMu sync.RWMutex
+)
+
+var (
+	ErrNotFound = errors.New(http.StatusText(http.StatusNotFound))
 )
 
 func GetIsEnableHttpServer() bool {

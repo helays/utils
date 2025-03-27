@@ -158,7 +158,7 @@ func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, lik
 				if fieldType == "int" {
 					valList := strings.Split(val, ",")
 					if len(valList) > 1 {
-						conditions = append(conditions, clause.IN{Column: fieldName, Values: toInterfaceSlice(valList)})
+						conditions = append(conditions, clause.IN{Column: fieldName, Values: tools.StrSlice2AnySlice(valList)})
 					} else {
 						conditions = append(conditions, clause.Eq{Column: fieldName, Value: val})
 					}
@@ -197,15 +197,6 @@ func applyLikes(val, dblikeTag string, likes []map[string]string, fieldName stri
 		}
 	}
 	return lastVal
-}
-
-// toInterfaceSlice 将字符串切片转换为 interface{} 切片
-func toInterfaceSlice(strs []string) []any {
-	result := make([]any, len(strs))
-	for i, v := range strs {
-		result[i] = v
-	}
-	return result
 }
 
 // FilterWhereStruct 通过结构体 自动映射查询字段
