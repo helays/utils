@@ -89,3 +89,15 @@ func (this *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	*this = CustomTime(_t)
 	return err
 }
+
+type DynamicTime struct {
+	time.Time
+	Format string
+}
+
+func (dt DynamicTime) MarshalJSON() ([]byte, error) {
+	if dt.Time.IsZero() {
+		return []byte(`null`), nil
+	}
+	return []byte(`"` + dt.Time.Format(dt.Format) + `"`), nil
+}
