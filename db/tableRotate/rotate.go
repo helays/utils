@@ -10,11 +10,22 @@ import (
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var crond *cron.Cron
+
+func init() {
+	crond = cron.New()
+	crond.Start()
+}
+
+func Close() error {
+	crond.Stop()
+	return nil
+}
 
 // TableRotate db自动轮转配置
 type TableRotate struct {
@@ -57,17 +68,14 @@ func (this TableRotate) AddTask(ctx context.Context, tx *gorm.DB, tableName stri
 
 // 通过 crontab方式运行
 func (this *TableRotate) toCrontab(ctx context.Context) {
-	c := cron.New()
-	eid, err := c.AddFunc(this.Crontab, this.run)
+	eid, err := crond.AddFunc(this.Crontab, this.run)
 	if err != nil {
 		ulogs.Error("添加自动轮转任务失败", "表", this.tableName, "定时", this.Crontab)
 		return
 	}
-	c.Start()
 	go func() {
 		<-ctx.Done()      // 等待上下文取消
-		c.Remove(eid)     // 移除任务
-		<-c.Stop().Done() // 停止 cron 调度器
+		crond.Remove(eid) // 移除任务
 		ulogs.Log("【表自动轮转配置终止】", "crontab", "数据库", this.tx.Dialector.Name(), this.tx.Migrator().CurrentDatabase(), this.tableName)
 	}()
 }
@@ -99,10 +107,6 @@ const dateFormat = "20060102150405"
 
 // 分表
 func (this *TableRotate) runSplitTable() {
-	if this.MaxTableRetention <= 0 {
-		return
-	}
-	// 然后进行分表切割
 	newTableName := this.tableName + "_" + time.Now().Format(dateFormat)
 	err := this.tx.Transaction(func(tx *gorm.DB) error {
 		err := tx.Migrator().RenameTable(this.tableName, newTableName)
@@ -137,6 +141,10 @@ func (this *TableRotate) runSplitTable() {
 	} else {
 		ulogs.Log("自动轮转表", this.tableName, "修改表名成功", "新表名", newTableName)
 	}
+	// 如果最大保留数量为0，就不会清理表
+	if this.MaxTableRetention <= 0 {
+		return
+	}
 	// 查询以 this.tableName开头的表名
 	var tables []string
 	switch this.tx.Dialector.Name() {
@@ -165,37 +173,17 @@ func (this *TableRotate) runSplitTable() {
 		ulogs.Error("自动轮转表，查询表名失败", err)
 		return
 	}
-
-	var ts byCreateTime
-	// 获取表名清单，满足tablename_20060102150405 格式的单独计算，然后根据时间倒叙，保留最大数量的表
-	for _, tableName := range tables {
-		// 根据去除 tableName中的前缀
-		createTime := ""
-		currentTable := this.tableName + "_"
-		if strings.HasPrefix(tableName, currentTable) {
-			createTime = tableName[len(currentTable):]
-		}
-		if t, err := time.Parse(dateFormat, createTime); err == nil {
-			ts = append(ts, tableSplit{
-				tableName:  tableName,
-				createTime: t,
-			})
-		}
+	ret := MaxTableRetention{
+		Tx:         this.tx,
+		MaxNum:     this.MaxTableRetention,
+		TableName:  this.tableName,
+		Step:       "_",
+		Tables:     tables,
+		DateFormat: dateFormat,
 	}
-	sort.Sort(ts)
-	if len(ts) < this.MaxTableRetention {
-		return
+	if err = ret.Run(); err != nil {
+		ulogs.Error("自动轮转表，删除表失败", err)
 	}
-	// 删除多余的表
-	for _, item := range ts[this.MaxTableRetention:] {
-		err = this.tx.Migrator().DropTable(item.tableName)
-		if err != nil {
-			ulogs.Error("自动轮转表，删除表失败", err)
-		} else {
-			ulogs.Log("自动轮转表", this.tableName, "删除表成功", "表名", item.tableName)
-		}
-	}
-
 }
 
 // 回收表数据
