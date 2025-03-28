@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"github.com/helays/utils/config"
 	"strings"
 )
 
@@ -76,14 +77,14 @@ func ConvertTimeFormat(format string, lang string) string {
 	// 获取对应语言的转换映射
 	lang = strings.ToLower(lang)
 	switch strings.ToLower(lang) {
-	case "java":
+	case config.ProgramLangJAVA:
 		// 特殊处理Java格式(需要按长度排序确保长格式优先匹配)
 		return convertTimeFormatJAVA(format)
-	case "php":
+	case config.ProgramLangPHP:
 		convMap = conversionMapPHP
-	case "python":
+	case config.ProgramLangPYTHON:
 		convMap = conversionMapPYTHON
-	case "lua":
+	case config.ProgramLangLUA:
 		convMap = conversionMapLUA
 	default:
 		return ""

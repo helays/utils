@@ -151,3 +151,11 @@ const (
 	ExportFileTypeExcel = "excel"
 	ExportFileTypeCsv   = "csv"
 )
+
+const (
+	ProgramLangJAVA   = "java"
+	ProgramLangPHP    = "php"
+	ProgramLangPYTHON = "python"
+	ProgramLangGOLANG = "golang"
+	ProgramLangLUA    = "lua"
+)
