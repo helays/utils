@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+// Config elastic 配置
 type Config struct {
 	DbIdentifier string `ini:"db_identifier" yaml:"db_identifier,omitempty" json:"db_identifier"`
 	Schema       string `json:"schema" yaml:"schema" ini:"schema"`
