@@ -41,7 +41,7 @@ type Config struct {
 	EnableDebugLogger           bool          `json:"enable_debug_logger" yaml:"enable_debug_logger" ini:"enable_debug_logger"`                         // 启用调试日志记录，默认为 false。
 	EnableCompatibilityMode     bool          `json:"enable_compatibility_mode" yaml:"enable_compatibility_mode" ini:"enable_compatibility_mode"`       //  启用发送兼容性头部，默认为 false。
 	DisableMetaHeader           bool          `json:"disable_meta_header" yaml:"disable_meta_header" ini:"disable_meta_header"`                         // 禁用额外的 "X-Elastic-Client-Meta" HTTP 头部，默认为 false。
-	*simpleHttpClient.Transport `json:"transport" yaml:"transport" ini:"transport"`                                                                     // 传输配置
+	*simpleHttpClient.Transport `json:"transport" yaml:"transport" ini:"transport"`                                                                     // 传输配置，
 }
 
 func (this *Config) SetInfo(args ...any) {
