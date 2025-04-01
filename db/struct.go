@@ -17,7 +17,7 @@ var (
 	SupportedDbType = []map[string]string{
 		{"type": config.DbTypeMysql, "value": config.DbTypeMysql},
 		{"type": config.DbTypePg, "value": config.DbTypePostgres},
-		{"type": config.DbTypeEs, "value": config.DbTypeEs},
+		{"type": config.DbClientEs, "value": config.DbClientEs},
 		{"type": config.QueueTypeKafka, "value": config.QueueTypeKafka},
 		{"type": config.FileTypeFtp, "value": config.FileTypeFtp},
 		{"type": config.FileTypeSftp, "value": config.FileTypeSftp},

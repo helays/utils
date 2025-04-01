@@ -78,7 +78,7 @@ func init() {
 
 const (
 	DbClientGorm = "gorm"
-	DbClientEs   = "es"
+	DbClientEs   = "elastic"
 )
 
 // 关系数据库
@@ -97,11 +97,6 @@ const (
 const (
 	DbTypeMongo = "mongo"
 	DbTypeRedis = "redis"
-)
-
-// DbTypeEs 搜索数据库
-const (
-	DbTypeEs = "elastic" // es存储
 )
 
 // 消息队列
