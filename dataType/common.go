@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/helays/utils/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -17,16 +18,16 @@ import (
 
 func JsonDbDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
-	case "sqlite":
+	case config.DbTypeSqlite:
 		return "JSON"
-	case "mysql":
+	case config.DbTypeMysql:
 		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
 			return "JSON"
 		}
 		return "LONGTEXT"
-	case "postgres":
+	case config.DbTypePostgres:
 		return "JSONB"
-	case "sqlserver":
+	case config.DbTypeSqlserver:
 		return "NVARCHAR(MAX)"
 	}
 	return ""

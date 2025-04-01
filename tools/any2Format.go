@@ -337,17 +337,17 @@ func Any2bool(_v any) (bool, error) {
 
 // Any2bytes 尝试将任意类型转换为 []byte
 func Any2bytes(v any) ([]byte, error) {
-	switch v := v.(type) {
+	switch _v := v.(type) {
 	case []byte:
-		return v, nil
+		return _v, nil
 	case string:
-		return []byte(v), nil
+		return []byte(_v), nil
 	case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		b, _ := json.Marshal(v)
+		b, _ := json.Marshal(_v)
 		return b, nil
 	default:
 		// 尝试使用 JSON 序列化其他类型
-		b, err := json.Marshal(v)
+		b, err := json.Marshal(_v)
 		if err != nil {
 			return nil, fmt.Errorf("无法将类型 %T 转换为 []byte: %w", v, err)
 		}
@@ -361,7 +361,108 @@ func Any2Byte(src any) []byte {
 	return b
 }
 
+func Any2String(src any) string {
+	return string(Any2Byte(src))
+}
+
 // Any2Reader 将任意类型转换为 io.Reader
 func Any2Reader(src any) io.Reader {
 	return bytes.NewReader(Any2Byte(src))
+}
+
+func Any2Map(src any) (any, error) {
+	if src == "" || src == nil {
+		return nil, nil
+	}
+	var dst map[string]any
+	switch _src := src.(type) {
+	case string:
+		// 尝试解析JSON字符串
+		err := json.Unmarshal([]byte(_src), &dst)
+		return dst, err
+	case map[string]any:
+		return _src, nil
+	case []byte:
+		// 尝试解析JSON字节数组
+		err := json.Unmarshal(_src, &dst)
+		return dst, err
+		// 扩展的切片类型检测
+	case []any, []string, []int, []int8, []int16, []int32, []int64,
+		[]uint, []uint16, []uint32, []uint64, []uintptr,
+		[]float32, []float64, []bool,
+		[]complex64, []complex128,
+		[][]byte,
+		[]map[string]any, []map[any]any:
+		return _src, nil
+	case int, int8, int16, int32, int64,
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64, bool:
+		return [1]any{src}, nil
+	default:
+		// 尝试通过反射处理其他类型
+		val := reflect.ValueOf(src)
+		switch val.Kind() {
+		case reflect.Map, reflect.Struct, reflect.Slice, reflect.Array:
+			return _src, nil
+		case reflect.Ptr:
+			// 解引用指针
+			if val.IsNil() {
+				return nil, nil
+			}
+			return Any2Map(val.Elem().Interface())
+		default:
+			return [1]any{src}, nil
+		}
+
+	}
+}
+
+// 预定义常见类型，减少反射调用
+var (
+	mapStringInterfaceType = reflect.TypeOf(map[string]interface{}(nil))
+	sliceInterfaceType     = reflect.TypeOf([]interface{}(nil))
+	timeType               = reflect.TypeOf(time.Time{})
+)
+
+// CheckIsObject 检查给定的值是否是一个对象（map、slice、struct、指针）
+func CheckIsObject(v any) bool {
+	// 先尝试类型断言（最快路径）
+	switch v.(type) {
+	case map[string]any, []any, // 最常见
+		map[any]any,                // 任意 key 的 map
+		[]map[string]any,           // map 数组
+		[]int, []float64, []string, // 基本类型 slice
+		struct{}, *struct{}: // 结构体及其指针
+		return true
+	case time.Time, *time.Time: // time.Time 通常不需要再序列化
+		return false
+	case nil, string, int, float64, bool: // 基本类型直接跳过
+		return false
+	}
+	// 获取反射类型
+	typ := reflect.TypeOf(v)
+	if typ == nil {
+		return false // nil 不需要序列化
+	}
+	// 检查是否是指针
+	if typ.Kind() == reflect.Ptr {
+		if reflect.ValueOf(v).IsNil() {
+			return false // nil 指针不需要序列化
+		}
+		typ = typ.Elem() // 解引用指针
+	}
+
+	// 用预定义类型快速匹配（比 Kind() 更快）
+	switch typ {
+	case mapStringInterfaceType, sliceInterfaceType, timeType:
+		return typ != timeType // time.Time 不序列化
+	}
+
+	// 检查 Kind（处理其他情况）
+	switch typ.Kind() {
+	case reflect.Map, reflect.Slice, reflect.Array, reflect.Struct:
+		return true
+	default:
+		return false
+	}
 }
