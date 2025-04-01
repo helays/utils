@@ -427,8 +427,8 @@ func Any2Map(src any) (any, error) {
 
 // 预定义常见类型，减少反射调用
 var (
-	mapStringInterfaceType = reflect.TypeOf(map[string]interface{}(nil))
-	sliceInterfaceType     = reflect.TypeOf([]interface{}(nil))
+	mapStringInterfaceType = reflect.TypeOf(map[string]any(nil))
+	sliceInterfaceType     = reflect.TypeOf([]any(nil))
 	timeType               = reflect.TypeOf(time.Time{})
 )
 
