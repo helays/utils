@@ -375,17 +375,25 @@ func Any2Map(src any) (any, error) {
 		return nil, nil
 	}
 	var dst map[string]any
+	var dstSlice []any
 	switch _src := src.(type) {
 	case string:
 		// 尝试解析JSON字符串
-		err := json.Unmarshal([]byte(_src), &dst)
-		return dst, err
+		_byt := []byte(_src)
+		if err := json.Unmarshal(_byt, &dst); err == nil {
+			return dst, nil
+		}
+		err := json.Unmarshal(_byt, &dstSlice)
+		return dstSlice, err
 	case map[string]any:
 		return _src, nil
 	case []byte:
 		// 尝试解析JSON字节数组
-		err := json.Unmarshal(_src, &dst)
-		return dst, err
+		if err := json.Unmarshal(_src, &dst); err == nil {
+			return dst, nil
+		}
+		err := json.Unmarshal(_src, &dstSlice)
+		return dstSlice, err
 		// 扩展的切片类型检测
 	case []any, []string, []int, []int8, []int16, []int32, []int64,
 		[]uint, []uint16, []uint32, []uint64, []uintptr,
@@ -428,7 +436,7 @@ var (
 func CheckIsObject(v any) bool {
 	// 先尝试类型断言（最快路径）
 	switch v.(type) {
-	case map[string]any, []any, // 最常见
+	case map[string]any, []any,     // 最常见
 		map[any]any,                // 任意 key 的 map
 		[]map[string]any,           // map 数组
 		[]int, []float64, []string, // 基本类型 slice
