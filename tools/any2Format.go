@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"reflect"
 	"strconv"
 	"strings"
@@ -130,6 +129,9 @@ func Any2string(v any) string {
 		return _v.Error()
 	case nil:
 		return ""
+	case map[string]any, []map[string]any, []string, []int, []float64, []float32, struct{}, *struct{}:
+		_byt, _ := json.Marshal(v)
+		return string(_byt)
 	default:
 		// 使用反射处理更多类型
 		rv := reflect.ValueOf(v)
@@ -361,12 +363,8 @@ func Any2Byte(src any) []byte {
 	return b
 }
 
-func Any2String(src any) string {
-	return string(Any2Byte(src))
-}
-
 // Any2Reader 将任意类型转换为 io.Reader
-func Any2Reader(src any) io.Reader {
+func Any2Reader(src any) *bytes.Reader {
 	return bytes.NewReader(Any2Byte(src))
 }
 
