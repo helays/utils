@@ -407,3 +407,36 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string, t reflect.Typ
 	}
 	return false
 }
+
+// UpdateSeq 更新postgreSQL数据库中指定表的序列值。
+// 该函数用于确保序列值在插入新记录时不会产生间隙，通常在删除记录或导入数据后调用。
+// 参数:
+// tableName - 表名，序列所属的表。
+// field - 序列字段名，需要重置的序列对应的字段名
+func UpdateSeq(utx *gorm.DB, tableName string) {
+	defer func() {
+		if err := recover(); err != nil {
+			ulogs.Error("更新自增序列值失败", err)
+		}
+	}()
+	if utx == nil || utx.Dialector == nil || utx.Dialector.Name() != config.DbTypePostgres {
+		return
+	}
+	// 如果自增字段 autoIncrementField不为空，那么再插入完成后，需要使用这句话 SELECT setval(pg_get_serial_sequence('test', 'id'), COALESCE((SELECT MAX(id)+1 FROM test), 1), false) 重置自增字段的值
+	var autoIncrementField []string
+	// 如果是pg数据库，这里需要获取当前表的主键字段，并判断其是否是自增主键，如果是自增主键，就将字段查询出来，放入autoIncrementField []string 变量中
+	if err := utx.Raw("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_default LIKE 'nextval%'", tableName).Scan(&autoIncrementField).Error; err != nil {
+		ulogs.Error(err, "pg数据库查询自增字段失败")
+	}
+	for _, field := range autoIncrementField {
+		if err := utx.Debug().Exec(
+			"SELECT setval(pg_get_serial_sequence(?, ?), COALESCE((SELECT MAX(?)+1 FROM ?), 1), false)",
+			tableName,
+			field,
+			clause.Column{Name: field},
+			clause.Table{Name: tableName},
+		).Error; err != nil {
+			ulogs.Error(err, "pg数据库重置自增字段失败", tableName)
+		}
+	}
+}
