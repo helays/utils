@@ -37,6 +37,15 @@ func Debug(i ...any) {
 	log.Println(i...)
 }
 
+func Debugf(format string, a ...any) {
+	if Level > LogLevelDebug {
+		return
+	}
+	log.SetPrefix("【DEBUG】")
+	log.SetOutput(os.Stdout)
+	log.Printf(format, a...)
+}
+
 // Info 用于记录信息
 func Info(i ...interface{}) {
 	if Level > LogLevelInfo {
@@ -45,6 +54,15 @@ func Info(i ...interface{}) {
 	log.SetPrefix("【INFO】")
 	log.SetOutput(os.Stdout)
 	log.Println(i...)
+}
+
+func Infof(format string, a ...any) {
+	if Level > LogLevelInfo {
+		return
+	}
+	log.SetPrefix("【INFO】")
+	log.SetOutput(os.Stdout)
+	log.Printf(format, a...)
 }
 
 // Warn 用于记录警告信息
@@ -57,6 +75,15 @@ func Warn(i ...interface{}) {
 	log.Println(i...)
 }
 
+func Warnf(format string, a ...any) {
+	if Level > LogLevelWarn {
+		return
+	}
+	log.SetPrefix("【WARN】")
+	log.SetOutput(os.Stdout)
+	log.Printf(format, a...)
+}
+
 // Error 用于记录错误信息
 func Error(i ...interface{}) {
 	if Level > LogLevelError {
@@ -67,6 +94,15 @@ func Error(i ...interface{}) {
 	log.Println(i...)
 }
 
+func Errorf(format string, a ...any) {
+	if Level > LogLevelError {
+		return
+	}
+	log.SetPrefix("【ERROR】")
+	log.SetOutput(os.Stderr)
+	log.Printf(format, a...)
+}
+
 // Fatal 用于记录致命错误信息
 func Fatal(i ...interface{}) {
 	if Level > LogLevelFatal {
@@ -74,7 +110,16 @@ func Fatal(i ...interface{}) {
 	}
 	log.SetPrefix("【FATAL】")
 	log.SetOutput(os.Stderr)
-	log.Fatal(i...)
+	log.Println(i...)
+}
+
+func Fatalf(format string, a ...any) {
+	if Level > LogLevelFatal {
+		return
+	}
+	log.SetPrefix("【FATAL】")
+	log.SetOutput(os.Stderr)
+	log.Printf(format, a...)
 }
 
 // Checkerr 检查错误
