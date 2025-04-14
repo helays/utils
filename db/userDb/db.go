@@ -2,14 +2,17 @@ package userDb
 
 import (
 	"github.com/helays/utils/config"
+	"github.com/helays/utils/dataType"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //
@@ -91,6 +94,11 @@ type stackItem struct {
 	alias string // 设置的别名
 }
 
+var (
+	customTimeType = reflect.TypeOf(dataType.CustomTime{})
+	timeType       = reflect.TypeOf(time.Time{})
+)
+
 // FilterWhereByDbModel 通过DB 实例设置的model 自动映射查询字段
 // 这里是通过 栈的模式，避免函数递归调用
 func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, likes ...map[string]string) func(db *gorm.DB) *gorm.DB {
@@ -119,7 +127,6 @@ func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, lik
 				} else {
 					tableName = tools.SnakeString(t.Name())
 				}
-
 				item.alias = tableName
 			}
 			if v.Kind() == reflect.Ptr {
@@ -129,42 +136,47 @@ func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, lik
 			for i := 0; i < t.NumField(); i++ {
 				field := t.Field(i)
 				tagName := field.Tag.Get("json")
+				kind := field.Type.Kind()
 				// 处理嵌套结构体
-				if field.Type.Kind() == reflect.Struct && field.Tag.Get("gorm") == "" && tagName == "" {
+				if kind == reflect.Struct && field.Tag.Get("gorm") == "" && tagName == "" {
 					stack = append(stack, stackItem{v.Field(i).Interface(), item.alias})
-					continue
-				}
-				// 检查字段类型
-				fieldType := field.Type.String()
-				if fieldType != "int" && fieldType != "string" {
 					continue
 				}
 				if tagName == "" {
 					continue
 				}
-				val := query.Get(strings.Split(tagName, ",")[0])
-				if val == "" {
-					if !enableDefault {
-						continue
-					}
-					// 如果没有传值，判断是否有默认值
-					if val = field.Tag.Get("default"); val == "" {
-						continue
-					}
+				val, ok := getValFromQuery(query, tagName, enableDefault, field)
+				if !ok {
+					continue
 				}
+				fieldName := tools.SnakeString(field.Name)
 				// 这里还需要解析出字段本身的名字，去数据库进行查询，通过将结构体转成蛇形方式。
-				fieldName := tableName + "." + tools.SnakeString(field.Name)
-
-				if fieldType == "int" {
+				column := clause.Column{
+					Table: tableName,
+					Name:  fieldName,
+				}
+				switch kind {
+				case reflect.String:
+					lastVal := applyLikes(val, field.Tag.Get("dblike"), likes, fieldName)
+					conditions = append(conditions, clause.Like{Column: column, Value: lastVal})
+				case reflect.Int, reflect.Int8, reflect.Int32, reflect.Int64, reflect.Int16, reflect.Float64, reflect.Float32:
 					valList := strings.Split(val, ",")
 					if len(valList) > 1 {
-						conditions = append(conditions, clause.IN{Column: fieldName, Values: tools.StrSlice2AnySlice(valList)})
+						conditions = append(conditions, clause.Eq{Column: column, Value: valList})
 					} else {
-						conditions = append(conditions, clause.Eq{Column: fieldName, Value: val})
+						conditions = append(conditions, clause.Eq{Column: column, Value: val})
 					}
-				} else {
-					lastVal := applyLikes(val, field.Tag.Get("dblike"), likes, fieldName)
-					conditions = append(conditions, clause.Like{Column: fieldName, Value: lastVal})
+				case customTimeType.Kind(), timeType.Kind():
+					dateRange := strings.Split(val, " - ")
+					if len(dateRange) == 2 {
+						begin := clause.Gt{Column: column, Value: dateRange[0]}
+						end := clause.Lte{Column: column, Value: dateRange[1]}
+						conditions = append(conditions, clause.And(begin, end))
+					} else if len(dateRange) == 1 {
+						conditions = append(conditions, clause.Eq{Column: column, Value: val})
+					}
+				default:
+					continue
 				}
 			}
 		}
@@ -174,6 +186,20 @@ func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, lik
 		}
 		return db
 	}
+}
+
+func getValFromQuery(query url.Values, tagName string, enableDefault bool, field reflect.StructField) (string, bool) {
+	val := query.Get(strings.Split(tagName, ",")[0])
+	if val == "" {
+		if !enableDefault {
+			return "", false
+		}
+		// 如果没有传值，判断是否有默认值
+		if val = field.Tag.Get("default"); val == "" {
+			return "", false
+		}
+	}
+	return val, true
 }
 
 // applyLikes 处理 like 查询的值
@@ -330,6 +356,8 @@ func FilterWhereData(data any, tableName ...string) func(db *gorm.DB) *gorm.DB {
 					}
 				}
 				db.Where(jsonTag+"=?", v)
+			default:
+				continue
 			}
 		}
 		return db
