@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/helays/utils/config"
+	"github.com/helays/utils/db/userDb"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/robfig/cron/v3"
@@ -120,11 +121,9 @@ func (this *TableRotate) runSplitTable() {
 			if err != nil {
 				return fmt.Errorf("创建表失败 %s :%s", this.tableName, err.Error())
 			}
-			for _, seqField := range this.SeqFields {
-				err = tx.Debug().Exec("ALTER TABLE ? ALTER COLUMN ? DROP DEFAULT", clause.Table{Name: newTableName}, clause.Column{Name: seqField}).Error
-				if err != nil {
-					return fmt.Errorf("清除表%s自增序列字段%s失败:%s", this.tableName, seqField, err.Error())
-				}
+			// 清理新表的序列字段的默认值，不清理在删表的时候会失败
+			if err = userDb.ClearSequenceFieldDefaultValue(tx, newTableName, this.SeqFields); err != nil {
+				return err
 			}
 			// 创建表后，需要将改表后的序列清除掉
 		case config.DbTypeMysql:

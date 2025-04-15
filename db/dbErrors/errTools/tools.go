@@ -62,3 +62,36 @@ func IsTableNotExist(err error) bool {
 	ulogs.Errorf("unknown error type: %T, err: %v\n", err, err)
 	return false
 }
+
+// IsColumnNotExist 检查错误是否为字段(列)不存在
+func IsColumnNotExist(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// 检查 PostgreSQL 错误
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "42703" // PostgreSQL 列不存在的错误码
+	}
+
+	// 检查 MySQL 错误
+	var myErr *mysql.MySQLError
+	if errors.As(err, &myErr) {
+		return myErr.Number == 1054 // MySQL 列不存在的错误码 (ER_BAD_FIELD_ERROR)
+	}
+
+	errStr := err.Error()
+
+	if strings.Contains(errStr, "no such column") {
+		return true // 检查 SQLite 错误
+	} else if strings.Contains(errStr, "Invalid column name") {
+		return true // 检查 SQL Server 错误
+	} else if strings.Contains(errStr, "ORA-00904") { // Oracle 无效标识符(列不存在)
+		return true // 检查 Oracle 错误
+	}
+
+	// 其他数据库或未知错误
+	ulogs.Errorf("unknown error type: %T, err: %v\n", err, err)
+	return false
+}
