@@ -102,6 +102,21 @@ func ClearSequenceFieldDefaultValue(tx *gorm.DB, tableName string, seqFields []s
 	return nil
 }
 
+// DropSequence 删除postgreSQL数据库中指定表的序列。
+func DropSequence(tx *gorm.DB, tableName string, seqFields []string) error {
+	if tx == nil || tx.Dialector == nil || tx.Dialector.Name() != config.DbTypePostgres {
+		return nil
+	}
+	for _, seqField := range seqFields {
+		var seqName string
+		tx.Raw("SELECT pg_get_serial_sequence(?, ?)", tableName, seqField).Scan(&seqName)
+		if seqName != "" {
+			tx.Exec("DROP SEQUENCE  IF EXISTS ?", clause.Table{Name: seqName})
+		}
+	}
+	return nil
+}
+
 // UpdateSeq 更新postgreSQL数据库中指定表的序列值。
 // 该函数用于确保序列值在插入新记录时不会产生间隙，通常在删除记录或导入数据后调用。
 // 参数:
