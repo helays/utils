@@ -69,14 +69,15 @@ func (tp TimePrecision) IsSameTimePrecision(t1, t2 time.Time) bool {
 }
 
 const (
-	PrecisionYear TimePrecision = iota
-	PrecisionMonth
-	PrecisionWeek
-	PrecisionDay
-	PrecisionHour
-	PrecisionMinute
-	PrecisionSecond
-	PrecisionUnknown
+	_                TimePrecision = iota // 忽略 0
+	PrecisionYear                         // 1
+	PrecisionMonth                        // 2
+	PrecisionWeek                         // 3
+	PrecisionDay                          // 4
+	PrecisionHour                         // 5
+	PrecisionMinute                       // 6
+	PrecisionSecond                       // 7
+	PrecisionUnknown                      // 8
 )
 
 var TimePrecisionChinese = map[TimePrecision]string{
