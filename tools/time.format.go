@@ -9,6 +9,65 @@ import (
 // TimePrecision 表示时间精度
 type TimePrecision int
 
+func (tp TimePrecision) TimeFormat(t time.Time) string {
+	switch tp {
+	case PrecisionWeek:
+		return FormatWeek(t)
+	case PrecisionUnknown:
+		return ""
+	default:
+		return t.Format(GetFormatFromPrecision(tp))
+	}
+}
+
+// IsSameTimePrecision 方法实现时间精度比较
+func (tp TimePrecision) IsSameTimePrecision(t1, t2 time.Time) bool {
+	// 容错处理：检查时间是否为零值
+	if t1.IsZero() || t2.IsZero() {
+		return false
+	}
+
+	// 优化：先比较可能更快的年、月、日等
+	switch tp {
+	case PrecisionYear:
+		return t1.Year() == t2.Year()
+	case PrecisionMonth:
+		y1, m1, _ := t1.Date()
+		y2, m2, _ := t2.Date()
+		return y1 == y2 && m1 == m2
+	case PrecisionWeek:
+		// 使用ISO周比较，更准确处理跨年周
+		y1, w1 := t1.ISOWeek()
+		y2, w2 := t2.ISOWeek()
+		return y1 == y2 && w1 == w2
+	case PrecisionDay:
+		// 优化：直接比较年月日
+		y1, m1, d1 := t1.Date()
+		y2, m2, d2 := t2.Date()
+		return y1 == y2 && m1 == m2 && d1 == d2
+	case PrecisionHour:
+		// 优化：先比较日，如果不相同则直接返回
+		if !PrecisionDay.IsSameTimePrecision(t1, t2) {
+			return false
+		}
+		return t1.Truncate(time.Hour).Equal(t2.Truncate(time.Hour))
+	case PrecisionMinute:
+		// 优化：先比较小时
+		if !PrecisionHour.IsSameTimePrecision(t1, t2) {
+			return false
+		}
+		return t1.Truncate(time.Minute).Equal(t2.Truncate(time.Minute))
+	case PrecisionSecond:
+		// 优化：先比较分钟
+		if !PrecisionMinute.IsSameTimePrecision(t1, t2) {
+			return false
+		}
+		return t1.Truncate(time.Second).Equal(t2.Truncate(time.Second))
+	default:
+		return false
+	}
+}
+
 const (
 	PrecisionYear TimePrecision = iota
 	PrecisionMonth
@@ -154,7 +213,10 @@ func GetNextPeriodStart(t time.Time, format string) time.Time {
 
 // GetNextPeriodTime 获取下一个周期的当前时间点（保持相同时间位置）
 func GetNextPeriodTime(t time.Time, format string) time.Time {
-	precision := GetPrecisionFromFormat(format)
+	return GetNextPeriodTimeByPrecision(t, GetPrecisionFromFormat(format))
+}
+
+func GetNextPeriodTimeByPrecision(t time.Time, precision TimePrecision) time.Time {
 	switch precision {
 	case PrecisionYear:
 		return t.AddDate(1, 0, 0)
