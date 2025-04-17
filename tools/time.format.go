@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -18,6 +19,16 @@ const (
 	PrecisionSecond
 	PrecisionUnknown
 )
+
+var TimePrecisionChinese = map[TimePrecision]string{
+	PrecisionYear:   "年",
+	PrecisionMonth:  "月",
+	PrecisionWeek:   "周",
+	PrecisionDay:    "日",
+	PrecisionHour:   "小时",
+	PrecisionMinute: "分钟",
+	PrecisionSecond: "秒",
+}
 
 // GetPrecisionFromFormat 根据时间格式字符串获取时间精度
 func GetPrecisionFromFormat(format string) TimePrecision {
@@ -57,6 +68,32 @@ func GetPrecisionFromFormat(format string) TimePrecision {
 	}
 
 	return PrecisionUnknown
+}
+
+// GetFormatFromPrecision 根据时间精度获取标准的时间格式字符串
+func GetFormatFromPrecision(precision TimePrecision) string {
+	switch precision {
+	case PrecisionSecond:
+		return "20060102150405"
+	case PrecisionMinute:
+		return "200601021504"
+	case PrecisionHour:
+		return "2006010215"
+	case PrecisionDay:
+		return "20060102"
+	case PrecisionMonth:
+		return "200601"
+	case PrecisionYear:
+		return "2006"
+	default:
+		return "" // 或返回默认格式，如 "2006-01-02"
+	}
+}
+
+// FormatWeek 将时间格式化为202501（年+周数）格式
+func FormatWeek(t time.Time) string {
+	year, week := t.ISOWeek()
+	return fmt.Sprintf("%04d%02d", year, week)
 }
 
 // GetDurationFromPrecision 根据时间精度返回对应的时间段
