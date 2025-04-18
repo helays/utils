@@ -163,3 +163,22 @@ func ResetSequence(tx *gorm.DB, tableName string, seqFields []string) error {
 	}
 	return nil
 }
+
+// UnionAllScope 可复用的 UNION ALL 查询 Scope
+func UnionAllScope(queries ...*gorm.DB) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if len(queries) == 0 {
+			return db
+		}
+		// 单表查询直接返回
+		if len(queries) == 1 {
+			return db.Table("(?) AS union_table", queries[0])
+		}
+		// 多表查询构建 UNION ALL
+		unionQuery := queries[0]
+		for i := 1; i < len(queries); i++ {
+			unionQuery = db.Session(&gorm.Session{}).Raw("? UNION ALL ?", unionQuery, queries[i])
+		}
+		return db.Session(&gorm.Session{}).Table("(?) AS union_table", unionQuery)
+	}
+}
