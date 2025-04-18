@@ -87,6 +87,13 @@ func CloseStmt(stmt *sql.Stmt) {
 	}
 }
 
+func RenameConstraint(tx *gorm.DB, tableName string, oldName, newName string) error {
+	if tx == nil || tx.Dialector == nil || tx.Dialector.Name() != config.DbTypePostgres {
+		return nil
+	}
+	return tx.Exec("ALTER TABLE ? RENAME CONSTRAINT ? TO ?", clause.Table{Name: tableName}, clause.Column{Name: oldName}, clause.Column{Name: newName}).Error
+}
+
 // ClearSequenceFieldDefaultValue 清除自增序列字段的默认值
 func ClearSequenceFieldDefaultValue(tx *gorm.DB, tableName string, seqFields []string) error {
 	if tx == nil || tx.Dialector == nil || tx.Dialector.Name() != config.DbTypePostgres {
