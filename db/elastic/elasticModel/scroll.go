@@ -22,6 +22,7 @@ type EsScroll struct {
 
 	ScrollTime time.Duration // 滚动查询保持时间
 	BatchSize  int           // 每批处理的数据量
+	Index      []string      // 查询索引
 	QueryBody  io.Reader     // 查询体
 	SortFields []string      // 排序字段
 }
@@ -33,6 +34,7 @@ func (this *EsScroll) DoESSearchWithScroll(ctx context.Context, callback ESScrol
 	if this.SearchRequest == nil {
 		// 如果没有提供SearchRequest，则创建一个默认的
 		this.SearchRequest = &esapi.SearchRequest{
+			Index:   this.Index,
 			Body:    this.QueryBody,
 			Size:    &this.BatchSize,
 			Scroll:  this.ScrollTime,
