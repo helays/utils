@@ -1,11 +1,16 @@
 package elasticModel
 
+type ESError struct {
+	Status int `json:"status"` // HTTP状态码
+	// 错误信息
+	Error *ErrorDetail `json:"error"` // 错误详情
+}
+
 // ESSearchResponse 包含成功和错误响应的统一结构
 type ESSearchResponse struct {
 	// 请求元信息
 	Took     int  `json:"took"`      // 查询耗时(毫秒)
 	TimedOut bool `json:"timed_out"` // 是否超时
-	Status   int  `json:"status"`    // HTTP状态码
 
 	// 分片信息
 	Shards *ShardsInfo `json:"_shards"` // 分片信息
@@ -20,8 +25,7 @@ type ESSearchResponse struct {
 	ScrollID string `json:"_scroll_id"` // 滚动查询ID
 	PitID    string `json:"pit_id"`     // Point in Time ID
 
-	// 错误信息
-	Error *ErrorDetail `json:"error"` // 错误详情
+	ESError
 }
 
 // ShardsInfo 分片信息
