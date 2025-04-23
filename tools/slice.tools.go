@@ -13,6 +13,14 @@ func StrSlice2AnySlice(inp []string) []any {
 	return out
 }
 
+func AnySlice2StrSlice(slice []any) []string {
+	var out []string
+	for _, v := range slice {
+		out = append(out, Any2string(v))
+	}
+	return out
+}
+
 // AnySlice2Str 将任意切片转成字符串
 func AnySlice2Str(slice []any, _sep ...string) string {
 	var builder strings.Builder

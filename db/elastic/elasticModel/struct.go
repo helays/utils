@@ -1,11 +1,5 @@
 package elasticModel
 
-type ESError struct {
-	Status int `json:"status"` // HTTP状态码
-	// 错误信息
-	Error *ErrorDetail `json:"error"` // 错误详情
-}
-
 // ESSearchResponse 包含成功和错误响应的统一结构
 type ESSearchResponse struct {
 	// 请求元信息

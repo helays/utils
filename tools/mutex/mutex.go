@@ -30,10 +30,10 @@ func NewSafeResourceMutex[T any](resource T) *SafeResourceMutex[T] {
 
 // ----- RWMutex 版本的方法 -----
 
-func (sr *SafeResourceRWMutex[T]) Read() *T {
+func (sr *SafeResourceRWMutex[T]) Read() T {
 	sr.mu.RLock()
 	defer sr.mu.RUnlock()
-	return &sr.resource
+	return sr.resource
 }
 
 func (sr *SafeResourceRWMutex[T]) ReadWith(fn func(T)) {
@@ -56,10 +56,10 @@ func (sr *SafeResourceRWMutex[T]) Update(fn func(T) T) {
 
 // ----- Mutex 版本的方法 -----
 
-func (sr *SafeResourceMutex[T]) Read() *T {
+func (sr *SafeResourceMutex[T]) Read() T {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
-	return &sr.resource
+	return sr.resource
 }
 
 func (sr *SafeResourceMutex[T]) ReadWith(fn func(T)) {

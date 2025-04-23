@@ -6,7 +6,6 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/helays/utils/db/dbErrors"
 	"github.com/helays/utils/db/dbErrors/errPostgres"
-	"github.com/helays/utils/logger/ulogs"
 	"github.com/jackc/pgx/v5/pgconn"
 	"strings"
 )
@@ -58,8 +57,6 @@ func IsTableNotExist(err error) bool {
 	} else if strings.Contains(errStr, "ORA-00942") { // Oracle 表或视图不存在
 		return true // 检查 Oracle 错误
 	}
-	// 其他数据库或未知错误
-	ulogs.Errorf("unknown error type: %T, err: %v\n", err, err)
 	return false
 }
 
@@ -90,8 +87,63 @@ func IsColumnNotExist(err error) bool {
 	} else if strings.Contains(errStr, "ORA-00904") { // Oracle 无效标识符(列不存在)
 		return true // 检查 Oracle 错误
 	}
-
-	// 其他数据库或未知错误
-	ulogs.Errorf("unknown error type: %T, err: %v\n", err, err)
 	return false
+}
+
+// IsDuplicateKeyError 检查错误是否为主键或唯一约束冲突，并返回约束类型
+// 返回值: 0-非重复错误, 1-主键重复, 2-唯一键重复
+func IsDuplicateKeyError(err error) int {
+	if err == nil {
+		return 0
+	}
+
+	errStr := err.Error()
+
+	// 检查 PostgreSQL 错误
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code == "23505" { // 唯一约束违反
+			if strings.Contains(pgErr.ConstraintName, "pkey") || strings.Contains(pgErr.Message, "primary key") {
+				return 1 // 主键重复
+			}
+			return 2 // 唯一键重复
+		}
+		return 0
+	}
+
+	// 检查 MySQL 错误
+	var myErr *mysql.MySQLError
+	if errors.As(err, &myErr) {
+		if myErr.Number == 1062 { // ER_DUP_ENTRY
+			if strings.Contains(myErr.Message, "PRIMARY") || strings.Contains(myErr.Message, "primary key") {
+				return 1 // 主键重复
+			}
+			return 2 // 唯一键重复
+		}
+		return 0
+	}
+
+	// SQLite 错误
+	if strings.Contains(errStr, "UNIQUE constraint failed") {
+		if strings.Contains(errStr, "PRIMARY") || strings.Contains(errStr, "primary key") {
+			return 1
+		}
+		return 2
+	}
+
+	// SQL Server 错误
+	if strings.Contains(errStr, "Violation of PRIMARY KEY constraint") {
+		return 1
+	} else if strings.Contains(errStr, "Violation of UNIQUE KEY constraint") {
+		return 2
+	}
+
+	// Oracle 错误
+	if strings.Contains(errStr, "ORA-00001") {
+		if strings.Contains(errStr, "PRIMARY") || strings.Contains(errStr, "primary key") {
+			return 1
+		}
+		return 2
+	}
+	return 0
 }
