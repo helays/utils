@@ -3,12 +3,21 @@ package kafka
 import (
 	"database/sql/driver"
 	"errors"
+	"github.com/IBM/sarama"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/dataType"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"time"
 )
+
+var KafkaMessageTypeEnum = map[string]string{
+	sarama.SASLTypePlaintext:   sarama.SASLTypePlaintext,
+	sarama.SASLTypeSCRAMSHA256: sarama.SASLTypeSCRAMSHA256,
+	sarama.SASLTypeSCRAMSHA512: sarama.SASLTypeSCRAMSHA512,
+	sarama.SASLTypeGSSAPI:      sarama.SASLTypeGSSAPI,
+	sarama.SASLTypeOAuth:       sarama.SASLTypeOAuth,
+}
 
 type KafkaConfig struct {
 	Addrs       []string      `yaml:"addrs" json:"addrs" ini:"addrs,omitempty"`
@@ -54,6 +63,17 @@ func (KafkaConfig) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 func (this *KafkaConfig) Valid() error {
 	if len(this.Addrs) < 1 {
 		return errors.New("kafka地址不能为空")
+	}
+	if this.Sasl {
+		if _, ok := KafkaMessageTypeEnum[this.Mechanism]; !ok {
+			return errors.New("sasl机制错误")
+		}
+		if this.User == "" {
+			return errors.New("sasl用户名不能为空")
+		}
+		if this.Password == "" {
+			return errors.New("sasl密码不能为空")
+		}
 	}
 	return nil
 }
