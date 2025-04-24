@@ -15,7 +15,7 @@ type Model interface {
 // Create 通用创建函数（使用泛型）
 func Create[T Model](tx *gorm.DB, src T) error {
 	// 调用 Valid 方法进行验证
-	if err := src.Valid(tx); err != nil {
+	if err := src.Valid(tx.Session(&gorm.Session{NewDB: true})); err != nil {
 		return fmt.Errorf("验证失败：%s", err.Error())
 	}
 	// 使用 GORM 的 Create 方法插入数据
@@ -24,6 +24,15 @@ func Create[T Model](tx *gorm.DB, src T) error {
 	}
 
 	return nil
+}
+
+func CreateIfNotExist[T Model](tx *gorm.DB, src T, c Curd) error {
+	// 调用 Valid 方法进行验证
+	if err := src.Valid(tx.Session(&gorm.Session{NewDB: true})); err != nil {
+		return fmt.Errorf("验证失败：%s", err.Error())
+	}
+	_tx := tx.Session(&gorm.Session{})
+	return _tx.FirstOrCreate(src, c.Where.Query, c.Where.Args).Error
 }
 
 type QueryOpt struct {

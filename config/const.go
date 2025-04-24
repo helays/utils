@@ -154,3 +154,8 @@ const (
 	ProgramLangGOLANG = "golang"
 	ProgramLangLUA    = "lua"
 )
+
+const (
+	ProtocolTCP = "tcp"
+	ProtocolUDP = "udp"
+)
