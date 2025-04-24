@@ -29,6 +29,13 @@ type Config struct {
 	client *minio.Client
 }
 
+func (this *Config) Valid() error {
+	if this.Endpoint == "" {
+		return fmt.Errorf("缺失地址")
+	}
+	return nil
+}
+
 func (this *Config) RemovePasswd() {
 	this.SecretAccessKey = ""
 }

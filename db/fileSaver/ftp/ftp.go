@@ -7,6 +7,7 @@ import (
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/dataType"
 	"github.com/helays/utils/dataType/customWriter"
+	"github.com/helays/utils/net/checkIp"
 	"github.com/jlaffaye/ftp"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -43,6 +44,18 @@ func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 
 func (this *Config) RemovePasswd() {
 	this.Pwd = ""
+}
+
+func (this *Config) Valid() error {
+	if _, port, err := checkIp.ParseIPAndPort(this.Host); err != nil {
+		return err
+	} else if port < 1 {
+		return fmt.Errorf("缺失端口号")
+	}
+	if this.Epsv != 0 && this.Epsv != 1 {
+		return fmt.Errorf("无效的连接模式")
+	}
+	return nil
 }
 
 func (this *Config) SetInfo(args ...any) {

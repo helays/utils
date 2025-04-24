@@ -26,6 +26,14 @@ type Config struct {
 	client *hdfs.Client
 }
 
+func (this *Config) Valid() error {
+	if len(this.Addresses) < 1 {
+		return fmt.Errorf("缺失地址")
+	}
+	
+	return nil
+}
+
 func (this *Config) SetInfo(args ...any) {
 	if len(args) != 2 {
 		return

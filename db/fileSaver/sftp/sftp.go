@@ -6,6 +6,7 @@ import (
 	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/dataType"
+	"github.com/helays/utils/net/checkIp"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"gorm.io/gorm"
@@ -27,6 +28,26 @@ type Config struct {
 
 func (this *Config) RemovePasswd() {
 	this.Pwd = ""
+}
+
+func (this *Config) Valid() error {
+	if _, port, err := checkIp.ParseIPAndPort(this.Host); err != nil {
+		return err
+	} else if port < 1 {
+		return fmt.Errorf("缺失端口号")
+	}
+	if this.User == "" {
+		return fmt.Errorf("缺失账号")
+	}
+	if this.Pwd == "" {
+		return fmt.Errorf("缺失密码")
+	}
+	if this.Authentication == "" {
+		this.Authentication = "password"
+	} else if this.Authentication != "password" && this.Authentication != "public_key" {
+		return fmt.Errorf("无效的认证方式")
+	}
+	return nil
 }
 
 func (this *Config) SetInfo(args ...any) {
