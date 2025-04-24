@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"database/sql/driver"
+	"errors"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/dataType"
 	"gorm.io/gorm"
@@ -48,6 +49,13 @@ func (this KafkaConfig) GormDataType() string {
 
 func (KafkaConfig) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return dataType.JsonDbDataType(db, field)
+}
+
+func (this *KafkaConfig) Valid() error {
+	if len(this.Addrs) < 1 {
+		return errors.New("kafka地址不能为空")
+	}
+	return nil
 }
 
 func (this *KafkaConfig) RemovePasswd() {
