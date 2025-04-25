@@ -125,9 +125,7 @@ func (this *RowsExport) Response(w http.ResponseWriter) error {
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 		httpTools.SetDisposition(w, this.FileName+".xlsx")
 		_ = streamWriter.Flush()
-		if err := f.Write(w); err != nil {
-			return fmt.Errorf("导出excel失败：%w", err)
-		}
+		_ = f.Write(w)
 	}
 	return nil
 }

@@ -90,9 +90,7 @@ func (e *ElasticsearchExport) Response(ctx context.Context, w http.ResponseWrite
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 		httpTools.SetDisposition(w, e.FileName+".xlsx")
 		_ = streamWriter.Flush()
-		if err = f.Write(w); err != nil {
-			return fmt.Errorf("导出excel失败：%w", err)
-		}
+		_ = f.Write(w)
 	}
 	return nil
 }

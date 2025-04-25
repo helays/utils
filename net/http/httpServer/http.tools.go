@@ -209,10 +209,10 @@ func SetReturn(w http.ResponseWriter, code int, msg ...any) {
 			msg = []any{"失败"}
 		}
 	}
-	ulogs.Checkerr(json.NewEncoder(w).Encode(map[string]any{
+	_ = json.NewEncoder(w).Encode(map[string]any{
 		"code": code,
 		"msg":  msg[0],
-	}), "SetReturn")
+	})
 }
 
 // SetReturnCode 设置返回函数
@@ -255,7 +255,7 @@ func SetReturnData(w http.ResponseWriter, code int, msg any, data ...any) {
 	} else if len(data) > 1 {
 		r.Data = data
 	}
-	ulogs.Checkerr(json.NewEncoder(w).Encode(r), "SetReturnData")
+	_ = json.NewEncoder(w).Encode(r)
 }
 
 // SetReturnFile 直接讲文件反馈给前端
@@ -312,10 +312,10 @@ func SetReturnError(w http.ResponseWriter, r *http.Request, err error, code int,
 	} else {
 		w.WriteHeader(code)
 	}
-	ulogs.Checkerr(json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"code": code,
 		"msg":  tools.AnySlice2Str(msg),
-	}), "SetReturnError")
+	})
 }
 
 // SetReturnWithoutError ，错误信息会记录下来，但是只会反馈msg
@@ -332,10 +332,10 @@ func SetReturnWithoutError(w http.ResponseWriter, r *http.Request, err error, co
 	} else {
 		w.WriteHeader(code)
 	}
-	ulogs.Checkerr(json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"code": code,
 		"msg":  tools.AnySlice2Str(msg),
-	}), "SetReturnError")
+	})
 }
 
 // SetReturnErrorDisableLog 不记录日志,err 变量忽略不处理
@@ -347,10 +347,10 @@ func SetReturnErrorDisableLog(w http.ResponseWriter, err error, code int, msg ..
 	} else {
 		w.WriteHeader(code)
 	}
-	ulogs.Checkerr(json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"code": code,
 		"msg":  tools.AnySlice2Str(msg),
-	}), "SetReturnError")
+	})
 }
 
 // CheckReqPost 检查请求是否post
