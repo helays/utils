@@ -91,9 +91,10 @@ func InitDb(c db.Dbbase) (*gorm.DB, error) {
 		CloseGormDb(_db)
 		return nil, err
 	}
-	_sqlDb.SetMaxIdleConns(tools.Ternary(c.MaxIdleConns < 1, 2, c.MaxIdleConns)) // 设置连接池中空闲连接的最大数量
-	_sqlDb.SetMaxOpenConns(tools.Ternary(c.MaxOpenConns < 1, 5, c.MaxOpenConns)) // 设置打开数据库连接的最大数量
-	_sqlDb.SetConnMaxIdleTime(time.Hour)                                         // 连接空闲1小时候将失效
+	_sqlDb.SetMaxIdleConns(tools.Ternary(c.MaxIdleConns < 1, 2, c.MaxIdleConns))      // 设置连接池中空闲连接的最大数量
+	_sqlDb.SetMaxOpenConns(tools.Ternary(c.MaxOpenConns < 1, 5, c.MaxOpenConns))      // 设置打开数据库连接的最大数量
+	_sqlDb.SetConnMaxLifetime(tools.AutoTimeDuration(c.MaxConnLifetime, time.Second)) // 连接的总生存时间，从连接创建开始计时
+	_sqlDb.SetConnMaxIdleTime(tools.AutoTimeDuration(c.MaxConnIdleTime, time.Second)) // 连接的空闲时间，从连接变为空闲开始计时
 	return _db, nil
 }
 

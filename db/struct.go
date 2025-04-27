@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm/schema"
 	"net/url"
 	"strings"
+	"time"
 )
 
 var (
@@ -44,13 +45,15 @@ type Dbbase struct {
 	Pwd  string               `ini:"pwd" yaml:"pwd" json:"pwd,omitempty" gorm:"type:text;comment:数据库密码"`
 
 	// 这部分是数据库独有
-	Dbname        string          `ini:"dbname" yaml:"dbname" json:"dbname,omitempty" gorm:"type:varchar(128);not null;index;default:'';comment:默认连接的库"`
-	Schema        string          `ini:"schema" yaml:"schema" json:"schema,omitempty" gorm:"type:varchar(128);not null;default:'';comment:数据库模式"`
-	MaxIdleConns  int             `ini:"max_idle_conns" yaml:"max_idle_conns" json:"max_idle_conns,omitempty" gorm:"type:int;not null;default:2;comment:最大空闲连接数"`
-	MaxOpenConns  int             `ini:"max_open_conns" yaml:"max_open_conns" json:"max_open_conns,omitempty" gorm:"type:int;not null;default:10;comment:最大连接数"`
-	TablePrefix   string          `ini:"table_prefix" yaml:"table_prefix" json:"table_prefix,omitempty" gorm:"type:varchar(64);not null;default:'';comment:表前缀"`
-	SingularTable int             `ini:"singular_table" yaml:"singular_table" json:"singular_table,omitempty" gorm:"type:int;not null;default:0;comment:是否启用单数表"` // 1 启用 0 不启用
-	Logger        zaploger.Config `json:"logger" yaml:"logger" ini:"logger" gorm:"comment:日志配置"`
+	Dbname          string          `ini:"dbname" yaml:"dbname" json:"dbname,omitempty" gorm:"type:varchar(128);not null;index;default:'';comment:默认连接的库"`
+	Schema          string          `ini:"schema" yaml:"schema" json:"schema,omitempty" gorm:"type:varchar(128);not null;default:'';comment:数据库模式"`
+	MaxIdleConns    int             `ini:"max_idle_conns" yaml:"max_idle_conns" json:"max_idle_conns,omitempty" gorm:"type:int;not null;default:2;comment:最大空闲连接数"`
+	MaxOpenConns    int             `ini:"max_open_conns" yaml:"max_open_conns" json:"max_open_conns,omitempty" gorm:"type:int;not null;default:10;comment:最大连接数"`
+	MaxConnLifetime time.Duration   `ini:"max_conn_lifetime" yaml:"max_conn_lifetime" json:"max_conn_lifetime,omitempty" gorm:"type:int;not null;default:0;comment:连接最大存活时间"`    // DB服务器wait_timeout的80-90%
+	MaxConnIdleTime time.Duration   `ini:"max_conn_idle_time" yaml:"max_conn_idle_time" json:"max_conn_idle_time,omitempty" gorm:"type:int;not null;default:0;comment:连接最大空闲时间"` // 平均请求间隔 × 3
+	TablePrefix     string          `ini:"table_prefix" yaml:"table_prefix" json:"table_prefix,omitempty" gorm:"type:varchar(64);not null;default:'';comment:表前缀"`
+	SingularTable   int             `ini:"singular_table" yaml:"singular_table" json:"singular_table,omitempty" gorm:"type:int;not null;default:0;comment:是否启用单数表"` // 1 启用 0 不启用
+	Logger          zaploger.Config `json:"logger" yaml:"logger" ini:"logger" gorm:"comment:日志配置"`
 }
 
 func (this Dbbase) Value() (driver.Value, error) {
