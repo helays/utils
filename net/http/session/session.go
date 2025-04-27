@@ -63,7 +63,7 @@ func Init(dialector Dialector, opt ...*Options) *Store {
 	c := &Store{}
 	if len(opt) > 0 {
 		c.Options = opt[0]
-		c.Options.CheckInterval = tools.AutoTimeDuration(c.Options.CheckInterval, time.Microsecond, Interval)
+		c.Options.CheckInterval = tools.AutoTimeDuration(c.Options.CheckInterval, time.Second, Interval)
 	} else {
 		c.Options.CheckInterval = Interval
 		c.Options.Carrier = "cookie"
