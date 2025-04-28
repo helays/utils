@@ -1,79 +1,93 @@
-// Package ringbuffer 固定大小的滑动窗口
+// Package ringbuffer 提供线程安全的智能环形缓冲区
 package ringbuffer
 
 import (
 	"errors"
+	"github.com/helays/utils/tools/ringbuffer/impl"
+	"reflect"
 	"sync"
 	"sync/atomic"
 )
 
-// RingBuffer 是一个线程安全的泛型环形缓冲区(循环队列)实现
-// 使用读写锁(sync.RWMutex)保证并发安全，适用于多读少写的场景
-// 当缓冲区满时，新元素会自动覆盖最旧的元素(FIFO淘汰策略)
-// 类型参数T表示缓冲区中存储的元素类型
+// RingBuffer 线程安全的环形缓冲区实现
 type RingBuffer[T any] struct {
-	buffer []T          // 底层数组，存储实际元素
-	size   int          // 缓冲区总容量(固定大小)
-	head   int          // 指向队列头部(最旧元素)的索引
-	tail   int          // 指向队列尾部(下一个写入位置)的索引
-	count  int32        // 当前缓冲区中的元素数量(使用原子操作)
-	mu     sync.RWMutex // 读写锁，保证并发安全
+	impl  impl.Buffer[T] // 底层实现
+	size  int            // 容量
+	mu    sync.RWMutex   // 读写锁
+	count int32          // 原子计数器
 }
 
-// New 创建并返回一个新的RingBuffer实例
-// 参数:
-//   - size: 缓冲区容量，必须为正整数
-//
-// 返回值:
-//   - *RingBuffer[T]: 初始化后的环形缓冲区指针
-//   - error: 如果size<=0返回错误
+// New 创建新的环形缓冲区
 func New[T any](size int) (*RingBuffer[T], error) {
 	if size <= 0 {
-		return nil, errors.New("size must be positive")
+		return nil, errors.New("缓冲区大小必须为正整数")
 	}
-	return &RingBuffer[T]{
-		buffer: make([]T, size),
-		size:   size,
-	}, nil
+
+	rb := &RingBuffer[T]{
+		size: size,
+	}
+
+	// 智能选择实现方式
+	if shouldUseLinkedList[T](size) {
+		rb.impl = impl.NewLinkedListBuffer[T](size)
+	} else {
+		rb.impl = impl.NewArrayBuffer[T](size)
+	}
+
+	return rb, nil
 }
 
-// MustNew 创建并返回一个新的RingBuffer实例，如果size<=0会panic
-// 参数:
-//   - size: 缓冲区容量，必须为正整数
-//
-// 返回值:
-//   - *RingBuffer[T]: 初始化后的环形缓冲区指针
-func MustNew[T any](size int) *RingBuffer[T] {
-	rb, err := New[T](size)
-	if err != nil {
-		panic(err)
-	}
-	return rb
+// shouldUseLinkedList 判断是否使用链表实现
+func shouldUseLinkedList[T any](size int) bool {
+	const (
+		largeElementSize = 16 // 大元素阈值(字节)
+		smallCapacity    = 32 // 小容量阈值
+	)
+
+	elementSize := estimateElementSize[T]()
+	return elementSize > largeElementSize && size <= smallCapacity
 }
 
-// Push 向缓冲区添加一个元素
-// 如果缓冲区已满，最旧的元素将被新元素覆盖
-// 线程安全：使用互斥锁(sync.Mutex)保证并发安全
+// estimateElementSize 估算泛型类型大小
+func estimateElementSize[T any]() int {
+	var zero T
+	t := reflect.TypeOf(zero)
+
+	switch t.Kind() {
+	case reflect.Bool, reflect.Int8, reflect.Uint8:
+		return 1
+	case reflect.Int16, reflect.Uint16:
+		return 2
+	case reflect.Int32, reflect.Uint32, reflect.Float32:
+		return 4
+	case reflect.Int64, reflect.Uint64, reflect.Float64, reflect.Complex64:
+		return 8
+	case reflect.Complex128:
+		return 16
+	case reflect.String:
+		return 32
+	case reflect.Struct:
+		return int(t.Size())
+	case reflect.Ptr, reflect.Slice, reflect.Map, reflect.Interface:
+		return 16
+	default:
+		return 32
+	}
+}
+
+// Push 添加单个元素
 func (rb *RingBuffer[T]) Push(item T) {
 	rb.mu.Lock()
 	defer rb.mu.Unlock()
 
-	// 写入元素到tail位置(下一个写入位置)
-	rb.buffer[rb.tail] = item
-
-	// 移动tail指针(循环)
-	rb.tail = (rb.tail + 1) % rb.size
-
-	// 更新计数器
-	if rb.count < int32(rb.size) {
-		atomic.AddInt32(&rb.count, 1) // 缓冲区未满，元素数量增加
-	} else {
-		rb.head = (rb.head + 1) % rb.size // 缓冲区已满，移动head指针
+	old := rb.impl.Len()
+	rb.impl.Push(item)
+	if rb.impl.Len() != old {
+		atomic.StoreInt32(&rb.count, int32(rb.impl.Len()))
 	}
 }
 
-// PushAll 向缓冲区批量添加元素
-// 线程安全：使用互斥锁(sync.Mutex)保证并发安全
+// PushAll 批量添加元素
 func (rb *RingBuffer[T]) PushAll(items []T) {
 	if len(items) == 0 {
 		return
@@ -82,130 +96,80 @@ func (rb *RingBuffer[T]) PushAll(items []T) {
 	rb.mu.Lock()
 	defer rb.mu.Unlock()
 
-	for _, item := range items {
-		rb.buffer[rb.tail] = item
-		rb.tail = (rb.tail + 1) % rb.size
-
-		if rb.count < int32(rb.size) {
-			atomic.AddInt32(&rb.count, 1)
-		} else {
-			rb.head = (rb.head + 1) % rb.size
-		}
+	old := rb.impl.Len()
+	rb.impl.PushAll(items)
+	if rb.impl.Len() != old {
+		atomic.StoreInt32(&rb.count, int32(rb.impl.Len()))
 	}
 }
 
-// GetAll 获取缓冲区中所有元素的副本(按插入顺序从旧到新)
-// 线程安全：使用读锁(sync.RLock)保证并发安全
-// 返回值:
-//   - []T: 包含所有元素的切片(可能为空)
+// GetAll 获取所有元素
 func (rb *RingBuffer[T]) GetAll() []T {
 	rb.mu.RLock()
 	defer rb.mu.RUnlock()
 
-	result := make([]T, rb.count)
-	for i := 0; i < int(rb.count); i++ {
-		result[i] = rb.buffer[(rb.head+i)%rb.size]
-	}
-	return result
+	return rb.impl.GetAll()
 }
 
-// GetLast 获取缓冲区中最后n个元素(按插入顺序从旧到新)
-// 线程安全：使用读锁(sync.RLock)保证并发安全
-// 返回值:
-//   - []T: 包含元素的切片，长度不超过n
+// GetLast 获取最后n个元素
 func (rb *RingBuffer[T]) GetLast(n int) []T {
 	rb.mu.RLock()
 	defer rb.mu.RUnlock()
 
-	if n <= 0 {
-		return nil
-	}
-
-	count := int(rb.count)
-	if n > count {
-		n = count
-	}
-
-	result := make([]T, n)
-	start := (rb.tail - n + rb.size) % rb.size
-	for i := 0; i < n; i++ {
-		result[i] = rb.buffer[(start+i)%rb.size]
-	}
-	return result
+	return rb.impl.GetLast(n)
 }
 
-// Iterator 返回一个只读通道，用于遍历缓冲区中的元素
-// 注意: 必须在消费完所有元素前完成遍历，否则会导致goroutine泄漏
-func (rb *RingBuffer[T]) Iterator() <-chan T {
-	ch := make(chan T)
-	go func() {
-		rb.mu.RLock()
-		defer rb.mu.RUnlock()
-		defer close(ch)
-
-		for i := 0; i < int(rb.count); i++ {
-			ch <- rb.buffer[(rb.head+i)%rb.size]
-		}
-	}()
-	return ch
-}
-
-// Len 返回当前缓冲区中的元素数量
-// 线程安全：使用原子操作保证并发安全
+// Len 当前元素数量
 func (rb *RingBuffer[T]) Len() int {
 	return int(atomic.LoadInt32(&rb.count))
 }
 
-// Cap 返回缓冲区的总容量
+// Cap 缓冲区容量
 func (rb *RingBuffer[T]) Cap() int {
 	return rb.size
 }
 
-// IsFull 检查缓冲区是否已满
+// IsFull 是否已满
 func (rb *RingBuffer[T]) IsFull() bool {
 	return rb.Len() == rb.size
 }
 
-// IsEmpty 检查缓冲区是否为空
+// IsEmpty 是否为空
 func (rb *RingBuffer[T]) IsEmpty() bool {
 	return rb.Len() == 0
 }
 
-// Clear 清空缓冲区(重置所有指针和计数器)
-// 线程安全：使用互斥锁(sync.Mutex)保证并发安全
+// Clear 清空缓冲区
 func (rb *RingBuffer[T]) Clear() {
 	rb.mu.Lock()
 	defer rb.mu.Unlock()
 
-	rb.head = 0
-	rb.tail = 0
+	rb.impl.Clear()
 	atomic.StoreInt32(&rb.count, 0)
 }
 
-// RingBufferPool 对象池，用于管理RingBuffer实例
-type RingBufferPool[T any] struct {
-	pool sync.Pool
+// Iterator 创建元素迭代器
+func (rb *RingBuffer[T]) Iterator() <-chan T {
+	ch := make(chan T, rb.Len())
+
+	go func() {
+		rb.mu.RLock()
+		defer rb.mu.RUnlock()
+
+		for item := range rb.impl.Iterator() {
+			ch <- item
+		}
+		close(ch)
+	}()
+
+	return ch
 }
 
-// NewPool 创建一个新的RingBuffer对象池
-func NewPool[T any](size int) *RingBufferPool[T] {
-	return &RingBufferPool[T]{
-		pool: sync.Pool{
-			New: func() any {
-				rb, _ := New[T](size)
-				return rb
-			},
-		},
+// MustNew 创建环形缓冲区(失败时panic)
+func MustNew[T any](size int) *RingBuffer[T] {
+	rb, err := New[T](size)
+	if err != nil {
+		panic(err)
 	}
-}
-
-// Get 从对象池获取一个RingBuffer实例
-func (p *RingBufferPool[T]) Get() *RingBuffer[T] {
-	return p.pool.Get().(*RingBuffer[T])
-}
-
-// Put 将RingBuffer实例放回对象池
-func (p *RingBufferPool[T]) Put(rb *RingBuffer[T]) {
-	rb.Clear()
-	p.pool.Put(rb)
+	return rb
 }
