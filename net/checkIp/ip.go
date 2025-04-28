@@ -48,3 +48,47 @@ func parsePort(portStr string) (int, error) {
 	}
 	return port, nil
 }
+
+func GetListeningAddr(listenAddr string) (string, error) {
+	// 解析监听地址（如 ":10001"）
+	addr, err := net.ResolveTCPAddr("tcp", listenAddr)
+	if err != nil {
+		return "", fmt.Errorf("解析地址失败: %w", err)
+	}
+
+	// 如果配置中已明确指定IP，直接返回
+	if addr.IP != nil && !addr.IP.IsUnspecified() {
+		return fmt.Sprintf("%s:%d", addr.IP, addr.Port), nil
+	}
+
+	// 单次遍历网络接口
+	var firstIP net.IP
+	ifaces, _ := net.Interfaces() // 错误可忽略
+	for _, iface := range ifaces {
+		addrs, _ := iface.Addrs()
+		for _, a := range addrs {
+			ipnet, ok := a.(*net.IPNet)
+			if !ok {
+				continue
+			}
+			ip := ipnet.IP
+			if ip.IsLoopback() {
+				// 发现环回地址立即返回
+				return fmt.Sprintf("127.0.0.1:%d", addr.Port), nil
+			}
+
+			// 记录第一个非环回IPv4地址
+			if firstIP == nil && ip.To4() != nil {
+				firstIP = ip
+			}
+		}
+	}
+
+	// 没有环回地址时返回第一个找到的IP
+	if firstIP != nil {
+		return fmt.Sprintf("%s:%d", firstIP, addr.Port), nil
+	}
+
+	// 保底返回环回地址（即使没有实际接口）
+	return fmt.Sprintf("127.0.0.1:%d", addr.Port), nil
+}
