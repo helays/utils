@@ -19,18 +19,18 @@ const (
 
 // Backoff 封装了递增睡眠时间的逻辑
 type Backoff struct {
-	Type          BackoffType   // 递增曲线类型
-	InitialSleep  time.Duration // 初始等待时间
-	MaxSleep      time.Duration // 最大等待时间
-	Step          time.Duration // 线性递增的步长（仅用于 Linear 和 Step 类型）
-	Base          float64       // 指数递增的基数（仅用于 Exponential 类型）
-	StepThreshold int           // 分段递增的阈值（仅用于 Step 类型）
+	Type          BackoffType   `json:"type" yaml:"type" ini:"type"`                               // 递增曲线类型
+	InitialSleep  time.Duration `json:"initial_sleep" yaml:"initial_sleep" ini:"initial_sleep"`    // 初始等待时间
+	MaxSleep      time.Duration `json:"max_sleep" yaml:"max_sleep" ini:"max_sleep"`                // 最大等待时间
+	Step          time.Duration `json:"step" yaml:"step" ini:"step"`                               // 线性递增的步长（仅用于 Linear 和 Step 类型）
+	Base          float64       `json:"base" yaml:"base" ini:"base"`                               // 指数递增的基数（仅用于 Exponential 类型）
+	StepThreshold int           `json:"step_threshold" yaml:"step_threshold" ini:"step_threshold"` // 分段递增的阈值（仅用于 Step 类型）
 	currentSleep  time.Duration // 当前等待时间
 	failureCount  int           // 失败次数
 }
 
 // NewBackoff 创建一个新的 Backoff 实例
-func NewBackoff(backoffType BackoffType, initialSleep, maxSleep time.Duration, options ...interface{}) *Backoff {
+func NewBackoff(backoffType BackoffType, initialSleep, maxSleep time.Duration, options ...any) *Backoff {
 	b := &Backoff{
 		Type:         backoffType,
 		InitialSleep: initialSleep,
