@@ -92,3 +92,19 @@ func GetListeningAddr(listenAddr string) (string, error) {
 	// 保底返回环回地址（即使没有实际接口）
 	return fmt.Sprintf("127.0.0.1:%d", addr.Port), nil
 }
+
+// GetLocalIP 获取本地非回环IP
+func GetLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return ""
+}

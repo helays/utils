@@ -1,6 +1,7 @@
 package electMaster
 
 import (
+	"fmt"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
@@ -8,27 +9,23 @@ import (
 	"time"
 )
 
-type nacosElect struct {
-	client        naming_client.INamingClient
-	electionKey   string // Nacos服务名
-	candidateInfo string // 当前节点唯一编号
-	leaderChs     []chan<- bool
+type NacosElect struct {
+	Client        naming_client.INamingClient
+	ElectionKey   string // Nacos服务名
+	CandidateInfo string // 当前节点唯一编号
+	LeaderChs     []chan<- bool
 	stopCh        chan struct{}
+	Ip            string
+	Port          uint64
 }
 
 // ElectMaster Nacos选举实现
-func ElectMaster(client naming_client.INamingClient, electionKey, candidateInfo string, leaderChs ...chan<- bool) {
-	e := &nacosElect{
-		client:        client,
-		electionKey:   electionKey,
-		candidateInfo: candidateInfo,
-		leaderChs:     leaderChs,
-		stopCh:        make(chan struct{}),
-	}
+func ElectMaster(e *NacosElect) {
+	e.stopCh = make(chan struct{})
 	go e.process()
 }
 
-func (e *nacosElect) process() {
+func (e *NacosElect) process() {
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
@@ -49,21 +46,22 @@ func (e *nacosElect) process() {
 	}
 }
 
-func (e *nacosElect) checkLeadership() {
+func (e *NacosElect) checkLeadership() {
 	// 获取所有实例
 	param := vo.SelectInstancesParam{
-		ServiceName: e.electionKey,
+		ServiceName: e.ElectionKey,
 		HealthyOnly: true,
+		GroupName:   "DEFAULT_GROUP",
 	}
-	instances, err := e.client.SelectInstances(param)
+	instances, err := e.Client.SelectInstances(param)
 	if err != nil {
-		e.error(err, "获取服务实例失败")
+		e.error(err, fmt.Sprintf("获取服务实例失败 %s", param.ServiceName))
 		return
 	}
 
 	if len(instances) == 0 {
 		e.log("没有找到服务实例，重新注册自己")
-		if err := e.registerSelf(); err != nil {
+		if err = e.registerSelf(); err != nil {
 			e.error(err, "重新注册实例失败")
 		}
 		return
@@ -76,40 +74,51 @@ func (e *nacosElect) checkLeadership() {
 	})
 
 	// 第一个实例是leader
-	isLeader := instances[0].Metadata["candidateInfo"] == e.candidateInfo
+	isLeader := instances[0].Metadata["candidateInfo"] == e.CandidateInfo
 	e.notifyLeaderChange(isLeader)
 }
 
-func (e *nacosElect) registerSelf() error {
-	// 使用当前时间作为注册时间
+func (e *NacosElect) registerSelf() error {
 	registerTime := time.Now().Format(time.RFC3339Nano)
 
-	// 注册当前实例
-	_, err := e.client.RegisterInstance(vo.RegisterInstanceParam{
-		ServiceName: e.electionKey,
-		Ip:          "127.0.0.1", // 使用本地IP，实际不重要
-		Port:        0,           // 端口设为0，因为我们不真正提供服务
+	param := vo.RegisterInstanceParam{
+		ServiceName: e.ElectionKey,
+		Ip:          e.Ip,
+		Port:        e.Port,
 		Metadata: map[string]string{
-			"candidateInfo": e.candidateInfo,
+			"candidateInfo": e.CandidateInfo,
 			"registerTime":  registerTime,
 		},
-		Ephemeral: true, // 临时实例
-	})
-	return err
+		Ephemeral: true,
+		Healthy:   true,
+		Enable:    true,
+	}
+
+	success, err := e.Client.RegisterInstance(param)
+	if err != nil {
+		return fmt.Errorf("注册实例失败: %v", err)
+	}
+
+	if !success {
+		return fmt.Errorf("注册实例返回失败")
+	}
+
+	e.log("成功注册实例:", e.CandidateInfo)
+	return nil
 }
 
-func (e *nacosElect) notifyLeaderChange(isLeader bool) {
-	for _, ch := range e.leaderChs {
+func (e *NacosElect) notifyLeaderChange(isLeader bool) {
+	for _, ch := range e.LeaderChs {
 		go func(ch chan<- bool) {
 			ch <- isLeader
 		}(ch)
 	}
 }
 
-func (e *nacosElect) error(err error, msg ...any) {
+func (e *NacosElect) error(err error, msg ...any) {
 	ulogs.Error(append([]any{"【Nacos选leader】", err.Error()}, msg...)...)
 }
 
-func (e *nacosElect) log(args ...any) {
+func (e *NacosElect) log(args ...any) {
 	ulogs.Log(append([]any{"【Nacos选leader】"}, args...)...)
 }

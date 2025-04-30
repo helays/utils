@@ -121,7 +121,6 @@ func (this *Config) NewClient() (naming_client.INamingClient, error) {
 	this.setKMSConfig(clientConfig.KMSConfig)
 	this.setLogSampling(clientConfig.LogSampling)
 	this.setLogRollingConfig(clientConfig.LogRollingConfig)
-
 	return clients.NewNamingClient(vo.NacosClientParam{
 		ClientConfig:  clientConfig,
 		ServerConfigs: serverConfigs,
