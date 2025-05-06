@@ -113,14 +113,20 @@ func (this *Config) NewClient() (naming_client.INamingClient, error) {
 	var serverConfigs []constant.ServerConfig
 	for _, v := range this.ServerConfigs {
 		serverConfigs = append(serverConfigs,
-			constant.ServerConfig{Scheme: v.Scheme, ContextPath: v.ContextPath, IpAddr: v.IpAddr, Port: v.Port, GrpcPort: v.GrpcPort})
+			constant.ServerConfig{
+				Scheme:      v.Scheme,
+				ContextPath: v.ContextPath,
+				IpAddr:      v.IpAddr,
+				Port:        v.Port,
+				GrpcPort:    v.GrpcPort,
+			})
 	}
 	clientConfig := this.setClientConfig()
-	this.setRamConfig(clientConfig.RamConfig)
-	this.setKMSv3Config(clientConfig.KMSv3Config)
-	this.setKMSConfig(clientConfig.KMSConfig)
-	this.setLogSampling(clientConfig.LogSampling)
-	this.setLogRollingConfig(clientConfig.LogRollingConfig)
+	this.setRamConfig(clientConfig)
+	this.setKMSv3Config(clientConfig)
+	this.setKMSConfig(clientConfig)
+	this.setLogSampling(clientConfig)
+	this.setLogRollingConfig(clientConfig)
 	return clients.NewNamingClient(vo.NacosClientParam{
 		ClientConfig:  clientConfig,
 		ServerConfigs: serverConfigs,
@@ -162,62 +168,72 @@ func (this *Config) setClientConfig() *constant.ClientConfig {
 }
 
 // 设置 RAM 配置
-func (this *Config) setRamConfig(v *constant.RamConfig) {
+func (this *Config) setRamConfig(v *constant.ClientConfig) {
 	if this.ClientConfig.RamConfig == nil {
 		return
 	}
-	v.SecurityToken = this.ClientConfig.RamConfig.SecurityToken
-	v.SignatureRegionId = this.ClientConfig.RamConfig.SignatureRegionId
-	v.RamRoleName = this.ClientConfig.RamConfig.RamRoleName
-	v.RoleArn = this.ClientConfig.RamConfig.RoleArn
-	v.Policy = this.ClientConfig.RamConfig.Policy
-	v.RoleSessionName = this.ClientConfig.RamConfig.RoleSessionName
-	v.RoleSessionExpiration = this.ClientConfig.RamConfig.RoleSessionExpiration
-	v.OIDCProviderArn = this.ClientConfig.RamConfig.OIDCProviderArn
-	v.OIDCTokenFilePath = this.ClientConfig.RamConfig.OIDCTokenFilePath
-	v.CredentialsURI = this.ClientConfig.RamConfig.CredentialsURI
-	v.SecretName = this.ClientConfig.RamConfig.SecretName
+	v.RamConfig = &constant.RamConfig{
+		SecurityToken:         this.ClientConfig.RamConfig.SecurityToken,
+		SignatureRegionId:     this.ClientConfig.RamConfig.SignatureRegionId,
+		RamRoleName:           this.ClientConfig.RamConfig.RamRoleName,
+		RoleArn:               this.ClientConfig.RamConfig.RoleArn,
+		Policy:                this.ClientConfig.RamConfig.Policy,
+		RoleSessionName:       this.ClientConfig.RamConfig.RoleSessionName,
+		RoleSessionExpiration: this.ClientConfig.RamConfig.RoleSessionExpiration,
+		OIDCProviderArn:       this.ClientConfig.RamConfig.OIDCProviderArn,
+		OIDCTokenFilePath:     this.ClientConfig.RamConfig.OIDCTokenFilePath,
+		CredentialsURI:        this.ClientConfig.RamConfig.CredentialsURI,
+		SecretName:            this.ClientConfig.RamConfig.SecretName,
+	}
 }
 
 // 设置 KMS v3 配置
-func (this *Config) setKMSv3Config(v *constant.KMSv3Config) {
+func (this *Config) setKMSv3Config(v *constant.ClientConfig) {
 	if this.ClientConfig.KMSv3Config == nil {
 		return
 	}
-	v.ClientKeyContent = this.ClientConfig.KMSv3Config.ClientKeyContent
-	v.Password = this.ClientConfig.KMSv3Config.Password
-	v.Endpoint = this.ClientConfig.KMSv3Config.Endpoint
-	v.CaContent = this.ClientConfig.KMSv3Config.CaContent
+	v.KMSv3Config = &constant.KMSv3Config{
+		ClientKeyContent: this.ClientConfig.KMSv3Config.ClientKeyContent,
+		Password:         this.ClientConfig.KMSv3Config.Password,
+		Endpoint:         this.ClientConfig.KMSv3Config.Endpoint,
+		CaContent:        this.ClientConfig.KMSv3Config.CaContent,
+	}
 }
 
 // 设置 KMS 配置
-func (this *Config) setKMSConfig(v *constant.KMSConfig) {
+func (this *Config) setKMSConfig(v *constant.ClientConfig) {
 	if this.ClientConfig.KMSConfig == nil {
 		return
 	}
-	v.Endpoint = this.ClientConfig.KMSConfig.Endpoint
-	v.OpenSSL = this.ClientConfig.KMSConfig.OpenSSL
-	v.CaContent = this.ClientConfig.KMSConfig.CaContent
+	v.KMSConfig = &constant.KMSConfig{
+		Endpoint:  this.ClientConfig.KMSConfig.Endpoint,
+		OpenSSL:   this.ClientConfig.KMSConfig.OpenSSL,
+		CaContent: this.ClientConfig.KMSConfig.CaContent,
+	}
 }
 
-func (this *Config) setLogSampling(v *constant.ClientLogSamplingConfig) {
+func (this *Config) setLogSampling(v *constant.ClientConfig) {
 	if this.ClientConfig.LogSampling == nil {
 		return
 	}
-	v.Initial = this.ClientConfig.LogSampling.Initial
-	v.Thereafter = this.ClientConfig.LogSampling.Thereafter
-	v.Tick = tools.AutoTimeDuration(this.ClientConfig.LogSampling.Tick, time.Second)
+	v.LogSampling = &constant.ClientLogSamplingConfig{
+		Initial:    this.ClientConfig.LogSampling.Initial,
+		Thereafter: this.ClientConfig.LogSampling.Thereafter,
+		Tick:       tools.AutoTimeDuration(this.ClientConfig.LogSampling.Tick, time.Second),
+	}
 }
 
-func (this *Config) setLogRollingConfig(v *constant.ClientLogRollingConfig) {
+func (this *Config) setLogRollingConfig(v *constant.ClientConfig) {
 	if this.ClientConfig.LogRollingConfig == nil {
 		return
 	}
-	v.MaxSize = this.ClientConfig.LogRollingConfig.MaxSize
-	v.MaxAge = this.ClientConfig.LogRollingConfig.MaxAge
-	v.MaxBackups = this.ClientConfig.LogRollingConfig.MaxBackups
-	v.LocalTime = this.ClientConfig.LogRollingConfig.LocalTime
-	v.Compress = this.ClientConfig.LogRollingConfig.Compress
+	v.LogRollingConfig = &constant.ClientLogRollingConfig{
+		MaxSize:    this.ClientConfig.LogRollingConfig.MaxSize,
+		MaxAge:     this.ClientConfig.LogRollingConfig.MaxAge,
+		MaxBackups: this.ClientConfig.LogRollingConfig.MaxBackups,
+		LocalTime:  this.ClientConfig.LogRollingConfig.LocalTime,
+		Compress:   this.ClientConfig.LogRollingConfig.Compress,
+	}
 }
 
 func (this *Config) setTLSCfg() constant.TLSConfig {

@@ -77,7 +77,7 @@ func (this *elect) campaign(ctx context.Context, elector *concurrency.Election) 
 		if string(resp.Kvs[0].Value) != this.candidateInfo {
 			for _, ch := range this.leaderChs {
 				go func(ch chan<- bool) {
-					ch <- false // 发送信号表示成为leader
+					ch <- false
 				}(ch)
 			}
 			return
@@ -86,9 +86,9 @@ func (this *elect) campaign(ctx context.Context, elector *concurrency.Election) 
 }
 
 func (this *elect) error(err error, msg ...any) {
-	ulogs.Error(append([]any{"【自动选leader】", err.Error()}, msg...)...)
+	ulogs.Error(append([]any{"【ETCD选leader】", err.Error()}, msg...)...)
 }
 
 func (this *elect) log(args ...any) {
-	ulogs.Log(append([]any{"【自动选leader】"}, args...)...)
+	ulogs.Log(append([]any{"【ETCD选leader】"}, args...)...)
 }
