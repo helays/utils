@@ -7,6 +7,7 @@ import (
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/db/userDb"
 	"github.com/helays/utils/logger/ulogs"
+	"github.com/helays/utils/tools/retention"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
@@ -172,15 +173,20 @@ func (this *TableRotate) runSplitTable() {
 		ulogs.Error("自动轮转表，查询表名失败", err)
 		return
 	}
-	ret := MaxTableRetention{
-		Tx:         this.tx,
-		MaxNum:     this.MaxTableRetention,
-		TableName:  this.tableName,
-		Step:       "_",
-		Tables:     tables,
-		DateFormat: dateFormat,
-	}
-	if err = ret.Run(); err != nil {
+
+	tableManager := retention.New(retention.Config{
+		MaxRetain:  this.MaxTableRetention,
+		Prefix:     this.tableName,
+		Delimiter:  "_",
+		TimeFormat: dateFormat,
+		Order:      false, // 按时间降序排序
+		Criteria:   retention.ByTime,
+	})
+	tableManager.AddItems(tables)
+	err = tableManager.Run(func(name string) error {
+		return this.tx.Migrator().DropTable(name)
+	})
+	if err != nil {
 		ulogs.Error("自动轮转表，删除表失败", err)
 	}
 }
