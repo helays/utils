@@ -9,6 +9,66 @@ import (
 	"path/filepath"
 )
 
+// CompressFileToZip 将单个文件压缩为ZIP文件
+// 参数：
+//
+//	filePath - 需要压缩的源文件路径
+//	zipFilePath - 生成的ZIP文件路径
+//
+// 返回值：
+//
+//	error - 压缩过程中遇到的错误
+func CompressFileToZip(filePath string, zipFilePath string) error {
+	// 打开源文件
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("打开源文件失败: %w", err)
+	}
+	defer osClose.CloseFile(file)
+
+	// 获取文件信息用于创建ZIP头
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("获取文件信息失败: %w", err)
+	}
+
+	// 创建ZIP文件
+	zipFile, err := os.Create(zipFilePath)
+	if err != nil {
+		return fmt.Errorf("创建ZIP文件失败: %w", err)
+	}
+	defer osClose.CloseFile(zipFile)
+
+	// 创建ZIP写入器
+	zipWriter := zip.NewWriter(zipFile)
+	defer CloseZipWriter(zipWriter)
+
+	// 创建文件头信息
+	header, err := zip.FileInfoHeader(fileInfo)
+	if err != nil {
+		return fmt.Errorf("创建文件头失败: %w", err)
+	}
+
+	// 设置压缩方法为Deflate(默认压缩算法)
+	header.Method = zip.Deflate
+	// 只使用文件名(不含路径)作为ZIP内的条目名称
+	header.Name = filepath.Base(filePath)
+
+	// 在ZIP中创建文件条目
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return fmt.Errorf("创建ZIP条目失败: %w", err)
+	}
+
+	// 将文件内容拷贝到ZIP中
+	_, err = io.Copy(writer, file)
+	if err != nil {
+		return fmt.Errorf("写入文件内容到ZIP失败: %w", err)
+	}
+
+	return nil
+}
+
 // CompressDirectoryToZip compresses the given directory recursively into a ZIP file.
 func CompressDirectoryToZip(dirPath string, zipFilePath string) error {
 	// Create a new ZIP file.
