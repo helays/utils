@@ -129,6 +129,49 @@ func (this *Config) Login() error {
 	return nil
 }
 
+func (this *Config) ListFiles(dirPath string) ([]string, error) {
+	if err := this.Login(); err != nil {
+		return nil, err
+	}
+	filePath, err := SetPath(this.client, dirPath)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := this.client.List(filePath)
+	if err != nil {
+		return nil, err
+	}
+	var fileNames []string
+	for _, entry := range entries {
+		if entry.Type == ftp.EntryTypeFile {
+			fileNames = append(fileNames, entry.Name)
+		}
+	}
+	return fileNames, nil
+}
+
+func (this *Config) Delete(p string) error {
+	if err := this.Login(); err != nil {
+		return err
+	}
+	filePath, err := SetPath(this.client, p)
+	if err != nil {
+		return err
+	}
+	return this.client.Delete(filePath)
+}
+
+func (this *Config) DeleteAll(p string) error {
+	if err := this.Login(); err != nil {
+		return err
+	}
+	filePath, err := SetPath(this.client, p)
+	if err != nil {
+		return err
+	}
+	return this.client.RemoveDirRecur(filePath)
+}
+
 func (this *Config) Close() {
 	if this.client == nil {
 		return

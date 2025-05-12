@@ -49,3 +49,30 @@ func (this Local) Read(p string) (io.ReadCloser, error) {
 	}
 	return file, nil
 }
+
+func (this Local) ListFiles(dirPath string) ([]string, error) {
+	dirPath = tools.Fileabs(dirPath)
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("读取目录%s失败: %s", dirPath, err.Error())
+	}
+	var filePaths []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			filePaths = append(filePaths, entry.Name())
+		}
+	}
+	return filePaths, nil
+}
+
+// Delete 删除文件
+func (this Local) Delete(p string) error {
+	filePath := tools.Fileabs(p)
+	return os.Remove(filePath)
+}
+
+// DeleteAll 删除文件
+func (this Local) DeleteAll(p string) error {
+	filePath := tools.Fileabs(p)
+	return os.RemoveAll(filePath)
+}

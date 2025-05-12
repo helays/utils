@@ -99,6 +99,36 @@ func (this *Config) Read(filePath string, options Options) (io.ReadCloser, error
 	}
 }
 
+func (this *Config) ListFiles(dirPath string, options Options) ([]string, error) {
+	if err := this.login(); err != nil {
+		return nil, err
+	}
+	this.options = options
+
+	// 列出对象
+	var files []string
+	opts := minio.ListObjectsOptions{
+		Prefix:    dirPath,
+		Recursive: false,
+	}
+	for obj := range this.client.ListObjects(this.ctx, this.options.Bucket, opts) {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+		files = append(files, obj.Key)
+	}
+
+	return files, nil
+}
+
+func (this *Config) Delete(filePath string, options Options) error {
+	if err := this.login(); err != nil {
+		return err
+	}
+	this.options = options
+	return this.client.RemoveObject(this.ctx, this.options.Bucket, filePath, minio.RemoveObjectOptions{})
+}
+
 // 登录
 func (this *Config) login() error {
 	if this.client != nil {

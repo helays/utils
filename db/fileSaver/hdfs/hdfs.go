@@ -30,7 +30,7 @@ func (this *Config) Valid() error {
 	if len(this.Addresses) < 1 {
 		return fmt.Errorf("缺失地址")
 	}
-	
+
 	return nil
 }
 
@@ -105,6 +105,53 @@ func (this *Config) Read(filePath string) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return remoteFile, nil
+}
+
+func (this *Config) ListFiles(dirPath string) ([]string, error) {
+	if err := this.login(); err != nil {
+		return nil, err
+	}
+	if !path.IsAbs(dirPath) {
+		dirPath = path.Join("/", dirPath)
+	}
+	entries, err := this.client.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			files = append(files, entry.Name())
+		}
+	}
+
+	return files, nil
+}
+
+func (this *Config) Delete(filePath string) error {
+	if err := this.login(); err != nil {
+		return err
+	}
+	if !path.IsAbs(filePath) {
+		filePath = path.Join("/", filePath)
+	}
+	if ok, err := this.exist(filePath); !ok {
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return this.client.Remove(filePath)
+}
+
+func (this *Config) DeleteAll(filePath string) error {
+	if err := this.login(); err != nil {
+		return err
+	}
+	if !path.IsAbs(filePath) {
+		filePath = path.Join("/", filePath)
+	}
+	return this.client.RemoveAll(filePath)
 }
 
 // login 登录

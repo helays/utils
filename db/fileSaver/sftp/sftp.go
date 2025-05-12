@@ -132,6 +132,55 @@ func (this *Config) Write(p string, src io.Reader, existIgnores ...bool) (int64,
 	return written, nil
 }
 
+func (this *Config) ListFiles(dirPath string) ([]string, error) {
+	if err := this.LoginSftp(); err != nil {
+		return nil, err
+	}
+	filePath, err := SetPath(this.sftpClient, dirPath)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := this.sftpClient.ReadDir(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("获取目录%s失败：%s", filePath, err.Error())
+	}
+	var files []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			files = append(files, entry.Name())
+		}
+	}
+	return files, nil
+}
+
+func (this *Config) Delete(p string) error {
+	if err := this.LoginSftp(); err != nil {
+		return err
+	}
+	filePath, err := SetPath(this.sftpClient, p)
+	if err != nil {
+		return err
+	}
+	if err = this.sftpClient.Remove(filePath); err != nil {
+		return fmt.Errorf("删除文件%s失败：%s", filePath, err.Error())
+	}
+	return nil
+}
+
+func (this *Config) DeleteAll(p string) error {
+	if err := this.LoginSftp(); err != nil {
+		return err
+	}
+	filePath, err := SetPath(this.sftpClient, p)
+	if err != nil {
+		return err
+	}
+	if err = this.sftpClient.RemoveAll(filePath); err != nil {
+		return fmt.Errorf("删除文件%s失败：%s", filePath, err.Error())
+	}
+	return nil
+}
+
 // LoginSsh 登录 ssh
 func (this *Config) LoginSsh() error {
 	if this.sshClient != nil {

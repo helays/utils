@@ -26,12 +26,13 @@ const (
 
 // Config 保留管理器配置
 type Config struct {
-	MaxRetain  int      // 最大保留数量
-	Prefix     string   // 项目前缀
-	Delimiter  string   // 分隔符，默认为"_"
-	TimeFormat string   // 时间格式，默认为"20060102"
-	Order      Order    // 排序顺序
-	Criteria   Criteria // 排序依据
+	MaxRetain      int      // 最大保留数量
+	Prefix         string   // 项目前缀
+	Delimiter      string   // 分隔符，默认为"_"
+	TimeFormat     string   // 时间格式，默认为"20060102"
+	Order          Order    // 排序顺序
+	Criteria       Criteria // 排序依据
+	IgnoreSuffixes []string // 要忽略的后缀列表
 }
 
 // Manager 保留管理器
@@ -61,7 +62,7 @@ func New(config Config) *Manager {
 }
 
 // WithCustomExtractor 设置自定义键提取器
-func (m *Manager) WithCustomExtractor(fn func(string) interface{}) *Manager {
+func (m *Manager) WithCustomExtractor(fn func(string) any) *Manager {
 	m.extractKey = fn
 	return m
 }
@@ -105,8 +106,8 @@ func (m *Manager) parseItem(name string) *item {
 	if !strings.HasPrefix(name, m.config.Prefix+m.config.Delimiter) {
 		return nil
 	}
-
-	suffix := name[len(m.config.Prefix+m.config.Delimiter):]
+	baseName := m.removeSuffixes(name)
+	suffix := baseName[len(m.config.Prefix+m.config.Delimiter):]
 
 	switch m.config.Criteria {
 	case ByTime:
@@ -130,6 +131,15 @@ func (m *Manager) parseItem(name string) *item {
 		name: name,
 		key:  name,
 	}
+}
+
+func (m *Manager) removeSuffixes(name string) string {
+	for _, suffix := range m.config.IgnoreSuffixes {
+		if strings.HasSuffix(name, suffix) {
+			return strings.TrimSuffix(name, suffix)
+		}
+	}
+	return name
 }
 
 func (m *Manager) sortItems() {
