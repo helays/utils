@@ -418,10 +418,13 @@ func CopyBuffer(dst io.Writer, src io.Reader, buf []byte) (written int64, err er
 // JsonDecode 解析json数据
 func JsonDecode[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	var postData T
-	jd := json.NewDecoder(r.Body)
+	var buf bytes.Buffer
+	tee := io.TeeReader(r.Body, &buf)
+
+	jd := json.NewDecoder(tee)
 	err := jd.Decode(&postData)
 	if err != nil && !errors.Is(err, io.EOF) {
-		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError, "参数解析失败", tools.MustStringReader(jd.Buffered()))
+		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError, "参数解析失败", tools.MustStringReader(tee))
 		return postData, false
 	}
 	return postData, true
