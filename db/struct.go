@@ -83,11 +83,7 @@ func (this Dbbase) Dsn() string {
 	case config.DbTypePostgres, config.DbTypePg:
 		dsn.Scheme = "postgres"
 		// 如果下面这里 设置成TimeZone ，有几率会出现时间异常
-		query.Set("timezone", "Asia/Shanghai")
-		if this.Schema != "" {
-			query.Set("search_path", this.Schema)
-		}
-		dsn.RawQuery = query.Encode()
+		dsn.RawQuery = fmt.Sprintf("search_path=%s&timezone=%s", this.Schema, "Asia/Shanghai")
 		return dsn.String()
 	case config.DbTypeMysql:
 		//dsn.Scheme = "mysql" // mysql 不需要这个

@@ -23,7 +23,6 @@ func InitDb(c db.Dbbase) (*gorm.DB, error) {
 		dialector gorm.Dialector
 		err       error
 	)
-
 	switch c.DbType {
 	case config.DbTypePostgres, config.DbTypePg:
 		//postgres://user:password@host1:port1/database?target_session_attrs=read-write&TimeZone=Asia/Shanghai
