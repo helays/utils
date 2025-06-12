@@ -17,7 +17,7 @@ func Parseparams(f ...func()) {
 		logLevel string
 	)
 	flag.BoolVar(&config.Help, "h", false, "参数说明")
-	flag.StringVar(&config.Cpath, "c", "conf.ini", "配置文件")
+	flag.StringVar(&config.Cpath, "c", "conf.yaml", "配置文件")
 	flag.BoolVar(&config.Dbg, "debug", false, "Debug 模式")
 	flag.StringVar(&logLevel, "log-level", "info", "日志级别:\ndebug info warn error fatal")
 	flag.BoolVar(&vers, "version", false, "查看版本")
