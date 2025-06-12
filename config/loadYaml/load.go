@@ -10,6 +10,8 @@ import (
 	"os"
 )
 
+// TODO 后续可使用 标准库里面的 模板引擎预处理 进行嵌套引用。
+
 func LoadYaml(i any) {
 	ulogs.DieCheckerr(LoadYamlBase(i), "解析配置文件失败")
 }
