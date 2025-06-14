@@ -40,7 +40,7 @@ func SwitchDebug(w http.ResponseWriter, r *http.Request) {
 }
 
 // 辅助函数，用于匹配正则表达式
-func (this *Router) matchRegexp(path string, rules []*regexp.Regexp) bool {
+func (ro *Router) matchRegexp(path string, rules []*regexp.Regexp) bool {
 	for _, rule := range rules {
 		if rule.MatchString(path) {
 			return true
@@ -52,49 +52,49 @@ func (this *Router) matchRegexp(path string, rules []*regexp.Regexp) bool {
 // 验证是否需要登录才能访问，
 // 首先要判断 免登录权限，优先级高
 // 然后判断 是否要登录
-func (this *Router) validMustLogin(path string) bool {
-	if this.UnLoginPath[path] {
+func (ro *Router) validMustLogin(path string) bool {
+	if ro.UnLoginPath[path] {
 		return false // 不用登录
 	}
-	if this.UnLoginPathRegexp != nil && this.matchRegexp(path, this.UnLoginPathRegexp) {
+	if ro.UnLoginPathRegexp != nil && ro.matchRegexp(path, ro.UnLoginPathRegexp) {
 		return false
 	}
-	if this.MustLoginPath[path] {
+	if ro.MustLoginPath[path] {
 		return true
 	}
-	if this.MustLoginPathRegexp != nil && this.matchRegexp(path, this.MustLoginPathRegexp) {
+	if ro.MustLoginPathRegexp != nil && ro.matchRegexp(path, ro.MustLoginPathRegexp) {
 		return true
 	}
 	return false
 }
 
 // 无授权的响应
-func (this *Router) unAuthorizedResp(w http.ResponseWriter, r *http.Request) bool {
-	if this.UnauthorizedRespMethod == 401 {
-		SetReturnData(w, this.UnauthorizedRespMethod, "未登录，请先登录！！")
+func (ro *Router) unAuthorizedResp(w http.ResponseWriter, r *http.Request) bool {
+	if ro.UnauthorizedRespMethod == 401 {
+		SetReturnData(w, ro.UnauthorizedRespMethod, "未登录，请先登录！！")
 		return false
 	}
-	http.Redirect(w, r, this.LoginPath, 302)
+	http.Redirect(w, r, ro.LoginPath, 302)
 	return false
 }
 
 // 验证是否是登录后就禁止访问的页面
-func (this *Router) validDisableLoginRequestPath(path string) bool {
-	if this.DisableLoginPath[path] {
+func (ro *Router) validDisableLoginRequestPath(path string) bool {
+	if ro.DisableLoginPath[path] {
 		return true
 	}
-	if this.DisableLoginPathRegexp != nil && this.matchRegexp(path, this.DisableLoginPathRegexp) {
+	if ro.DisableLoginPathRegexp != nil && ro.matchRegexp(path, ro.DisableLoginPathRegexp) {
 		return true
 	}
 	return false
 }
 
 // 验证是否是管理页面
-func (this *Router) validManagePage(path string) bool {
-	if this.ManagePage[path] {
+func (ro *Router) validManagePage(path string) bool {
+	if ro.ManagePage[path] {
 		return true
 	}
-	if this.ManagePageRegexp != nil && this.matchRegexp(path, this.ManagePageRegexp) {
+	if ro.ManagePageRegexp != nil && ro.matchRegexp(path, ro.ManagePageRegexp) {
 		return true
 	}
 	return false

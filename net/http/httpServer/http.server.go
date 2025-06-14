@@ -18,12 +18,21 @@ import (
 	"golang.org/x/net/websocket"
 	"net/http"
 	"net/http/pprof"
-	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
+
+// 辅助结构体用于捕获状态码
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+}
 
 // HttpServerStart 公功 http server 启动函数
 func (h *HttpServer) HttpServerStart() {
@@ -62,6 +71,13 @@ func (h *HttpServer) HttpServerStart() {
 			h.middleware(mux, u, funcName)
 		}
 	}
+
+	if h.RouteHandle != nil {
+		for u, funcName := range h.RouteHandle {
+			h.middleware(mux, u, funcName)
+		}
+	}
+
 	if h.RouteSocket != nil {
 		for u, funcName := range h.RouteSocket {
 			//mux.Handle(u, websocket.Handler(funcName))
@@ -120,8 +136,8 @@ func (h *HttpServer) HttpServerStart() {
 	}
 }
 
-func (h *HttpServer) middleware(mux *http.ServeMux, u string, f func(w http.ResponseWriter, r *http.Request)) {
-	mux.Handle(u, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *HttpServer) middleware(mux *http.ServeMux, u string, f http.Handler) {
+	mux.HandleFunc(u, func(w http.ResponseWriter, r *http.Request) {
 		defer httpClose.CloseReq(r)
 		if len(h.serverNameMap) > 0 {
 			// 提取并转换为小写的host（忽略端口部分）
@@ -159,11 +175,11 @@ func (h *HttpServer) middleware(mux *http.ServeMux, u string, f func(w http.Resp
 		if h.CommonCallback != nil && !h.CommonCallback(w, r) {
 			return
 		}
-		http.HandlerFunc(f).ServeHTTP(w, r)
-	}))
+		f.ServeHTTP(w, r)
+	})
 }
 
-func (h *HttpServer) socketMiddleware(mux *http.ServeMux, u string, f func(ws *websocket.Conn)) {
+func (h *HttpServer) socketMiddleware(mux *http.ServeMux, u string, f websocket.Handler) {
 	handler := websocket.Handler(func(ws *websocket.Conn) {
 		defer vclose.Close(ws)
 		// 提取并转换为小写的host（忽略端口部分）
@@ -227,65 +243,6 @@ func (this *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bo
 		return false
 	}
 	return true
-}
-
-// SetRequestDefaultPage 设置 打开的默认页面
-// defaultPage string 默认打开页面
-// root 网站更目录
-// path string
-func SetRequestDefaultPage(defaultPage, path string) ([]*os.File, []string, bool) {
-	sarr := strings.Split(path, "??")
-	if len(sarr) == 1 {
-		swapUrl, err := url.Parse(path)
-		if err != nil {
-			ulogs.Error("url 异常", err)
-			return nil, nil, false
-		}
-		path = swapUrl.Path
-		if filepath.Base(path) == "lib.js" {
-
-		}
-		f, err := os.OpenFile(path, os.O_RDONLY, 0644)
-		if err != nil {
-			return []*os.File{f}, []string{path}, false
-		}
-		fInfo, _ := f.Stat()
-		if !fInfo.IsDir() {
-			return []*os.File{f}, []string{path}, true
-		}
-		defaultPage = strings.TrimSpace(defaultPage)
-		if defaultPage == "" {
-			defaultPage = "index.html"
-		}
-		fp := path + "/" + defaultPage
-
-		if strings.HasSuffix(path, "/") {
-			fp = path + defaultPage
-		}
-		f, err = os.OpenFile(fp, os.O_RDONLY, 0644)
-		if err != nil {
-			return []*os.File{f}, []string{fp}, false
-		}
-		return []*os.File{f}, []string{fp}, true
-	}
-
-	var (
-		swapList  []*os.File
-		swapPaths []string
-		status    bool
-	)
-	for _, item := range strings.Split(sarr[1], ",") {
-		swapFile, swapPath, swapStatus := SetRequestDefaultPage(defaultPage, sarr[0]+item)
-		if !swapStatus {
-			continue
-		}
-		swapList = append(swapList, swapFile...)
-		swapPaths = append(swapPaths, swapPath...)
-	}
-	if len(swapList) > 0 {
-		status = true
-	}
-	return swapList, swapPaths, status
 }
 
 // Closehttpserver 关闭http server

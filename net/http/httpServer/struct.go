@@ -1,6 +1,7 @@
 package httpServer
 
 import (
+	"embed"
 	"github.com/helays/utils/logger/zaploger"
 	"github.com/helays/utils/net/http/session"
 	"github.com/helays/utils/net/ipAccess"
@@ -11,23 +12,24 @@ import (
 )
 
 type HttpServer struct {
-	ListenAddr          string                                                  `ini:"listen_addr" json:"listen_addr" yaml:"listen_addr"`
-	Auth                string                                                  `ini:"auth" json:"auth" yaml:"auth"`
-	Allowip             []string                                                `ini:"allowip,omitempty" json:"allowip" yaml:"allowip"`
-	Denyip              []string                                                `ini:"denyip,omitempty" json:"denyip" yaml:"denyip"`
-	ServerName          []string                                                `ini:"server_name,omitempty" json:"server_name" yaml:"server_name"` // 绑定域名
-	Ssl                 bool                                                    `ini:"ssl" json:"ssl" yaml:"ssl"`
-	Ca                  string                                                  `ini:"ca" json:"ca" yaml:"ca"`
-	Crt                 string                                                  `ini:"crt" json:"crt" yaml:"crt"`
-	Key                 string                                                  `ini:"key" json:"key" yaml:"key"`
-	SocketTimeout       time.Duration                                           `ini:"socket_timeout" json:"socket_timeout" yaml:"socket_timeout"` // socket 心跳超时时间
-	Hotupdate           bool                                                    `ini:"hotupdate" json:"hotupdate" yaml:"hotupdate"`                // 是否启动热加载
-	EnableGzip          bool                                                    `ini:"enable_gzip" json:"enable_gzip" yaml:"enable_gzip"`          // 是否开启gzip
-	Route               map[string]func(w http.ResponseWriter, r *http.Request) `yaml:"-" json:"-"`
-	RouteSocket         map[string]func(ws *websocket.Conn)                     `yaml:"-" json:"-"`
-	CommonCallback      func(w http.ResponseWriter, r *http.Request) bool       `yaml:"-" json:"-"`
-	serverNameMap       map[string]byte                                         // 绑定的域名kkkko
-	Logger              zaploger.Config                                         `json:"logger" yaml:"logger" ini:"logger" gorm:"comment:日志配置"`
+	ListenAddr          string                      `ini:"listen_addr" json:"listen_addr" yaml:"listen_addr"`
+	Auth                string                      `ini:"auth" json:"auth" yaml:"auth"`
+	Allowip             []string                    `ini:"allowip,omitempty" json:"allowip" yaml:"allowip"`
+	Denyip              []string                    `ini:"denyip,omitempty" json:"denyip" yaml:"denyip"`
+	ServerName          []string                    `ini:"server_name,omitempty" json:"server_name" yaml:"server_name"` // 绑定域名
+	Ssl                 bool                        `ini:"ssl" json:"ssl" yaml:"ssl"`
+	Ca                  string                      `ini:"ca" json:"ca" yaml:"ca"`
+	Crt                 string                      `ini:"crt" json:"crt" yaml:"crt"`
+	Key                 string                      `ini:"key" json:"key" yaml:"key"`
+	SocketTimeout       time.Duration               `ini:"socket_timeout" json:"socket_timeout" yaml:"socket_timeout"` // socket 心跳超时时间
+	Hotupdate           bool                        `ini:"hotupdate" json:"hotupdate" yaml:"hotupdate"`                // 是否启动热加载
+	EnableGzip          bool                        `ini:"enable_gzip" json:"enable_gzip" yaml:"enable_gzip"`          // 是否开启gzip
+	Route               map[string]http.HandlerFunc `yaml:"-" json:"-"`
+	RouteHandle         map[string]http.Handler
+	RouteSocket         map[string]func(ws *websocket.Conn)               `yaml:"-" json:"-"`
+	CommonCallback      func(w http.ResponseWriter, r *http.Request) bool `yaml:"-" json:"-"`
+	serverNameMap       map[string]byte                                   // 绑定的域名kkkko
+	Logger              zaploger.Config                                   `json:"logger" yaml:"logger" ini:"logger" gorm:"comment:日志配置"`
 	logger              *zaploger.Logger
 	enableCheckIpAccess bool // 是否开启ip访问控制
 	allowIpList         *ipAccess.IPList
@@ -48,6 +50,10 @@ type Router struct {
 	CookieSecure   bool   `ini:"cookie_secure" json:"cookie_secure" yaml:"cookie_secure"`
 	CookieHttpOnly bool   `ini:"cookie_http_only" json:"cookie_http_only" yaml:"cookie_http_only"`
 
+	dev           bool                 // 开发模式
+	staticEmbedFS map[string]*embed.FS // 静态文件
+	enableGzip    bool                 // 是否开启gzip
+
 	Store                  *session.Store   // session 系统
 	IsLogin                bool             // 是否登录
 	LoginPath              string           // 登录页面
@@ -60,6 +66,21 @@ type Router struct {
 	DisableLoginPathRegexp []*regexp.Regexp // 登录状态下不能访问的页面正则
 	ManagePage             map[string]bool  // 管理员访问
 	ManagePageRegexp       []*regexp.Regexp
+}
+
+func (ro *Router) SetDev(dev bool) {
+	ro.dev = dev
+}
+
+func (ro *Router) SetStaticEmbedFs(p string, embedFS *embed.FS) {
+	if ro.staticEmbedFS == nil {
+		ro.staticEmbedFS = make(map[string]*embed.FS)
+	}
+	ro.staticEmbedFS[p] = embedFS
+}
+
+func (ro *Router) SetEnableGzip(enableGzip bool) {
+	ro.enableGzip = enableGzip
 }
 
 // LoginInfo 登录信息

@@ -570,3 +570,9 @@ func ParseRequestBodyAsAnySliceAndLength(w http.ResponseWriter, r *http.Request)
 	}
 	return postData, int(counter.TotalSize), nil
 }
+
+func AddContentEncoding(w http.ResponseWriter, encoding string) {
+	if encoding != "" {
+		w.Header().Set("Content-Encoding", encoding)
+	}
+}
