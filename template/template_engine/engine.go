@@ -1,13 +1,11 @@
 package template_engine
 
 import (
-	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 //
@@ -36,6 +34,12 @@ import (
 // User helay
 // Date: 2025/6/15 13:16
 //
+
+type TplExt string
+
+var tplExts = map[TplExt]bool{
+	".html": true,
+}
 
 type Engine struct {
 	templates *template.Template
@@ -70,6 +74,16 @@ func New(fsys fs.FS, fsysPath, localPath string, devMode bool) (*Engine, error) 
 	return e, nil
 }
 
+func (e *Engine) SetExts(exts ...TplExt) {
+	for _, ext := range exts {
+		tplExts[ext] = true
+	}
+}
+
+func (e *Engine) checkExt(name string) bool {
+	return tplExts[TplExt(filepath.Ext(name))]
+}
+
 func (e *Engine) loadTemplates() error {
 	e.templates = template.New("").Funcs(e.funcMap)
 	if e.devMode || e.fsys == nil {
@@ -96,28 +110,25 @@ func (e *Engine) walkDir(relPath string, fsys fs.FS) error {
 		entryPath := filepath.Join(relPath, entry.Name())
 
 		if entry.IsDir() {
-			subfs, err := fs.Sub(fsys, entry.Name())
-			if err != nil {
-				return err
+			subfs, _err := fs.Sub(fsys, entry.Name())
+			if _err != nil {
+				return _err
 			}
-			if err := e.walkDir(entryPath, subfs); err != nil {
+			if err = e.walkDir(entryPath, subfs); err != nil {
 				return err
 			}
 			continue
 		}
 
-		if filepath.Ext(entry.Name()) != ".html" {
+		if !e.checkExt(filepath.Ext(entry.Name())) {
 			continue
 		}
 
-		content, err := fs.ReadFile(fsys, entry.Name())
-		if err != nil {
-			return err
+		content, _err := fs.ReadFile(fsys, entry.Name())
+		if _err != nil {
+			return _err
 		}
-
-		name := strings.TrimSuffix(entryPath, ".html")
-		fmt.Println(name, "---")
-		if _, err := e.templates.New(name).Parse(string(content)); err != nil {
+		if _, err = e.templates.New(entryPath).Parse(string(content)); err != nil {
 			return err
 		}
 	}
