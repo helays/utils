@@ -61,9 +61,9 @@ func New(fsys fs.FS, fsysPath, localPath string, devMode bool) *Engine {
 	e := &Engine{
 		funcMap: template.FuncMap{
 			// 时间处理
-			"now":     time.Now,
-			"date":    formatDate,
-			"timeAgo": timeSince, // 实现相对时间显示
+			"now":        time.Now,
+			"formatDate": formatDate,
+			"timeAgo":    timeSince, // 实现相对时间显示
 
 			// 字符串处理
 			"truncate": truncateString,
