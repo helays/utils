@@ -52,6 +52,7 @@ type Engine struct {
 
 // New 创建模板引擎实例
 // fsys: 生产模式使用的 embed.FS
+// fsysPath: 生产模式下的虚拟路径
 // localPath: 开发模式下的本地模板目录路径
 // devMode: 是否为开发模式
 func New(fsys fs.FS, fsysPath, localPath string, devMode bool) (*Engine, error) {
