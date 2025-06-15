@@ -80,3 +80,36 @@ func secureRandomIntn(n int) (int, error) {
 	result := int(randomUint32 % uint32(n))
 	return result, nil
 }
+
+// SecureRandomSampleUnique 从切片中随机选取 n 个 **不重复** 元素
+func SecureRandomSampleUnique[T any](collection []T, n int) ([]T, bool) {
+	if n < 0 {
+		return nil, false
+	}
+	if len(collection) == 0 {
+		return collection, true
+	}
+	if n >= len(collection) {
+		return collection, true
+	}
+
+	// 复制一份切片，避免修改原数据
+	copySlice := make([]T, len(collection))
+	copy(copySlice, collection)
+
+	// Fisher-Yates 洗牌算法（部分洗牌）
+	for i := 0; i < n; i++ {
+		// 生成 [i, len(copySlice)) 范围内的随机索引
+		j, err := secureRandomIntn(len(copySlice) - i)
+		if err != nil {
+			return nil, false
+		}
+		j += i
+
+		// 交换元素
+		copySlice[i], copySlice[j] = copySlice[j], copySlice[i]
+	}
+
+	// 返回前 n 个元素
+	return copySlice[:n], true
+}
