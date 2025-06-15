@@ -3,6 +3,7 @@ package tools
 import (
 	"bufio"
 	"os"
+	"strings"
 )
 
 type ReadRowCallback func(scanner *bufio.Scanner) error
@@ -17,3 +18,17 @@ func ReadRowWithFile(file *os.File, callback ReadRowCallback) error {
 	}
 	return nil
 }
+
+func ContainsDotDot(v string) bool {
+	if !strings.Contains(v, "..") {
+		return false
+	}
+	for _, ent := range strings.FieldsFunc(v, isSlashRune) {
+		if ent == ".." {
+			return true
+		}
+	}
+	return false
+}
+
+func isSlashRune(r rune) bool { return r == '/' || r == '\\' }

@@ -1,21 +1,18 @@
 package httpServer
 
 import (
+	"errors"
 	"fmt"
-	"github.com/helays/utils/close/httpClose"
 	"github.com/helays/utils/close/vclose"
-	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/net/http/mime"
 	"github.com/helays/utils/tools"
 	"io"
+	"io/fs"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 )
 
 //
@@ -103,156 +100,58 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 	if strings.HasSuffix(_path, "/") && defaultFile != defaultIndexPage {
 		_path = _path + defaultFile
 	}
-	// 注意，当发现响应状态非正常时，浏览器显示乱码，是标准库[http/fs.go]里面会删除Content-Encoding，需要处理下
+	if tools.ContainsDotDot(_path) {
+		http.Error(w, "invalid URL path", http.StatusBadRequest)
+		return
+	}
+	var embedFs http.FileSystem
+	// 注意，当发现响应状态非正常时，浏览器显示乱码，是标准库[http/fs.go]里面会删除Content-Encoding，
+	// 所以这里不用 http.ServeFile,http.ServeFileFS
 	if !ro.dev && len(ro.staticEmbedFS) > 0 {
-		for k, embedFS := range ro.staticEmbedFS {
+		for k, _embedFS := range ro.staticEmbedFS {
 			if strings.HasPrefix(r.URL.Path, k) {
-				http.ServeFileFS(w, r, embedFS, _path)
-				return
+				embedFs = http.FS(_embedFS)
+				break
 			}
 		}
 	}
-	http.ServeFile(w, r, path.Join(ro.Root, _path))
-}
-
-// Index 默认页面
-func (ro Router) Indexs(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		MethodNotAllow(w)
+	if embedFs == nil {
+		embedFs = http.Dir(ro.Root)
+	}
+	f, d, ok := openEmbedFsFile(w, embedFs, _path)
+	if !ok {
 		return
 	}
-	files, path, status := SetRequestDefaultPage(ro.Default, ro.Root+r.URL.String())
-	defer func() {
-		if files != nil {
-			for _, item := range files {
-				if item != nil {
-					_ = item.Close()
-				}
-			}
-		}
-		httpClose.CloseReq(r)
-	}()
-	var rmime string
-	if len(path) < 1 {
-		rmime = "text/html; charset=utf-8"
-	} else {
-		if len(filepath.Ext(path[0])) > 0 {
-			rmime = mime.MimeMap[strings.ToLower(filepath.Ext(path[0])[1:])]
-		}
-		if rmime == "" {
-			rmime = "text/html; charset=utf-8"
-		}
-	}
-	w.Header().Set("Content-Type", rmime)
-	if !status {
-		if r.URL.Path == "/favicon.ico" {
-			ro.favicon(w)
-			return
-		}
-		NotFound(w, "404 not found")
-		return
-	}
-
-	if len(files) == 1 {
-		fileInfo, _ := files[0].Stat()
-		fileSize := int(fileInfo.Size())
-		total := strconv.Itoa(fileSize)
-		w.Header().Set("last-modified", fileInfo.ModTime().Format(time.RFC822))
-		w.Header().Set("Accept-Ranges", "bytes")
-
-		ranges := int64(0)
-		rangeSwap := strings.TrimSpace(r.Header.Get("Range"))
-		if rangeSwap != "" {
-			rangeSwap = rangeSwap[6:]
-			rangeListSwap := strings.Split(rangeSwap, "-")
-			if len(rangeListSwap) == 2 {
-				if num, err := strconv.Atoi(rangeListSwap[0]); err == nil {
-					ranges = int64(num)
-				}
-			}
-		}
-		w.Header().Set("Content-Length", strconv.Itoa(fileSize-int(ranges)))
-		_, _ = files[0].Seek(ranges, 0)
-		w.Header().Set("Etag", `W/"`+strconv.FormatInt(fileInfo.ModTime().Unix(), 16)+`-`+strconv.FormatInt(fileInfo.Size(), 16)+`"`)
-
-		if ranges > 0 {
-			w.Header().Set("Content-Range", "bytes "+strconv.Itoa(int(ranges))+"-"+strconv.Itoa(fileSize-1)+"/"+total) // 允许 range
-			w.WriteHeader(206)
-		} else {
-			w.WriteHeader(200)
-		}
-	} else {
-		w.WriteHeader(200)
-	}
-
-	if ro.HttpCache {
-		w.Header().Set("cache-control", "max-age="+ro.HttpCacheMaxAge)
-		if len(files) == 1 {
-			fileInfo, _ := files[0].Stat()
-			w.Header().Set("last-modified", fileInfo.ModTime().Format(time.RFC822))
-		}
-	}
-	for _, file := range files {
-		_, _ = io.Copy(w, file)
-		_, _ = fmt.Fprintln(w)
-	}
+	http.ServeContent(w, r, d.Name(), d.ModTime(), f)
 }
 
-// SetRequestDefaultPage 设置 打开的默认页面
-// defaultPage string 默认打开页面
-// root 网站更目录
-// path string
-func SetRequestDefaultPage(defaultPage, path string) ([]*os.File, []string, bool) {
-	sarr := strings.Split(path, "??")
-	if len(sarr) == 1 {
-		swapUrl, err := url.Parse(path)
-		if err != nil {
-			ulogs.Error("url 异常", err)
-			return nil, nil, false
-		}
-		path = swapUrl.Path
-		if filepath.Base(path) == "lib.js" {
-
-		}
-		f, err := os.OpenFile(path, os.O_RDONLY, 0644)
-		if err != nil {
-			return []*os.File{f}, []string{path}, false
-		}
-		fInfo, _ := f.Stat()
-		if !fInfo.IsDir() {
-			return []*os.File{f}, []string{path}, true
-		}
-		defaultPage = strings.TrimSpace(defaultPage)
-		if defaultPage == "" {
-			defaultPage = "index.html"
-		}
-		fp := path + "/" + defaultPage
-
-		if strings.HasSuffix(path, "/") {
-			fp = path + defaultPage
-		}
-		f, err = os.OpenFile(fp, os.O_RDONLY, 0644)
-		if err != nil {
-			return []*os.File{f}, []string{fp}, false
-		}
-		return []*os.File{f}, []string{fp}, true
+func openEmbedFsFile(w http.ResponseWriter, embedFs http.FileSystem, _path string) (http.File, fs.FileInfo, bool) {
+	f, err := embedFs.Open(_path)
+	if err != nil {
+		msg, code := toHTTPError(err)
+		http.Error(w, msg, code)
+		return nil, nil, false
 	}
+	d, _err := f.Stat()
+	if _err != nil {
+		msg, code := toHTTPError(err)
+		http.Error(w, msg, code)
+		return nil, nil, false
+	}
+	if d.IsDir() {
+		Forbidden(w, "403 Forbidden")
+		return nil, nil, false
+	}
+	return f, d, true
+}
 
-	var (
-		swapList  []*os.File
-		swapPaths []string
-		status    bool
-	)
-	for _, item := range strings.Split(sarr[1], ",") {
-		swapFile, swapPath, swapStatus := SetRequestDefaultPage(defaultPage, sarr[0]+item)
-		if !swapStatus {
-			continue
-		}
-		swapList = append(swapList, swapFile...)
-		swapPaths = append(swapPaths, swapPath...)
+func toHTTPError(err error) (msg string, httpStatus int) {
+	if errors.Is(err, fs.ErrNotExist) {
+		return "404 page not found", http.StatusNotFound
 	}
-	if len(swapList) > 0 {
-		status = true
+	if errors.Is(err, fs.ErrPermission) {
+		return "403 Forbidden", http.StatusForbidden
 	}
-	return swapList, swapPaths, status
+	// Default:
+	return "500 Internal Server Error", http.StatusInternalServerError
 }

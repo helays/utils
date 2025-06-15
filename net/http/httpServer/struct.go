@@ -52,7 +52,6 @@ type Router struct {
 
 	dev           bool                 // 开发模式
 	staticEmbedFS map[string]*embed.FS // 静态文件
-	enableGzip    bool                 // 是否开启gzip
 
 	Store                  *session.Store   // session 系统
 	IsLogin                bool             // 是否登录
@@ -77,10 +76,6 @@ func (ro *Router) SetStaticEmbedFs(p string, embedFS *embed.FS) {
 		ro.staticEmbedFS = make(map[string]*embed.FS)
 	}
 	ro.staticEmbedFS[p] = embedFS
-}
-
-func (ro *Router) SetEnableGzip(enableGzip bool) {
-	ro.enableGzip = enableGzip
 }
 
 // LoginInfo 登录信息

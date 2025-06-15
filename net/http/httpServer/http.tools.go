@@ -29,6 +29,7 @@ import (
 )
 
 // Play 公共函数文件
+// Deprecated: As of utils v1.1.0, this value is simply [router.Play].
 func Play(path string, w http.ResponseWriter, r *http.Request, args ...any) {
 	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	defer osClose.CloseFile(f)
@@ -123,6 +124,7 @@ func Play(path string, w http.ResponseWriter, r *http.Request, args ...any) {
 // Forbidden 设置系统返回403
 func Forbidden(w http.ResponseWriter, msg ...string) {
 	w.WriteHeader(http.StatusForbidden)
+	w.Header().Set("Content-Type", "text/html;charset=utf-8")
 	_html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,6 +138,7 @@ func Forbidden(w http.ResponseWriter, msg ...string) {
 // NotFound 设置返回 404
 func NotFound(w http.ResponseWriter, msg ...string) {
 	w.WriteHeader(http.StatusNotFound)
+	w.Header().Set("Content-Type", "text/html;charset=utf-8")
 	_html := `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -149,12 +152,14 @@ func NotFound(w http.ResponseWriter, msg ...string) {
 // MethodNotAllow 405
 func MethodNotAllow(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotFound)
+	w.Header().Set("Content-Type", "text/html;charset=utf-8")
 	_, _ = w.Write([]byte(`<h1 style="text-align:center;">405 Error!</h1>
 <p style="text-align:center;">` + http.StatusText(http.StatusMethodNotAllowed) + `</p>`))
 }
 
 func InternalServerError(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
+	w.Header().Set("Content-Type", "text/html;charset=utf-8")
 	_, _ = w.Write([]byte(`<h1 style="text-align:center;">500 Error!</h1>
 <p style="text-align:center;">` + http.StatusText(http.StatusInternalServerError) + `</p>`))
 }
