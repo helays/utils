@@ -1,11 +1,13 @@
 package template_engine
 
 import (
+	"bytes"
 	"html/template"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 //
@@ -55,12 +57,27 @@ type Engine struct {
 // fsysPath: 生产模式下的虚拟路径
 // localPath: 开发模式下的本地模板目录路径
 // devMode: 是否为开发模式
-func New(fsys fs.FS, fsysPath, localPath string, devMode bool) (*Engine, error) {
+func New(fsys fs.FS, fsysPath, localPath string, devMode bool) *Engine {
 	e := &Engine{
 		funcMap: template.FuncMap{
-			"safeHTML": func(s string) template.HTML {
-				return template.HTML(s)
-			},
+			// 时间处理
+			"now":     time.Now,
+			"date":    formatDate,
+			"timeAgo": timeSince, // 实现相对时间显示
+
+			// 字符串处理
+			"truncate": truncateString,
+			"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+
+			// 数学计算
+			"add":    func(a, b int) int { return a + b },
+			"divide": func(a, b int) float64 { return float64(a) / float64(b) },
+
+			// 链接处理
+			"a":          A,
+			"aSafe":      ASafe,
+			"aWithQuery": AWithQuery,
+			"dict":       Dict,
 		},
 		devMode:   devMode,
 		fsys:      fsys,
@@ -68,11 +85,17 @@ func New(fsys fs.FS, fsysPath, localPath string, devMode bool) (*Engine, error) 
 		localPath: localPath,
 	}
 
-	if err := e.loadTemplates(); err != nil {
-		return nil, err
-	}
+	return e
+}
 
-	return e, nil
+// AddFunc 添加自定义函数
+func (e *Engine) AddFunc(name string, fn any) {
+	// 1. 更新函数映射表
+	e.funcMap[name] = fn
+}
+
+func (e *Engine) Load() error {
+	return e.loadTemplates()
 }
 
 func (e *Engine) SetExts(exts ...TplExt) {
@@ -136,7 +159,17 @@ func (e *Engine) walkDir(relPath string, fsys fs.FS) error {
 	return nil
 }
 
-func (e *Engine) Render(w io.Writer, name string, data interface{}) error {
+// RenderString 渲染模板为字符串
+func (e *Engine) RenderString(name string, data any) (string, error) {
+	var buf bytes.Buffer
+	if err := e.Render(&buf, name, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// Render 渲染模板到 io.Writer
+func (e *Engine) Render(w io.Writer, name string, data any) error {
 	if e.devMode {
 		if err := e.loadTemplates(); err != nil { // 使用保存的 e.fsys
 			return err
