@@ -1,3 +1,6 @@
+// Package retention 是用在自动清理数据的场景。比如文件、数据表等的自动清理
+// 做好配置后，提供一个名称清单，然后讲根据配置的规则进行识别
+// 最后通过Run函数，可进行对应的处理
 package retention
 
 import (
