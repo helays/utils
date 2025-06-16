@@ -23,8 +23,8 @@ const (
 type Order bool
 
 const (
-	Descending Order = false // 降序
-	Ascending  Order = true  // 升序
+	Descending Order = false // 降序，删除数字小的
+	Ascending  Order = true  // 升序， 删除数字大的
 )
 
 // Config 保留管理器配置
