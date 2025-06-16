@@ -29,13 +29,13 @@ const (
 
 // Config 保留管理器配置
 type Config struct {
-	MaxRetain      int      // 最大保留数量
-	Prefix         string   // 项目前缀
-	Delimiter      string   // 分隔符，默认为"_"
-	TimeFormat     string   // 时间格式，默认为"20060102"
-	Order          Order    // 排序顺序
-	Criteria       Criteria // 排序依据
-	IgnoreSuffixes []string // 要忽略的后缀列表
+	MaxRetain      int      `json:"max_retain" yaml:"max_retain" ini:"max_retain"`                // 最大保留数量
+	Prefix         string   `json:"prefix" yaml:"prefix" ini:"prefix"`                            // 项目前缀
+	Delimiter      string   `json:"delimiter" yaml:"delimiter" ini:"delimiter"`                   // 分隔符，默认为"_"
+	TimeFormat     string   `json:"time_format" yaml:"time_format" ini:"time_format"`             // 时间格式，默认为"20060102"
+	Order          Order    `json:"order" yaml:"order" ini:"order"`                               // 排序顺序
+	Criteria       Criteria `json:"criteria" yaml:"criteria" ini:"criteria"`                      // 排序依据
+	IgnoreSuffixes []string `json:"ignore_suffixes" yaml:"ignore_suffixes" ini:"ignore_suffixes"` // 要忽略的后缀列表
 }
 
 // Manager 保留管理器
@@ -120,6 +120,7 @@ func (m *Manager) parseItem(name string) *item {
 				key:  t,
 			}
 		}
+		return nil
 	case ByNumber:
 		if num, err := strconv.ParseInt(suffix, 10, 64); err == nil {
 			return &item{
@@ -127,6 +128,7 @@ func (m *Manager) parseItem(name string) *item {
 				key:  num,
 			}
 		}
+		return nil
 	}
 
 	// 默认按名称排序

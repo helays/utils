@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
+	"strings"
 )
 
 var nullSqlConn map[string]*gorm.DB
@@ -188,4 +189,34 @@ func UnionAllScope(queries ...*gorm.DB) func(db *gorm.DB) *gorm.DB {
 		}
 		return db.Session(&gorm.Session{}).Table("(?) AS union_table", unionQuery)
 	}
+}
+
+func FindTableWithPrefix(tx *gorm.DB, prefix string) ([]string, error) {
+	var tables []string
+	var err error
+	switch tx.Dialector.Name() {
+	case config.DbTypePostgres:
+		// 还要查询当前的搜索模式
+		// 获取当前搜索模式
+		var searchPath string
+		if err = tx.Raw("SHOW search_path").Scan(&searchPath).Error; err != nil {
+			return nil, fmt.Errorf("获取当前连接的搜索模式失败：%s", err.Error())
+		}
+		// 默认搜索模式是第一个模式
+		currentSchema := "public" // 默认值
+		if len(searchPath) > 0 {
+			currentSchema = strings.Split(searchPath, ",")[0] // 取第一个模式
+			currentSchema = strings.TrimSpace(currentSchema)  // 去除空格
+		}
+		_tx := tx.Raw("SELECT table_name FROM information_schema.tables WHERE table_schema like ? and table_name LIKE ?", currentSchema, prefix+"%")
+		err = _tx.Scan(&tables).Error
+	case config.DbTypeMysql:
+		currentDataBase := tx.Migrator().CurrentDatabase()
+		_tx := tx.Raw("SELECT table_name FROM information_schema.tables WHERE table_schema like ? and table_name LIKE ?", currentDataBase, prefix+"%")
+		err = _tx.Scan(&tables).Error
+	}
+	if err != nil {
+		return nil, fmt.Errorf("根据前缀查询表清单失败：%s", err.Error())
+	}
+	return tables, nil
 }

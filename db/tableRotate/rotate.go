@@ -146,31 +146,9 @@ func (this *TableRotate) runSplitTable() {
 		return
 	}
 	// 查询以 this.tableName开头的表名
-	var tables []string
-	switch this.tx.Dialector.Name() {
-	case config.DbTypePostgres:
-		// 还要查询当前的搜索模式
-		// 获取当前搜索模式
-		var searchPath string
-		if err = this.tx.Raw("SHOW search_path").Scan(&searchPath).Error; err != nil {
-			ulogs.Error("自动轮转表，获取当前搜索模式失败", err)
-			return
-		}
-		// 默认搜索模式是第一个模式
-		currentSchema := "public" // 默认值
-		if len(searchPath) > 0 {
-			currentSchema = strings.Split(searchPath, ",")[0] // 取第一个模式
-			currentSchema = strings.TrimSpace(currentSchema)  // 去除空格
-		}
-		tx := this.tx.Raw("SELECT table_name FROM information_schema.tables WHERE table_schema like ? and table_name LIKE ?", currentSchema, this.tableName+"%")
-		err = tx.Scan(&tables).Error
-	case config.DbTypeMysql:
-		currentDataBase := this.tx.Migrator().CurrentDatabase()
-		tx := this.tx.Raw("SELECT table_name FROM information_schema.tables WHERE table_schema like ? and table_name LIKE ?", currentDataBase, this.tableName+"%")
-		err = tx.Scan(&tables).Error
-	}
-	if err != nil {
-		ulogs.Error("自动轮转表，查询表名失败", err)
+	tables, _err := userDb.FindTableWithPrefix(this.tx, this.tableName)
+	if _err != nil {
+		ulogs.Error("自动轮转表：%s", _err.Error())
 		return
 	}
 
