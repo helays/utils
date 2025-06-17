@@ -16,6 +16,10 @@ func (this CustomTime) String() string {
 	return time.Time(this).Format(time.DateTime)
 }
 
+func (this CustomTime) Format(layout string) string {
+	return time.Time(this).Format(layout)
+}
+
 func (this CustomTime) After(u time.Time) bool {
 	return time.Time(this).After(u)
 }
