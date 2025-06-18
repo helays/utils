@@ -7,6 +7,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
+	"path"
 	"strings"
 )
 
@@ -109,13 +110,13 @@ func (this *Config) ListFiles(dirPath string, options Options) ([]string, error)
 	var files []string
 	opts := minio.ListObjectsOptions{
 		Prefix:    dirPath,
-		Recursive: false,
+		Recursive: true,
 	}
 	for obj := range this.client.ListObjects(this.ctx, this.options.Bucket, opts) {
 		if obj.Err != nil {
 			return nil, obj.Err
 		}
-		files = append(files, obj.Key)
+		files = append(files, path.Base(obj.Key))
 	}
 
 	return files, nil
