@@ -22,5 +22,5 @@ var CategoryChineseNames = []CategoryAttribute{
 	{Category: CategoryLength, Zh: "长度校验", List: LengthAttributes},
 	{Category: CategoryFormat, Zh: "格式校验", List: FormatAttributes},
 	{Category: CategoryContent, Zh: "内容校验", List: ContentAttributes},
-	{Category: CategoryAdvanced, Zh: "安全校验", List: AdvancedAttributes},
+	{Category: CategoryAdvanced, Zh: "高级校验", List: AdvancedAttributes},
 }
