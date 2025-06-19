@@ -97,7 +97,7 @@ func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 
 func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defaultFile string) {
 	// 判断path是否以/结尾
-	if strings.HasSuffix(_path, "/") && defaultFile != defaultIndexPage {
+	if strings.HasSuffix(_path, "/") {
 		_path = _path + defaultFile
 	}
 	if tools.ContainsDotDot(_path) {
