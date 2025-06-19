@@ -422,6 +422,32 @@ func Searchslice(s string, o []string) bool {
 	return false
 }
 
+func SearchAnySlice(in any, lst []any) bool {
+	// 第一轮：快速尝试直接比较（所有类型）
+	if lst == nil || len(lst) < 1 {
+		return false
+	}
+	for _, v := range lst {
+		if v == in {
+			return true
+		}
+	}
+
+	// 如果是基本类型且==比较失败，直接返回false
+	switch in.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, string, bool:
+		return false
+	}
+
+	// 其他类型使用深度比较
+	for _, v := range lst {
+		if reflect.DeepEqual(in, v) {
+			return true
+		}
+	}
+	return false
+}
+
 // StringUniq 对字符串切片进行去重
 func StringUniq(tmp []string) []string {
 	var tmpMap = make(map[string]bool)

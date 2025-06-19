@@ -1,4 +1,4 @@
-package formatRuleEngine
+package formatter
 
 import (
 	"fmt"

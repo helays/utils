@@ -216,6 +216,8 @@ func Any2float64(_v any) (float64, error) {
 		return float64(v), nil
 	case float64:
 		return v, nil
+	case int:
+		return float64(v), nil
 	case int8:
 		return float64(v), nil
 	case int16:
