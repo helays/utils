@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -45,6 +46,7 @@ var tplExts = map[TplExt]bool{
 }
 
 type Engine struct {
+	mu             sync.RWMutex
 	templateLayout *template.Template            // 基础模板
 	templateSets   map[string]*template.Template // 按模板名存储独立模板集
 	funcMap        template.FuncMap
@@ -103,6 +105,9 @@ func (e *Engine) AddFunc(name string, fn any) {
 }
 
 func (e *Engine) Load() error {
+	// 这里需要上锁，开发模式下可能会存在多个线程同时访问
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	if e.layoutDir != "" {
 		if err := e.loadLayout(); err != nil {
 			return err
