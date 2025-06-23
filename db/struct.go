@@ -154,6 +154,11 @@ type TableDefaultField struct {
 	UpdateTime dataType.CustomTime `json:"update_time,omitempty" gorm:"autoUpdateTime:true;index;comment:记录更新时间" form:"-"`
 }
 
+type TableDefaultCreateField struct {
+	Id         int                 `json:"id,omitempty" gorm:"primaryKey;not null;autoIncrement;comment:行ID" form:"id"`
+	CreateTime dataType.CustomTime `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
+}
+
 // TableDefaultTimeField 用于快速定义默认的表结构时间字段，这里不需要定义字段类型，因为会自动根据字段类型进行转换
 type TableDefaultTimeField struct {
 	CreateTime dataType.CustomTime `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
