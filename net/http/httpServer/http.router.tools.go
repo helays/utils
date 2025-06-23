@@ -2,6 +2,9 @@ package httpServer
 
 import (
 	"github.com/helays/utils/config"
+	"github.com/helays/utils/logger/ulogs"
+	"github.com/helays/utils/net/http/httpServer/http_types"
+	"github.com/pkg/errors"
 	"net/http"
 	"regexp"
 )
@@ -98,4 +101,27 @@ func (ro *Router) validManagePage(path string) bool {
 		return true
 	}
 	return false
+}
+
+func (ro *Router) errorWithLog(w http.ResponseWriter, resp http_types.ErrorResp) {
+	if ro.ErrorWithLog != nil {
+		ro.ErrorWithLog(w, resp)
+		return
+	}
+	ulogs.Error("errorWithLog:", errors.WithStack(resp.Error))
+	ro.error(w, resp)
+}
+
+func (ro *Router) error(w http.ResponseWriter, resp http_types.ErrorResp) {
+	if ro.Error != nil {
+		ro.Error(w, resp)
+		return
+	}
+	desc := resp.Msg
+	if desc == "" && resp.Error != nil {
+		desc = resp.Error.Error()
+	} else {
+		desc = http.StatusText(resp.Code)
+	}
+	http.Error(w, desc, resp.Code)
 }

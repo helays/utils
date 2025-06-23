@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/net/http/httpServer/http_types"
 	"github.com/helays/utils/net/http/mime"
 	"github.com/helays/utils/tools"
 	"io"
@@ -101,7 +102,10 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 		_path = _path + defaultFile
 	}
 	if tools.ContainsDotDot(_path) {
-		http.Error(w, "invalid URL path", http.StatusBadRequest)
+		ro.error(w, http_types.ErrorResp{
+			Code: http.StatusBadRequest,
+			Msg:  "invalid URL path",
+		})
 		return
 	}
 	var embedFs http.FileSystem
@@ -118,28 +122,37 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 	if embedFs == nil {
 		embedFs = http.Dir(ro.Root)
 	}
-	f, d, ok := openEmbedFsFile(w, embedFs, _path)
+	f, d, ok := ro.openEmbedFsFile(w, embedFs, _path)
 	if !ok {
 		return
 	}
 	http.ServeContent(w, r, d.Name(), d.ModTime(), f)
 }
 
-func openEmbedFsFile(w http.ResponseWriter, embedFs http.FileSystem, _path string) (http.File, fs.FileInfo, bool) {
+func (ro *Router) openEmbedFsFile(w http.ResponseWriter, embedFs http.FileSystem, _path string) (http.File, fs.FileInfo, bool) {
 	f, err := embedFs.Open(_path)
 	if err != nil {
 		msg, code := toHTTPError(err)
-		http.Error(w, msg, code)
+		ro.error(w, http_types.ErrorResp{
+			Code: code,
+			Msg:  msg,
+		})
 		return nil, nil, false
 	}
 	d, _err := f.Stat()
 	if _err != nil {
 		msg, code := toHTTPError(err)
-		http.Error(w, msg, code)
+		ro.error(w, http_types.ErrorResp{
+			Code: code,
+			Msg:  msg,
+		})
 		return nil, nil, false
 	}
 	if d.IsDir() {
-		Forbidden(w, "403 Forbidden")
+		ro.error(w, http_types.ErrorResp{
+			Code: http.StatusForbidden,
+			Msg:  http.StatusText(http.StatusForbidden),
+		})
 		return nil, nil, false
 	}
 	return f, d, true

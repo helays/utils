@@ -45,7 +45,7 @@ func (ro *Router) Play(w http.ResponseWriter, r *http.Request, fname string, arg
 	}
 	dir, file := filepath.Split(fname)
 	embedFs := http.Dir(dir)
-	f, d, ok := openEmbedFsFile(w, embedFs, file)
+	f, d, ok := ro.openEmbedFsFile(w, embedFs, file)
 	if !ok {
 		return
 	}

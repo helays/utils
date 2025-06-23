@@ -3,6 +3,7 @@ package httpServer
 import (
 	"embed"
 	"github.com/helays/utils/logger/zaploger"
+	"github.com/helays/utils/net/http/httpServer/http_types"
 	"github.com/helays/utils/net/http/session"
 	"github.com/helays/utils/net/ipAccess"
 	"golang.org/x/net/websocket"
@@ -36,6 +37,8 @@ type HttpServer struct {
 	denyIpList          *ipAccess.IPList
 }
 
+type ErrPageFunc func(w http.ResponseWriter, resp http_types.ErrorResp)
+
 type Router struct {
 	Default                string `ini:"default" json:"default" yaml:"default"`
 	Root                   string `ini:"root" json:"root" yaml:"root"`
@@ -49,6 +52,9 @@ type Router struct {
 	CookieDomain   string `ini:"cookie_domain" json:"cookie_domain" yaml:"cookie_domain"`
 	CookieSecure   bool   `ini:"cookie_secure" json:"cookie_secure" yaml:"cookie_secure"`
 	CookieHttpOnly bool   `ini:"cookie_http_only" json:"cookie_http_only" yaml:"cookie_http_only"`
+
+	Error        ErrPageFunc // 错误页面处理函数
+	ErrorWithLog ErrPageFunc // 错误页面处理函数
 
 	dev           bool                 // 开发模式
 	staticEmbedFS map[string]*embed.FS // 静态文件
