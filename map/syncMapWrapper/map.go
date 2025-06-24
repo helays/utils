@@ -1,6 +1,7 @@
 package syncMapWrapper
 
 import (
+	"strings"
 	"sync"
 )
 
@@ -26,6 +27,31 @@ func (m *SyncMap[K, V]) Store(key K, value V) {
 // Delete 移除键的值。
 func (m *SyncMap[K, V]) Delete(key K) {
 	m.mu.Delete(key)
+}
+
+func (m *SyncMap[K, V]) DeleteAll() {
+	m.mu.Range(func(k, v interface{}) bool {
+		m.mu.Delete(k)
+		return true
+	})
+}
+
+func (m *SyncMap[K, V]) DeletePrefix(prefix string) {
+	m.mu.Range(func(k, v interface{}) bool {
+		if key, ok := k.(string); ok && strings.HasPrefix(key, prefix) {
+			m.mu.Delete(k)
+		}
+		return true
+	})
+}
+
+func (m *SyncMap[K, V]) DeleteSuffix(suffix string) {
+	m.mu.Range(func(k, v interface{}) bool {
+		if key, ok := k.(string); ok && strings.HasSuffix(key, suffix) {
+			m.mu.Delete(k)
+		}
+		return true
+	})
 }
 
 // Range 依次调用 f 函数，针对 map 中的每个键和值。
