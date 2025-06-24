@@ -126,7 +126,7 @@ const (
 )
 
 var ContentChineseMap = map[Operator]string{
-	Required:     "该字段为必填项",
+	Required:     "为必填项",
 	NotBlank:     "不能全是空白字符",
 	InEnum:       "值必须在预选范围内：%v",
 	NotInEnum:    "值不能在范围内：%v",

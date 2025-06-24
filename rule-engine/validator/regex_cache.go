@@ -27,10 +27,7 @@ func NewRegexCache(maxSize int32) *RegexCache {
 // Get 获取或编译正则表达式
 func (rc *RegexCache) Get(pattern string) *regexp.Regexp {
 	// 标准化pattern格式：将.field.*.subfield转为正则
-	regexPattern := "^" + strings.ReplaceAll(
-		strings.ReplaceAll(pattern, ".", "\\."),
-		"*", "[^.]+",
-	) + "$"
+	regexPattern := "^" + strings.ReplaceAll(strings.ReplaceAll(pattern, ".", "\\."), "*", "\\d+") + "$"
 
 	// 第一层缓存检查（无锁）
 	if cached, ok := rc.cache.Load(regexPattern); ok {

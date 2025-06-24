@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/helays/utils/rule-engine/validator/operators"
 	"github.com/helays/utils/rule-engine/validator/types"
-	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -127,12 +125,12 @@ func computeLogicResult(item *stackItem) (string, bool) {
 
 	switch item.rule.Logic {
 	case LogicAnd:
-		return fmt.Sprintf("AND条件失败: %s", strings.Join(item.msgs, "; ")), false
+		return strings.Join(item.msgs, "， "), false
 	case LogicOr:
 		if len(item.msgs) < len(item.rule.Conditions) {
 			return "", true // 至少有一个成功
 		}
-		return fmt.Sprintf("OR条件失败: %s", strings.Join(item.msgs, "; ")), false
+		return strings.Join(item.msgs, "， "), false
 	default:
 		return "未知逻辑类型", false
 	}
@@ -152,62 +150,69 @@ func (r *Rule) validateCondition(rule *Rule, data map[string]any) (string, bool)
 
 // 简单条件校验
 func (r *Rule) validateSimple(rule *Rule, value any) (string, bool) {
+	var (
+		msg string
+		ok  bool
+		tv  any
+	)
 	switch rule.Category {
 	case types.CategoryDataType: // 数据类型校验
-		if msg, ok := validParams(rule, types.DataTypeAttributes); !ok {
-			return msg, ok
+		if msg, ok = validParams(rule, types.DataTypeAttributes); ok {
+			if tv, msg, ok = operators.ValidateType(rule.Operator, value, rule.Value); ok {
+				if rule.FieldDataType == "date" {
+					// 当校验成功后，并且字段是日期来类型，需要将转换后的结果缓存下来，后续比较可以继续用
+					r.dataFormatCache.Store(rule.Field, tv)
+				}
+				return msg, ok
+			}
 		}
-		tv, msg, ok := operators.ValidateType(rule.Operator, value, rule.Value)
-		if ok && rule.FieldDataType == "date" {
-			// 当校验成功后，并且字段是日期来类型，需要将转换后的结果缓存下来，后续比较可以继续用
-			r.dataFormatCache.Store(rule.Field, tv)
-		}
-		return msg, ok
-
 	case types.CategoryLength: // 长度校验
-		if msg, ok := validParams(rule, types.LengthAttributes); !ok {
-			return msg, ok
+		if msg, ok = validParams(rule, types.LengthAttributes); ok {
+			if msg, ok = operators.ValidateLength(rule.Operator, value, rule.Value); ok {
+				return msg, ok
+			}
 		}
-		return operators.ValidateLength(rule.Operator, value, rule.Value)
-
 	case types.CategoryFormat: // 格式校验
-		if msg, ok := validParams(rule, types.FormatAttributes); !ok {
-			return msg, ok
+		if msg, ok = validParams(rule, types.FormatAttributes); ok {
+			if msg, ok = operators.ValidateFormat(rule.Operator, value, rule.Value); ok {
+				return msg, ok
+			}
 		}
-		return operators.ValidateFormat(rule.Operator, value, rule.Value)
 
 	case types.CategoryContent: // 内容校验
-		if msg, ok := validParams(rule, types.ContentAttributes); !ok {
-			return msg, ok
+		if msg, ok = validParams(rule, types.ContentAttributes); ok {
+			// 先从 cache中获取是否有数据
+			if tv, ok = r.dataFormatCache.Load(rule.Field); !ok {
+				tv = nil
+			}
+			if msg, ok = operators.ValidateContent(rule.Operator, rule.FieldDataType, value, tv, rule.Value); ok {
+				return msg, ok
+			}
 		}
-		// 先从 cache中获取是否有数据
-		tv, ok := r.dataFormatCache.Load(rule.Field)
-		if !ok {
-			tv = nil
-		}
-		return operators.ValidateContent(rule.Operator, rule.FieldDataType, value, tv, rule.Value)
 
 	case types.CategoryAdvanced: // 高级校验
-		if msg, ok := validParams(rule, types.AdvancedAttributes); !ok {
-			return msg, ok
+		if msg, ok = validParams(rule, types.AdvancedAttributes); ok {
+			if msg, ok = operators.ValidateAdvanced(rule.Operator, value, rule.Value); ok {
+				return msg, ok
+			}
 		}
-		return operators.ValidateAdvanced(rule.Operator, value, rule.Value)
 	default:
-		return fmt.Sprintf("未知数据类型校验操作符：%s", rule.Operator), false
+		return fmt.Sprintf("规则字段%s未知数据类型校验操作符：%s", rule.Field, rule.Operator), false
 	}
+	return fmt.Sprintf("规则字段%s%s", rule.Field, msg), ok
 }
 
 func validParams(rule *Rule, attrs map[types.Operator]types.Attribute) (string, bool) {
 	attr, ok := attrs[rule.Operator]
 	if !ok {
-		return fmt.Sprintf("未知%s：%s", rule.Category, rule.Operator), false
+		return fmt.Sprintf("配置了未知条件运算类型【%s】", rule.Operator), false
 	}
 	if attr.ValueNum == 0 {
 		return "", true
 	} else if (attr.ValueNum < 0 && len(rule.Value) < 1) || (attr.ValueNum != len(rule.Value)) {
 		// ValueNum<0 表示不固定参数，比较基准至少的有一个
 		// 否则必须和ValueNum相等
-		return fmt.Sprintf("%s校验基准参数数量错误：%d", attr.Title, len(rule.Value)), false
+		return fmt.Sprintf("%s校验基准参数数量错误【%d】", attr.Title, len(rule.Value)), false
 	}
 	return "", true
 }
@@ -216,49 +221,22 @@ func validParams(rule *Rule, attrs map[types.Operator]types.Attribute) (string, 
 func (r *Rule) validateWildcard(rule *Rule, data map[string]any) (string, bool) {
 	regex := GetGlobalCache().Get(rule.Field)
 	var errorMsgs []string
-
+	matched := false
 	for key, value := range data {
 		if regex.MatchString(key) {
-			if msg, ok := r.validateSimple(rule, value); !ok {
+			matched = true
+			msg, ok := r.validateSimple(rule, value)
+			if !ok {
 				errorMsgs = append(errorMsgs, msg)
-			} else if rule.Logic == LogicOr {
-				return "", true // OR逻辑下任意成功即返回
 			}
 		}
 	}
+	if !matched {
+		return fmt.Sprintf("规则字段%s无法匹配到被校验数据", rule.Field), false
+	}
 
 	if len(errorMsgs) > 0 {
-		return fmt.Sprintf("通配符[%s]校验失败: %s", rule.Field, strings.Join(errorMsgs, "; ")), false
+		return strings.Join(errorMsgs, "，"), false
 	}
-	return fmt.Sprintf("未匹配到通配符字段[%s]", rule.Field), false
-}
-
-// toString 高效类型转换
-func toString(v any) string {
-	switch val := v.(type) {
-	case string:
-		return val
-	case int, int8, int16, int32, int64:
-		return strconv.FormatInt(reflect.ValueOf(val).Int(), 10)
-	case uint, uint8, uint16, uint32, uint64:
-		return strconv.FormatUint(reflect.ValueOf(val).Uint(), 10)
-	case float32, float64:
-		return strconv.FormatFloat(reflect.ValueOf(val).Float(), 'f', -1, 64)
-	case bool:
-		return strconv.FormatBool(val)
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-}
-
-// compareGreater 比较大小
-func compareGreater(a, b string) bool {
-	// 尝试解析为数字
-	floatA, errA := strconv.ParseFloat(a, 64)
-	floatB, errB := strconv.ParseFloat(b, 64)
-	if errA == nil && errB == nil {
-		return floatA > floatB
-	}
-	// 回退到字符串比较
-	return a > b
+	return "", true
 }
