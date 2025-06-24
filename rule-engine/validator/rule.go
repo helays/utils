@@ -31,7 +31,7 @@ type Rule struct {
 }
 
 // Validate 主入口方法
-func (r *Rule) Validate(data map[string]any) (string, bool) {
+func (r *Rule) Validate(data map[string]any) (*types.ValidationError, bool) {
 	s := newStack()
 	defer func() {
 		// 确保栈清空时回收所有对象
@@ -48,13 +48,12 @@ func (r *Rule) Validate(data map[string]any) (string, bool) {
 	s.push(rootItem)
 
 	var (
-		finalMsg    string
+		finalMsg    *types.ValidationError
 		finalResult bool
 	)
 
 	for s.len() > 0 {
 		current := s.peek()
-
 		// 1. 处理叶子节点（基础条件）
 		if current.rule.Logic == "" {
 			msg, ok := r.validateCondition(current.rule, data)
@@ -99,7 +98,9 @@ func (r *Rule) Validate(data map[string]any) (string, bool) {
 			finalMsg, finalResult = msg, ok
 		}
 	}
-
+	if finalMsg != nil {
+		finalMsg.Field = r.Field
+	}
 	return finalMsg, finalResult
 }
 
@@ -117,29 +118,29 @@ func updateParentResult(parent *stackItem, childResult bool) (stopEarly bool) {
 	}
 }
 
-// computeLogicResult 计算逻辑组合结果
-func computeLogicResult(item *stackItem) (string, bool) {
+// 计算逻辑组合结果
+func computeLogicResult(item *stackItem) (*types.ValidationError, bool) {
 	if len(item.msgs) == 0 {
-		return "", true
+		return nil, true
 	}
 
 	switch item.rule.Logic {
 	case LogicAnd:
-		return strings.Join(item.msgs, "， "), false
+		return item.msgs[0], false
 	case LogicOr:
 		if len(item.msgs) < len(item.rule.Conditions) {
-			return "", true // 至少有一个成功
+			return nil, true // 至少有一个成功
 		}
-		return strings.Join(item.msgs, "， "), false
+		return item.msgs[0], false
 	default:
-		return "未知逻辑类型", false
+		return item.rule.setErr(nil, fmt.Sprintf("逻辑组合类型%s错误", item.rule.Logic)), false
 	}
 }
 
 // 执行单条件校验
-func (r *Rule) validateCondition(rule *Rule, data map[string]any) (string, bool) {
+func (r *Rule) validateCondition(rule *Rule, data map[string]any) (*types.ValidationError, bool) {
 	if rule.Field == "" {
-		return "字段路径为空", false
+		return rule.setErr(nil, "字段路径为空"), false
 	}
 
 	if strings.Contains(rule.Field, "*") {
@@ -149,7 +150,7 @@ func (r *Rule) validateCondition(rule *Rule, data map[string]any) (string, bool)
 }
 
 // 简单条件校验
-func (r *Rule) validateSimple(rule *Rule, value any) (string, bool) {
+func (r *Rule) validateSimple(rule *Rule, value any) (*types.ValidationError, bool) {
 	var (
 		msg string
 		ok  bool
@@ -163,19 +164,19 @@ func (r *Rule) validateSimple(rule *Rule, value any) (string, bool) {
 					// 当校验成功后，并且字段是日期来类型，需要将转换后的结果缓存下来，后续比较可以继续用
 					r.dataFormatCache.Store(rule.Field, tv)
 				}
-				return msg, ok
+				return nil, ok
 			}
 		}
 	case types.CategoryLength: // 长度校验
 		if msg, ok = validParams(rule, types.LengthAttributes); ok {
 			if msg, ok = operators.ValidateLength(rule.Operator, value, rule.Value); ok {
-				return msg, ok
+				return nil, ok
 			}
 		}
 	case types.CategoryFormat: // 格式校验
 		if msg, ok = validParams(rule, types.FormatAttributes); ok {
 			if msg, ok = operators.ValidateFormat(rule.Operator, value, rule.Value); ok {
-				return msg, ok
+				return nil, ok
 			}
 		}
 
@@ -186,20 +187,20 @@ func (r *Rule) validateSimple(rule *Rule, value any) (string, bool) {
 				tv = nil
 			}
 			if msg, ok = operators.ValidateContent(rule.Operator, rule.FieldDataType, value, tv, rule.Value); ok {
-				return msg, ok
+				return nil, ok
 			}
 		}
 
 	case types.CategoryAdvanced: // 高级校验
 		if msg, ok = validParams(rule, types.AdvancedAttributes); ok {
 			if msg, ok = operators.ValidateAdvanced(rule.Operator, value, rule.Value); ok {
-				return msg, ok
+				return nil, ok
 			}
 		}
 	default:
-		return fmt.Sprintf("规则字段%s未知数据类型校验操作符：%s", rule.Field, rule.Operator), false
+		return rule.setErr(value, fmt.Sprintf("规则字段%s未知数据类型校验操作符：%s", rule.Field, rule.Operator)), false
 	}
-	return fmt.Sprintf("规则字段%s%s", rule.Field, msg), ok
+	return rule.setErr(value, fmt.Sprintf("规则字段%s%s", rule.Field, msg)), false
 }
 
 func validParams(rule *Rule, attrs map[types.Operator]types.Attribute) (string, bool) {
@@ -218,9 +219,9 @@ func validParams(rule *Rule, attrs map[types.Operator]types.Attribute) (string, 
 }
 
 // validateWildcard 通配符条件校验
-func (r *Rule) validateWildcard(rule *Rule, data map[string]any) (string, bool) {
+func (r *Rule) validateWildcard(rule *Rule, data map[string]any) (*types.ValidationError, bool) {
 	regex := GetGlobalCache().Get(rule.Field)
-	var errorMsgs []string
+	var errorMsgs []*types.ValidationError
 	matched := false
 	for key, value := range data {
 		if regex.MatchString(key) {
@@ -232,11 +233,22 @@ func (r *Rule) validateWildcard(rule *Rule, data map[string]any) (string, bool) 
 		}
 	}
 	if !matched {
-		return fmt.Sprintf("规则字段%s无法匹配到被校验数据", rule.Field), false
+		return rule.setErr(nil, fmt.Sprintf("规则字段%s无法匹配到被校验数据", rule.Field)), false
 	}
 
 	if len(errorMsgs) > 0 {
-		return strings.Join(errorMsgs, "，"), false
+		return errorMsgs[0], false
 	}
-	return "", true
+	return nil, true
+}
+
+func (r *Rule) setErr(v any, m string) *types.ValidationError {
+	return &types.ValidationError{
+		RealField:  r.Field,
+		InputValue: v,
+		RuleValue:  r.Value,
+		Operator:   r.Operator,
+		Category:   r.Category,
+		Message:    m,
+	}
 }

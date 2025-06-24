@@ -1,13 +1,16 @@
 package validator
 
-import "sync"
+import (
+	"github.com/helays/utils/rule-engine/validator/types"
+	"sync"
+)
 
 // stackItem 栈元素定义
 type stackItem struct {
 	rule   *Rule
 	result bool
-	index  int      // 当前处理到的conditions索引
-	msgs   []string // 收集的错误信息
+	index  int                      // 当前处理到的conditions索引
+	msgs   []*types.ValidationError // 收集的错误信息
 }
 
 // stack 栈结构定义
@@ -18,7 +21,7 @@ type stack struct {
 var stackItemPool = sync.Pool{
 	New: func() interface{} {
 		return &stackItem{
-			msgs: make([]string, 0, 4), // 预分配错误消息容量
+			msgs: make([]*types.ValidationError, 0, 4), // 预分配错误消息容量
 		}
 	},
 }
