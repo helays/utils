@@ -1,6 +1,7 @@
 package pagination
 
 import (
+	"github.com/helays/utils/tools"
 	"math"
 )
 
@@ -78,7 +79,6 @@ func (p *Pagination) GetPages() []PageItem {
 		}
 	} else {
 		// 需要折叠显示
-		showEllipsis := p.MaxPagesToShow > 5
 		halfShow := (p.MaxPagesToShow - 2) / 2 // 两侧各显示多少页码
 
 		// 总是显示第一页
@@ -88,9 +88,12 @@ func (p *Pagination) GetPages() []PageItem {
 		})
 
 		// 左侧折叠
-		if showEllipsis && p.CurrentPage > halfShow+2 {
+		if p.CurrentPage > halfShow+2 {
+			jumpPage := p.CurrentPage - p.MaxPagesToShow
+			jumpPage = tools.Ternary(jumpPage < 1, 1, jumpPage)
 			items = append(items, PageItem{
-				Type: "ellipsis",
+				Type: "ellipsis-prev",
+				Page: jumpPage,
 			})
 		}
 
@@ -113,9 +116,12 @@ func (p *Pagination) GetPages() []PageItem {
 		}
 
 		// 右侧折叠
-		if showEllipsis && p.CurrentPage < totalPages-halfShow-1 {
+		if p.CurrentPage < totalPages-halfShow-1 {
+			jumpPage := p.CurrentPage + p.MaxPagesToShow
+			jumpPage = tools.Ternary(jumpPage > totalPages, totalPages, jumpPage)
 			items = append(items, PageItem{
-				Type: "ellipsis",
+				Type: "ellipsis-next",
+				Page: jumpPage,
 			})
 		}
 
