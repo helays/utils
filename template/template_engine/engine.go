@@ -76,6 +76,7 @@ func New(fsys fs.FS, fsysPath, localPath string, devMode bool) *Engine {
 
 			// 数学计算
 			"add":    func(a, b int) int { return a + b },
+			"mul":    func(a, b int) int { return a * b },
 			"divide": func(a, b int) float64 { return float64(a) / float64(b) },
 
 			// 链接处理
