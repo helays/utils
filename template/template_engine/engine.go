@@ -67,12 +67,18 @@ func New(fsys fs.FS, fsysPath, localPath string, devMode bool) *Engine {
 		funcMap: template.FuncMap{
 			// 时间处理
 			"now":        time.Now,
+			"timestamp":  func(t time.Time) int64 { return t.Unix() },
 			"formatDate": formatDate,
 			"timeAgo":    timeSince, // 实现相对时间显示
 
 			// 字符串处理
 			"truncate": truncateString,
 			"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+
+			// 数组
+			"listString": func(s ...string) []string { return s },
+			"listInt":    func(s ...int) []int { return s },
+			"loopInt":    LoopInt,
 
 			// 数学计算
 			"add":    func(a, b int) int { return a + b },

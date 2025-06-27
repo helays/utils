@@ -137,5 +137,14 @@ func Dict(values ...any) map[string]any {
 		}
 		dict[key] = values[i+1]
 	}
+
 	return dict
+}
+
+func LoopInt(start, end int) []int {
+	var s []int
+	for i := start; i <= end; i++ {
+		s = append(s, i)
+	}
+	return s
 }
