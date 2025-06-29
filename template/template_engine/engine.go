@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 )
 
 //
@@ -64,33 +63,7 @@ type Engine struct {
 // devMode: 是否为开发模式
 func New(fsys fs.FS, fsysPath, localPath string, devMode bool) *Engine {
 	e := &Engine{
-		funcMap: template.FuncMap{
-			// 时间处理
-			"now":        time.Now,
-			"timestamp":  func(t time.Time) int64 { return t.Unix() },
-			"formatDate": formatDate,
-			"timeAgo":    timeSince, // 实现相对时间显示
-
-			// 字符串处理
-			"truncate": truncateString,
-			"safeHTML": func(s string) template.HTML { return template.HTML(s) },
-
-			// 数组
-			"listString": func(s ...string) []string { return s },
-			"listInt":    func(s ...int) []int { return s },
-			"loopInt":    LoopInt,
-
-			// 数学计算
-			"add":    func(a, b int) int { return a + b },
-			"mul":    func(a, b int) int { return a * b },
-			"divide": func(a, b int) float64 { return float64(a) / float64(b) },
-
-			// 链接处理
-			"a":          A,
-			"aSafe":      ASafe,
-			"aWithQuery": AWithQuery,
-			"dict":       Dict,
-		},
+		funcMap:   builtinFuncMap(),
 		devMode:   devMode,
 		fsys:      fsys,
 		fsysPath:  fsysPath,
