@@ -9,7 +9,8 @@ import (
 	"github.com/helays/utils/close/gzipClose"
 	"github.com/helays/utils/close/httpClose"
 	"github.com/helays/utils/net/http/httpTools"
-	"gopkg.in/iconv.v1"
+	"github.com/helays/utils/tools"
+	"github.com/helays/utils/tools/encodinghelper"
 	"io"
 	"net"
 	"net/http"
@@ -58,18 +59,18 @@ func (c *Curl) initClient() {
 			// 表示连接池对每个host的最大链接数量，从字面意思也可以看出：
 			MaxIdleConnsPerHost: c.Maxidleconnsperhost,
 			// 空闲timeout设置，也即socket在该时间内没有交互则自动关闭连接,该参数通常设置为分钟级别，例如：90秒。
-			IdleConnTimeout: c.Idleconntimeout * time.Second,
+			IdleConnTimeout: tools.AutoTimeDuration(c.Idleconntimeout, time.Second),
 			// DisableCompression: true,
 			// 使用短链接
 			// DisableKeepAlives: true,
 			// request header 超时
-			ResponseHeaderTimeout: c.ResponseHeaderTimeout * time.Second,
-			ExpectContinueTimeout: c.ExpectContinueTimeout * time.Second,
+			ResponseHeaderTimeout: tools.AutoTimeDuration(c.ResponseHeaderTimeout, time.Second),
+			ExpectContinueTimeout: tools.AutoTimeDuration(c.ExpectContinueTimeout, time.Second),
 
 			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
 				// 确定，这是建立连接的时间
 				// 这里主要是控制解析域名时间,TCP 建立连接超时时长设置
-				conn, err := net.DialTimeout(network, addr, c.Tcpconnecttimeout*time.Second)
+				conn, err := net.DialTimeout(network, addr, tools.AutoTimeDuration(c.Tcpconnecttimeout, time.Second))
 				if err != nil {
 					return nil, err
 				}
@@ -83,7 +84,7 @@ func (c *Curl) initClient() {
 		// time.Duration不是一个函数，只是将数据显示转为 time.Duration这个类型
 		// 这个超时是总的超时时间，如果不清楚Transport里面的设置可以设置这个超时
 		// 由这个超时来设置总的超时时长
-		Timeout: c.Timeouttotal * time.Second,
+		Timeout: tools.AutoTimeDuration(c.Timeouttotal, time.Second),
 		// 检查首次状态值
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if c.Allowredict {
@@ -193,51 +194,33 @@ func (this *Curl) readBody(read io.Reader) ([]byte, error) {
 		return body, errors.New("读取到页面为空")
 	}
 	// 页面字符转码
-	if err := this.character(&body); err != nil {
+	if _body, err := this.character(body); err != nil {
 		return nil, err
+	} else if _body != nil {
+		return _body, nil
 	}
 	return body, nil
 }
 
 // 字符串转码
-func (c *Curl) character(body *[]byte) error {
+func (c *Curl) character(body []byte) ([]byte, error) {
 	// 识别页面字符集,每次页面打开，都需要先识别一次页面字符集
-	if utf8.Valid(*body) {
-		return nil
+	if utf8.Valid(body) {
+		return nil, nil
 	}
-	searchre := httpTools.PageCharacterSetPreg.FindStringSubmatch(string(*body))
+	searchre := httpTools.PageCharacterSetPreg.FindStringSubmatch(string(body))
 	if len(searchre) < 2 {
-		return errors.New("页面字符编码识别失败 ")
+		return nil, errors.New("页面字符编码识别失败 ")
 	}
 	charset := strings.ToLower(searchre[1])
-	if charset != "utf8" && charset != "utf-8" && !utf8.Valid(*body) {
+	if charset != "utf8" && charset != "utf-8" && !utf8.Valid(body) {
 		// 转码处理
 		if charset == "gbk" || charset == "gb2312" {
 			charset = "gb18030"
 		}
-		if err := c.toUtf8(body, charset); err != nil {
-			return err
-		}
+		return encodinghelper.ToUTF8(body, charset)
 	}
-	return nil
-}
-
-func (c *Curl) toUtf8(src *[]byte, srccode string) error {
-	// 对页面数据进行转码
-	icov, err := iconv.Open("UTF-8", strings.ToUpper(srccode))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = icov.Close()
-	}()
-	var outbuf = make([]byte, len(*src))
-	s1, _, err := icov.Conv(*src, outbuf)
-	if err != nil {
-		return err
-	}
-	*src = s1
-	return nil
+	return nil, nil
 }
 
 // 过滤content type 类型
@@ -261,13 +244,13 @@ func (c *Curl) startRequest(url string, resp *http.Response, err error) (*http.R
 		if err == nil { // 请求正常
 			return resp, nil
 		}
-		// 失败的 也确认下，关闭系统
-		if resp != nil && resp.Body != nil {
-			_ = resp.Body.Close()
-		}
+		httpClose.CloseResp(resp) // 失败的 也确认下，关闭系统
 		resp = nil
-		// 等待一秒后重新开始
-		time.Sleep(time.Duration(c.Sleep) * time.Second)
+		if i < c.Retry-1 {
+			// 等待一秒后重新开始
+			time.Sleep(time.Duration(c.Sleep) * time.Second)
+		}
+
 	}
 	return nil, err
 }
