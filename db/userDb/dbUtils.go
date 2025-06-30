@@ -140,14 +140,17 @@ func UpdateSeq(utx *gorm.DB, tableName string) {
 		return
 	}
 	// 如果自增字段 autoIncrementField不为空，那么再插入完成后，需要使用这句话 SELECT setval(pg_get_serial_sequence('test', 'id'), COALESCE((SELECT MAX(id)+1 FROM test), 1), false) 重置自增字段的值
-	var autoIncrementField []string
 	// 如果是pg数据库，这里需要获取当前表的主键字段，并判断其是否是自增主键，如果是自增主键，就将字段查询出来，放入autoIncrementField []string 变量中
-	if err := utx.Raw("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_default LIKE 'nextval%'", tableName).Scan(&autoIncrementField).Error; err != nil {
+	var autoIncrementField []string
+	const querySeqColumnsSQL = "SELECT column_name FROM information_schema.columns WHERE table_name = ? AND (column_default LIKE 'nextval%' OR is_identity='YES')"
+	if err := utx.Raw(querySeqColumnsSQL, tableName).Scan(&autoIncrementField).Error; err != nil {
 		ulogs.Error(err, "pg数据库查询自增字段失败")
 	}
+
+	const updateSeqValueSQL = "SELECT setval(pg_get_serial_sequence(?, ?), COALESCE((SELECT MAX(?)+1 FROM ?), 1), false)"
 	for _, field := range autoIncrementField {
 		if err := utx.Debug().Exec(
-			"SELECT setval(pg_get_serial_sequence(?, ?), COALESCE((SELECT MAX(?)+1 FROM ?), 1), false)",
+			updateSeqValueSQL,
 			tableName,
 			field,
 			clause.Column{Name: field},
