@@ -2,14 +2,11 @@ package db
 
 import (
 	"database/sql/driver"
-	"fmt"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/dataType"
 	"github.com/helays/utils/logger/zaploger"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"net/url"
-	"strings"
 	"time"
 )
 
@@ -54,6 +51,7 @@ type Dbbase struct {
 	TablePrefix     string          `ini:"table_prefix" yaml:"table_prefix" json:"table_prefix,omitempty" gorm:"type:varchar(64);not null;default:'';comment:表前缀"`
 	SingularTable   int             `ini:"singular_table" yaml:"singular_table" json:"singular_table,omitempty" gorm:"type:int;not null;default:0;comment:是否启用单数表"` // 1 启用 0 不启用
 	PostgresOpt     *PostgresOpt    `json:"postgres_opt" yaml:"postgres_opt" json:"postgres_opt,omitempty" gorm:"comment:Postgres专属配置"`
+	Timeout         int             `ini:"timeout" yaml:"timeout" json:"timeout,omitempty" gorm:"type:int;not null;default:0;comment:sqlite 超时，单位毫秒"` // sqlite可用
 	Logger          zaploger.Config `json:"logger" yaml:"logger" ini:"logger" gorm:"comment:日志配置"`
 }
 
@@ -71,62 +69,6 @@ func (this Dbbase) GormDataType() string {
 
 func (Dbbase) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return dataType.JsonDbDataType(db, field)
-}
-
-func (this Dbbase) Dsn() string {
-	//dsn := url.URL{
-	//	User: url.UserPassword(this.User, this.Pwd),
-	//	Host: strings.Join(this.Host, ","),
-	//	Path: this.Dbname,
-	//}
-	switch this.DbType {
-	case config.DbTypePostgres, config.DbTypePg:
-		return this.postgresqlDSN()
-		//dsn.Scheme = "postgres"
-		//// 如果下面这里 设置成TimeZone ，有几率会出现时间异常
-		//dsn.RawQuery = fmt.Sprintf("search_path=%s&timezone=%s", this.Schema, "Asia/Shanghai")
-		//return dsn.String()
-	case config.DbTypeMysql:
-		//dsn.Scheme = "mysql" // mysql 不需要这个
-		// mysql 密码里面的特殊字符 不用序列化
-		return this.mysqlDSN()
-	}
-	return ""
-}
-
-func (d Dbbase) postgresqlDSN() string {
-	hosts := make([]string, 0, len(d.Host))
-	ports := make([]string, 0, len(d.Host))
-	for _, addr := range d.Host {
-		tmp := strings.Split(addr, ":")
-		hosts = append(hosts, tmp[0])
-		ports = append(ports, tmp[1])
-	}
-	var builds []string
-	builds = append(builds, "host="+strings.Join(hosts, ","))
-	builds = append(builds, "port="+strings.Join(ports, ","))
-	builds = append(builds, "user="+d.User)
-	builds = append(builds, "password="+d.Pwd)
-	builds = append(builds, "dbname="+d.Dbname)
-	builds = append(builds, "search_path="+d.Schema)
-	builds = append(builds, "TimeZone=Asia/Shanghai")
-	if d.PostgresOpt != nil {
-		builds = append(builds, d.PostgresOpt.dsn()...)
-	}
-	return strings.Join(builds, " ")
-}
-
-func (this Dbbase) mysqlDSN() string {
-	dsn := url.URL{
-		User: url.UserPassword(this.User, this.Pwd),
-		Host: strings.Join(this.Host, ","),
-		Path: this.Dbname,
-	}
-	query := dsn.Query()
-	query.Set("charset", "utf8mb4")
-	query.Set("parseTime", "True")
-	query.Set("loc", "Local")
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?%s", this.User, this.Pwd, dsn.Host, this.Dbname, query.Encode())
 }
 
 func (this *Dbbase) RemovePasswd() {

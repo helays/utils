@@ -1,13 +1,10 @@
 package userDb
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/db/dbErrors/errTools"
 	"github.com/helays/utils/logger/ulogs"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
@@ -17,37 +14,16 @@ import (
 var nullSqlConn map[string]*gorm.DB
 
 // GetRawSql 生成sql的通用函数
-func GetRawSql(f func(dTx *gorm.DB) *gorm.DB, dbTypes ...string) (string, []any) {
-	dbType := "pg"
-	if len(dbTypes) > 1 {
-		dbType = dbTypes[0]
-	}
-	db, ok := nullSqlConn[dbType]
-	if !ok {
-		var dialector gorm.Dialector
-		switch dbType {
-		case "pg":
-			dialector = postgres.Open("")
-		case "mysql":
-			dialector = mysql.Open("")
-			//case "sqlite":
-			//	dialector = sqlite.Open("")
-			//case "sqlserver":
-			//	dialector = sqlserver.Open("")
-			//case "tidb":
-			//	dialector = mysql.Open("")
-			//case "clickhouse":
-			//	dialector = clickhouse.Open("")
-
-		}
-		db, _ = gorm.Open(dialector, &gorm.Config{
-			DryRun:                                   true,
-			Logger:                                   logger.Default.LogMode(logger.Silent),
-			DisableForeignKeyConstraintWhenMigrating: true,
-			SkipDefaultTransaction:                   true,
-			DisableAutomaticPing:                     true,
-		})
-	}
+// pg postgres.Open("")
+// mysql mysql.Open("")
+func GetRawSql(f func(dTx *gorm.DB) *gorm.DB, dialector gorm.Dialector) (string, []any) {
+	db, _ := gorm.Open(dialector, &gorm.Config{
+		DryRun:                                   true,
+		Logger:                                   logger.Default.LogMode(logger.Silent),
+		DisableForeignKeyConstraintWhenMigrating: true,
+		SkipDefaultTransaction:                   true,
+		DisableAutomaticPing:                     true,
+	})
 
 	query := f(db).Statement
 	return query.SQL.String(), query.Vars
@@ -57,35 +33,6 @@ func GetRawSql(f func(dTx *gorm.DB) *gorm.DB, dbTypes ...string) (string, []any)
 func GetRawSqlByDb(f func(dTx *gorm.DB) *gorm.DB, db *gorm.DB) (string, []any) {
 	query := f(db).Statement
 	return query.SQL.String(), query.Vars
-}
-
-func CloseDb(conn *sql.DB) {
-	if conn != nil {
-		_ = conn.Close()
-	}
-}
-
-func CloseMysqlRows(rows *sql.Rows) {
-	CloseRows(rows)
-}
-
-func CloseRows(rows *sql.Rows) {
-	if rows != nil {
-		_ = rows.Close()
-	}
-}
-
-// Deprecated: As of utils v1.1.0, this value is simply [tools.CloseDb].
-func CloseMysql(conn *sql.DB) {
-	if conn != nil {
-		_ = conn.Close()
-	}
-}
-
-func CloseStmt(stmt *sql.Stmt) {
-	if stmt != nil {
-		_ = stmt.Close()
-	}
 }
 
 func RenameConstraint(tx *gorm.DB, tableName string, oldName, newName string) error {
