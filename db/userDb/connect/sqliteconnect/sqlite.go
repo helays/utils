@@ -1,4 +1,4 @@
-package postgresconnect
+package sqliteconnect
 
 import (
 	"github.com/helays/utils/db"
