@@ -52,7 +52,7 @@ func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	return postData, true
 }
 
-func JsonDecodeRespPtr[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
+func JsonDecodePtrResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	postData, err := JsonDecodePtr[T](r)
 	if err != nil {
 		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError)
