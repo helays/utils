@@ -133,6 +133,29 @@ func FindOne[T any](tx *gorm.DB, opts Curd) (T, error) {
 	return data, err
 }
 
+// FindOnePtr 查询某个对象
+func FindOnePtr[T any](tx *gorm.DB, opts Curd) (T, error) {
+	_tx := tx.Session(&gorm.Session{}).Where(opts.Where.Query, opts.Where.Args...)
+	if opts.Table != "" {
+		_tx.Table(opts.Table)
+	}
+	if opts.Select.Query != "" {
+		_tx.Select(opts.Select.Query, opts.Select.Args...)
+	}
+	if len(opts.Omit) > 0 {
+		_tx.Omit(opts.Omit...)
+	}
+	for _, item := range opts.Preload {
+		_tx.Preload(item.Query)
+	}
+	var data T
+	err := _tx.Take(data).Error
+	if err != nil {
+		err = errTools.Error(err)
+	}
+	return data, err
+}
+
 // Query 查询多个对象
 func Query[T any](tx *gorm.DB, opts Curd) (res []T, err error) {
 	_tx := tx.Session(&gorm.Session{}).Where(opts.Where.Query, opts.Where.Args...)
