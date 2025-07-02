@@ -350,12 +350,12 @@ func SetReturnErrorDisableLog(w http.ResponseWriter, err error, code int, msg ..
 	}
 	rsp := map[string]any{
 		"code": code,
-		"err":  err.Error(),
+		"msg":  err.Error(),
 	}
 	if len(msg) == 1 {
-		rsp["msg"] = msg[0]
+		rsp["data"] = msg[0]
 	} else if len(msg) > 1 {
-		rsp["msg"] = msg
+		rsp["data"] = msg
 	}
 	_ = json.NewEncoder(w).Encode(rsp)
 }
