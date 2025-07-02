@@ -342,17 +342,22 @@ func SetReturnWithoutError(w http.ResponseWriter, r *http.Request, err error, co
 
 // SetReturnErrorDisableLog 不记录日志,err 变量忽略不处理
 func SetReturnErrorDisableLog(w http.ResponseWriter, err error, code int, msg ...any) {
-	msg = append([]any{err.Error()}, msg...)
 	RespJson(w)
 	if code == 0 || code == 200 {
 		w.WriteHeader(200)
 	} else {
 		w.WriteHeader(code)
 	}
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+	rsp := map[string]any{
 		"code": code,
-		"msg":  tools.AnySlice2Str(msg),
-	})
+		"err":  err.Error(),
+	}
+	if len(msg) == 1 {
+		rsp["msg"] = msg[0]
+	} else if len(msg) > 1 {
+		rsp["msg"] = msg
+	}
+	_ = json.NewEncoder(w).Encode(rsp)
 }
 
 // CheckReqPost 检查请求是否post

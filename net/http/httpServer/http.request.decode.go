@@ -15,6 +15,15 @@ import (
 	"strings"
 )
 
+type jsonDecodeError struct {
+	Err error
+	Raw bytes.Buffer
+}
+
+func (e *jsonDecodeError) Error() string {
+	return fmt.Sprintf("%v", e.Err)
+}
+
 // JsonDecode 解析json数据
 // 值类型，适合小结构体，当字段少于10的时候，缺点是返回时会复制整个结构体
 func JsonDecode[T any](r *http.Request) (T, error) {
@@ -24,7 +33,10 @@ func JsonDecode[T any](r *http.Request) (T, error) {
 
 	jd := json.NewDecoder(tee)
 	if err := jd.Decode(&postData); err != nil && !errors.Is(err, io.EOF) {
-		return postData, fmt.Errorf("参数解析失败，错误原因[%v]原始数据：%s", err, tools.MustStringReader(tee))
+		return postData, &jsonDecodeError{
+			Err: err,
+			Raw: buf,
+		}
 	}
 	return postData, nil
 }
@@ -38,7 +50,10 @@ func JsonDecodePtr[T any](r *http.Request) (T, error) {
 
 	jd := json.NewDecoder(tee)
 	if err := jd.Decode(postData); err != nil && !errors.Is(err, io.EOF) {
-		return postData, fmt.Errorf("参数解析失败，错误原因[%v]原始数据：%s", err, tools.MustStringReader(tee))
+		return postData, &jsonDecodeError{
+			Err: err,
+			Raw: buf,
+		}
 	}
 	return postData, nil
 }
@@ -46,7 +61,7 @@ func JsonDecodePtr[T any](r *http.Request) (T, error) {
 func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	postData, err := JsonDecode[T](r)
 	if err != nil {
-		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError)
+		SetReturnErrorDisableLog(w, fmt.Errorf(err.Error()), http.StatusInternalServerError, err.(*jsonDecodeError).Raw.String())
 		return postData, false
 	}
 	return postData, true
@@ -55,7 +70,7 @@ func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 func JsonDecodePtrResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	postData, err := JsonDecodePtr[T](r)
 	if err != nil {
-		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError)
+		SetReturnErrorDisableLog(w, fmt.Errorf(err.Error()), http.StatusInternalServerError, err.(*jsonDecodeError).Raw.String())
 		return postData, false
 	}
 	return postData, true
