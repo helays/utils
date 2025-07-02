@@ -421,7 +421,7 @@ func CopyBuffer(dst io.Writer, src io.Reader, buf []byte) (written int64, err er
 }
 
 // JsonDecode 解析json数据
-func JsonDecode[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
+func JsonDecode[T any](r *http.Request) (T, error) {
 	var postData T
 	var buf bytes.Buffer
 	tee := io.TeeReader(r.Body, &buf)
@@ -429,7 +429,15 @@ func JsonDecode[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	jd := json.NewDecoder(tee)
 	err := jd.Decode(&postData)
 	if err != nil && !errors.Is(err, io.EOF) {
-		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError, "参数解析失败", tools.MustStringReader(tee))
+		return postData, fmt.Errorf("参数解析失败，错误原因[%v]原始数据：%s", err, tools.MustStringReader(tee))
+	}
+	return postData, nil
+}
+
+func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
+	postData, err := JsonDecode[T](r)
+	if err != nil {
+		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError)
 		return postData, false
 	}
 	return postData, true
@@ -444,7 +452,7 @@ type File struct {
 	Body     *bytes.Buffer
 }
 
-// FormDataDecode 解析表单数据并将其解码为指定类型T的实例。
+// FormDataDecodeResp 解析表单数据并将其解码为指定类型T的实例。
 // 该函数控制上传内容的大小，并处理表单数据的解析。
 // 参数:
 //
@@ -456,24 +464,31 @@ type File struct {
 //
 //	T: 解析后的表单数据实例。
 //	bool: 表单数据是否成功解析。
-func FormDataDecode[T any](w http.ResponseWriter, r *http.Request, sizes ...int64) (T, bool) {
+func FormDataDecodeResp[T any](w http.ResponseWriter, r *http.Request, sizes ...int64) (*T, bool) {
+	data, err := FormDataDecode[T](r, sizes...)
+	if err != nil {
+		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError)
+		return data, false
+	}
+	return data, true
+}
+
+func FormDataDecode[T any](r *http.Request, sizes ...int64) (*T, error) {
 	size := tools.Ternary(len(sizes) > 0 && sizes[0] > 0, sizes[0], 10) // 默认10M
 	var formData T
 	// 控制上传内容大小
 	if err := r.ParseMultipartForm(size << 20); err != nil {
-		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError, "设置载荷大小失败")
-		return formData, false
+		return nil, fmt.Errorf("设置载荷大小失败 %v", err)
 	}
 
 	decoder := form.NewDecoder()
 	if err := decoder.Decode(&formData, r.PostForm); err != nil {
-		SetReturnErrorDisableLog(w, err, http.StatusInternalServerError, "参数解析失败")
-		return formData, false
+		return nil, fmt.Errorf("参数解析失败 %v", err)
 	}
 	// 获取 T结构里面的 []字段
 	t := reflect.TypeOf(formData)
 	if t.Kind() != reflect.Struct {
-		return formData, true
+		return &formData, nil
 	}
 	valsOf := reflect.ValueOf(&formData).Elem()
 	for i := 0; i < t.NumField(); i++ {
@@ -496,8 +511,7 @@ func FormDataDecode[T any](w http.ResponseWriter, r *http.Request, sizes ...int6
 		for _, fileHeader := range rfs {
 			f, err := multipartUploader(fileHeader)
 			if err != nil {
-				SetReturnErrorDisableLog(w, err, http.StatusInternalServerError, "参数解析失败")
-				return formData, false
+				return nil, fmt.Errorf("参数解析失败 %v", err)
 			}
 			f.Header = fileHeader.Header
 			f.Size = fileHeader.Size
@@ -509,7 +523,7 @@ func FormDataDecode[T any](w http.ResponseWriter, r *http.Request, sizes ...int6
 			valsOf.FieldByName(field.Name).Set(reflect.ValueOf(fs))
 		}
 	}
-	return formData, true
+	return &formData, nil
 }
 
 // multipartUploader 用于上传multipart表单中的文件。
