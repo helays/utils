@@ -73,11 +73,11 @@ func (d *Dbbase) sqliteDSN() string {
 	args := []string{
 		"cache=shared",
 		"mode=rwc",
-		"_pragma=journal_mode(WAL)",
-		"_pragma=synchronous(NORMAL)",
+		"journal_mode=WAL",
+		"synchronous=NORMAL",
 	}
 	if d.Timeout > 0 {
-		args = append(args, fmt.Sprintf("_pragma=busy_timeout(%d)", d.Timeout))
+		args = append(args, fmt.Sprintf("busy_timeout=%d", d.Timeout))
 	}
 	filePath := tools.Fileabs(d.Host[0])
 	return fmt.Sprintf("file:%s?%s", filePath, strings.Join(args, "&"))

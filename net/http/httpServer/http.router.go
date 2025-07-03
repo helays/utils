@@ -33,6 +33,7 @@ func (ro *Router) BeforeAction(w http.ResponseWriter, r *http.Request) bool {
 	// 如果session 存在，那么当session 剩余24小时的时候，更新session。
 	err := ro.Store.GetUpByTimeLeft(w, r, ro.SessionLoginName, &loginInfo, time.Hour*24)
 	if err != nil || !loginInfo.IsLogin {
+		ulogs.Checkerr(err, "session 获取失败")
 		// 未登录的，终止请求，响应401 或者302
 		return ro.unAuthorizedResp(w, r)
 	}
