@@ -56,3 +56,12 @@ func ArrayChunkCopy[T any](slice []T, size int) [][]T {
 
 	return chunks
 }
+
+// Slice2Map 更清晰的参数命名
+func Slice2Map[Key comparable, Elem any](slice []Elem, keyFunc func(Elem) Key) map[Key]Elem {
+	result := make(map[Key]Elem)
+	for _, item := range slice {
+		result[keyFunc(item)] = item
+	}
+	return result
+}
