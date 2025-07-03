@@ -43,14 +43,20 @@ func JsonDecode[T any](r *http.Request) (T, error) {
 
 // JsonDecodePtr 解析json数据
 // 处理指针类型（调用方需确保T是指针类型，如 *YourStruct）
-func JsonDecodePtr[T any](r *http.Request) (T, error) {
-	var postData T
+func JsonDecodePtr[T interface{ *E }, E any](r *http.Request, target ...T) (T, error) {
 	var buf bytes.Buffer
 	tee := io.TeeReader(r.Body, &buf)
 
-	jd := json.NewDecoder(tee)
-	if err := jd.Decode(postData); err != nil && !errors.Is(err, io.EOF) {
-		return postData, &jsonDecodeError{
+	// 处理目标指针
+	var postData T
+	if len(target) > 0 {
+		postData = target[0]
+	} else {
+		postData = new(E)
+	}
+	// 解码
+	if err := json.NewDecoder(tee).Decode(postData); err != nil && !errors.Is(err, io.EOF) {
+		return nil, &jsonDecodeError{
 			Err: err,
 			Raw: buf,
 		}
@@ -67,7 +73,7 @@ func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	return postData, true
 }
 
-func JsonDecodePtrResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
+func JsonDecodePtrResp[T interface{ *E }, E any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	postData, err := JsonDecodePtr[T](r)
 	if err != nil {
 		SetReturnErrorDisableLog(w, fmt.Errorf(err.Error()), http.StatusInternalServerError, err.(*jsonDecodeError).Raw.String())

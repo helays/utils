@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/helays/utils/crypto/md5"
+	"math/big"
 )
 
 //
@@ -112,4 +113,12 @@ func SecureRandomSampleUnique[T any](collection []T, n int) ([]T, bool) {
 
 	// 返回前 n 个元素
 	return copySlice[:n], true
+}
+
+func SecureRandomInt(min, max int) int {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(max-min+1)))
+	if err != nil {
+		panic(err)
+	}
+	return int(nBig.Int64()) + min
 }
