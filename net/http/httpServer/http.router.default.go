@@ -111,7 +111,7 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 	var embedFs http.FileSystem
 	// 注意，当发现响应状态非正常时，浏览器显示乱码，是标准库[http/fs.go]里面会删除Content-Encoding，
 	// 所以这里不用 http.ServeFile,http.ServeFileFS
-	if !ro.dev && len(ro.staticEmbedFS) > 0 {
+	if len(ro.staticEmbedFS) > 0 {
 		for k, _embedFS := range ro.staticEmbedFS {
 			if strings.HasPrefix(r.URL.Path, k) {
 				embedFs = http.FS(_embedFS)
