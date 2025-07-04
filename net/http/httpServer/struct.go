@@ -17,6 +17,7 @@ type HttpServer struct {
 	Auth                string                      `ini:"auth" json:"auth" yaml:"auth"`
 	Allowip             []string                    `ini:"allowip,omitempty" json:"allowip" yaml:"allowip"`
 	Denyip              []string                    `ini:"denyip,omitempty" json:"denyip" yaml:"denyip"`
+	DebugAllowIp        []string                    `ini:"debug_allow_ip,omitempty" json:"debug_allow_ip" yaml:"debug_allow_ip"`
 	ServerName          []string                    `ini:"server_name,omitempty" json:"server_name" yaml:"server_name"` // 绑定域名
 	Ssl                 bool                        `ini:"ssl" json:"ssl" yaml:"ssl"`
 	Ca                  string                      `ini:"ca" json:"ca" yaml:"ca"`
@@ -35,6 +36,7 @@ type HttpServer struct {
 	enableCheckIpAccess bool // 是否开启ip访问控制
 	allowIpList         *ipAccess.IPList
 	denyIpList          *ipAccess.IPList
+	debugAllowIpList    *ipAccess.IPList
 }
 
 type ErrPageFunc func(w http.ResponseWriter, resp http_types.ErrorResp)

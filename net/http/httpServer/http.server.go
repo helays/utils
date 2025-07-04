@@ -12,10 +12,12 @@ import (
 	"github.com/helays/utils/crypto/md5"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/logger/zaploger"
+	"github.com/helays/utils/net/http/httpServer/responsewriter"
 	"github.com/helays/utils/net/ipAccess"
 	"github.com/helays/utils/tools"
 	"go.uber.org/zap"
 	"golang.org/x/net/websocket"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -23,67 +25,21 @@ import (
 	"time"
 )
 
-// 辅助结构体用于捕获状态码
-type responseWriter struct {
-	http.ResponseWriter
-	status int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.status = code
-	rw.ResponseWriter.WriteHeader(code)
-}
-
 // HttpServerStart 公功 http server 启动函数
 func (h *HttpServer) HttpServerStart() {
 	h.serverNameMap = make(map[string]byte)
 	for _, dom := range h.ServerName {
 		h.serverNameMap[strings.ToLower(dom)] = 0
 	}
-	mux := http.NewServeMux()
-	h.Route["/debug/switch-debug"] = SwitchDebug
-	if config.Dbg {
-		h.Route["/debug/pprof/"] = pprof.Index
-		h.Route["/debug/pprof/cmdline"] = pprof.Cmdline
-		h.Route["/debug/pprof/profile"] = pprof.Profile
-		h.Route["/debug/pprof/symbol"] = pprof.Symbol
-		h.Route["/debug/pprof/trace"] = pprof.Trace
-	}
+
 	if h.Logger.LogLevelConfigs != nil {
 		var err error
 		h.logger, err = zaploger.New(&h.Logger)
 		ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
 	}
-	var err error
-	if len(h.Allowip) > 0 {
-		h.allowIpList, err = ipAccess.NewIPList(h.Allowip...)
-		ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
-		h.enableCheckIpAccess = true
-	}
-	if len(h.Denyip) > 0 {
-		h.denyIpList, err = ipAccess.NewIPList(h.Denyip...)
-		ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
-		h.enableCheckIpAccess = true
-	}
-
-	if h.Route != nil {
-		for u, funcName := range h.Route {
-			h.middleware(mux, u, funcName)
-		}
-	}
-
-	if h.RouteHandle != nil {
-		for u, funcName := range h.RouteHandle {
-			h.middleware(mux, u, funcName)
-		}
-	}
-
-	if h.RouteSocket != nil {
-		for u, funcName := range h.RouteSocket {
-			//mux.Handle(u, websocket.Handler(funcName))
-			h.socketMiddleware(mux, u, funcName)
-		}
-	}
+	h.iptablesInit()
+	mux := http.NewServeMux()
+	h.initRouter(mux)
 
 	server := &http.Server{Addr: h.ListenAddr}
 	if h.EnableGzip {
@@ -93,6 +49,7 @@ func (h *HttpServer) HttpServerStart() {
 	}
 	defer Closehttpserver(server)
 	ulogs.Log("启动Http(s) Server", h.ListenAddr)
+	var err error
 	if h.Ssl {
 		server.TLSConfig = &tls.Config{
 			CipherSuites: []uint16{
@@ -136,14 +93,67 @@ func (h *HttpServer) HttpServerStart() {
 	}
 }
 
+// ip 黑白名单初始化
+func (h *HttpServer) iptablesInit() {
+	var err error
+	if len(h.Allowip) > 0 {
+		h.allowIpList, err = ipAccess.NewIPList(h.Allowip...)
+		ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
+		h.enableCheckIpAccess = true
+	}
+	if len(h.Denyip) > 0 {
+		h.denyIpList, err = ipAccess.NewIPList(h.Denyip...)
+		ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
+		h.enableCheckIpAccess = true
+	}
+	debugAllowIps := []string{"127.0.0.1"}
+	if len(h.DebugAllowIp) > 0 {
+		debugAllowIps = append(debugAllowIps, h.DebugAllowIp...)
+	}
+	h.debugAllowIpList, err = ipAccess.NewIPList(debugAllowIps...)
+	ulogs.DieCheckerr(err, "http server debug ip白名单初始化失败")
+}
+
+// 设置路由
+func (h *HttpServer) initRouter(mux *http.ServeMux) {
+	h.Route["/debug/switch-debug"] = SwitchDebug
+	if config.Dbg {
+		h.Route["/debug/pprof/"] = pprof.Index
+		h.Route["/debug/pprof/cmdline"] = pprof.Cmdline
+		h.Route["/debug/pprof/profile"] = pprof.Profile
+		h.Route["/debug/pprof/symbol"] = pprof.Symbol
+		h.Route["/debug/pprof/trace"] = pprof.Trace
+	}
+	if h.Route != nil {
+		for u, funcName := range h.Route {
+			h.middleware(mux, u, funcName)
+		}
+	}
+
+	if h.RouteHandle != nil {
+		for u, funcName := range h.RouteHandle {
+			h.middleware(mux, u, funcName)
+		}
+	}
+
+	if h.RouteSocket != nil {
+		for u, funcName := range h.RouteSocket {
+			//mux.Handle(u, websocket.Handler(funcName))
+			h.socketMiddleware(mux, u, funcName)
+		}
+	}
+}
+
 func (h *HttpServer) middleware(mux *http.ServeMux, u string, f http.Handler) {
 	mux.HandleFunc(u, func(w http.ResponseWriter, r *http.Request) {
 		defer httpClose.CloseReq(r)
+		// 创建包装器
+		recorder := responsewriter.New(w) // 默认200
 		if len(h.serverNameMap) > 0 {
 			// 提取并转换为小写的host（忽略端口部分）
 			host := strings.ToLower(strings.SplitN(r.Host, ":", 2)[0])
 			if _, ok := h.serverNameMap[host]; !ok {
-				w.WriteHeader(http.StatusBadGateway)
+				recorder.WriteHeader(http.StatusBadGateway)
 				return
 			}
 		}
@@ -156,26 +166,32 @@ func (h *HttpServer) middleware(mux *http.ServeMux, u string, f http.Handler) {
 				h.logger.Info(context.Background(),
 					Getip(r),
 					zap.String(r.Method, r.URL.String()),
+					zap.Int("status", recorder.GetStatus()),
+					zap.Int64("bytes_send", recorder.GetBytesWritten()),
 					zap.String("http_user_agent", ua),
 					zap.Int64("elapsed", elapsed),
 				)
 			} else {
-				ulogs.Debug(Getip(r), r.Method, r.URL.String(), ua, elapsed)
+				ulogs.Debug(Getip(r), r.Method, r.URL.String(), recorder.GetStatus(), recorder.GetBytesWritten(), ua, elapsed)
 			}
 		}()
 
 		// add header
-		w.Header().Set("server", "vs/1.0")
-		w.Header().Set("connection", "keep-alive")
+		recorder.Header().Set("server", "vs/1.0")
+		recorder.Header().Set("connection", "keep-alive")
 		// 白名单验证
-		if h.enableCheckIpAccess && !h.checkIpAccess(w, r) {
+		if h.enableCheckIpAccess && !h.checkIpAccess(recorder, r) {
 			return
 		}
 
-		if h.CommonCallback != nil && !h.CommonCallback(w, r) {
+		if !h.debugIpAccess(recorder, r) {
 			return
 		}
-		f.ServeHTTP(w, r)
+
+		if h.CommonCallback != nil && !h.CommonCallback(recorder, r) {
+			return
+		}
+		f.ServeHTTP(recorder, r)
 	})
 }
 
@@ -224,13 +240,11 @@ func (h *HttpServer) socketMiddleware(mux *http.ServeMux, u string, f websocket.
 
 // 检测ip白名单和黑名单
 func (this *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bool {
-	addr := r.RemoteAddr
-	al := strings.Index(addr, ":")
-	if al < 0 {
-		Forbidden(w, "invalid address format")
-		return false
+	addr := Getip(r)
+	ip, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		ip = addr // 如果无端口，则直接使用原地址
 	}
-	ip := addr[0:al]
 	if this.allowIpList != nil {
 		if !this.allowIpList.Contains(ip) {
 			Forbidden(w, "你的IP不在系统白名单内")
@@ -240,6 +254,23 @@ func (this *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bo
 	}
 	if this.denyIpList != nil && this.denyIpList.Contains(ip) {
 		Forbidden(w, "你的IP已被监管")
+		return false
+	}
+	return true
+}
+
+func (h *HttpServer) debugIpAccess(w http.ResponseWriter, r *http.Request) bool {
+	// 判断path是否以debug开头
+	if !strings.HasPrefix(r.URL.Path, "/debug/") {
+		return true
+	}
+	addr := Getip(r)
+	ip, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		ip = addr // 如果无端口，则直接使用原地址
+	}
+	if !h.debugAllowIpList.Contains(ip) {
+		Forbidden(w, http.StatusText(http.StatusForbidden))
 		return false
 	}
 	return true
