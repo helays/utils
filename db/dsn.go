@@ -67,8 +67,9 @@ func (d *Dbbase) mysqlDSN() string {
 }
 
 func (d *Dbbase) sqliteDSN() string {
-	if len(d.Host) < 1 {
-		return ""
+	filePath := ":memory:"
+	if len(d.Host) > 0 && d.Host[0] != "" {
+		filePath = tools.Fileabs(d.Host[0])
 	}
 	args := []string{
 		"cache=shared",
@@ -79,6 +80,6 @@ func (d *Dbbase) sqliteDSN() string {
 	if d.Timeout > 0 {
 		args = append(args, fmt.Sprintf("busy_timeout=%d", d.Timeout))
 	}
-	filePath := tools.Fileabs(d.Host[0])
+
 	return fmt.Sprintf("file:%s?%s", filePath, strings.Join(args, "&"))
 }
