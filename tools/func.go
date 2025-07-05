@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bytes"
+	"cmp"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
@@ -226,6 +227,20 @@ func Float64tostring(f float64) string {
 		return "0"
 	}
 	return strconv.FormatFloat(f, 'f', 6, 64)
+}
+
+func Max[T cmp.Ordered](d1, d2 T) T {
+	if d1 > d2 {
+		return d1
+	}
+	return d2
+}
+
+func Min[T cmp.Ordered](d1, d2 T) T {
+	if d1 < d2 {
+		return d1
+	}
+	return d2
 }
 
 func MaxInt32(d1, d2 int32) int32 {
