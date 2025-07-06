@@ -89,3 +89,30 @@ func ProbabilityTrigger(probability float64) bool {
 	// 比较随机数和概率
 	return randomNumber < probability
 }
+
+func AutoRetry(retryCount int, retryInterval time.Duration, f func() bool) bool {
+	for i := 0; i < retryCount; i++ {
+		if f() {
+			return true
+		}
+		// 最后一次错误不睡眠
+		if i < retryCount-1 {
+			time.Sleep(retryInterval)
+		}
+	}
+	return false
+}
+
+func AutoRetryWithErr(retryCount int, retryInterval time.Duration, f func() error) error {
+	var err error
+	for i := 0; i < retryCount; i++ {
+		if err = f(); err == nil {
+			return nil
+		}
+		// 最后一次错误不睡眠
+		if i < retryCount-1 {
+			time.Sleep(retryInterval)
+		}
+	}
+	return err
+}
