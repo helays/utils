@@ -75,6 +75,18 @@ func (m *SyncMap[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
 	return actual, loaded
 }
 
+func (m *SyncMap[K, V]) LoadOrStoreFunc(key K, valueFunc func() (V, bool)) (actual V, loaded bool) {
+	// 先尝试快速读取
+	if v, ok := m.mu.Load(key); ok {
+		return v.(V), true
+	}
+	val, ok := valueFunc()
+	if !ok {
+		return val, false
+	}
+	return m.LoadOrStore(key, val)
+}
+
 // LoadAndDelete 删除键的值，返回之前的值（如果有）。
 // loaded 结果为 true 表示键存在。
 func (m *SyncMap[K, V]) LoadAndDelete(key K) (value V, loaded bool) {
