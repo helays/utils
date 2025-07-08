@@ -116,3 +116,18 @@ func AutoRetryWithErr(retryCount int, retryInterval time.Duration, f func() erro
 	}
 	return err
 }
+
+func WaitForCondition(ctx context.Context, condition func() bool) bool {
+	ticker := time.NewTicker(time.Millisecond * 100)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-ticker.C:
+			if condition() {
+				return true
+			}
+		}
+	}
+}
