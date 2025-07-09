@@ -1,6 +1,7 @@
 package httpServer
 
 import (
+	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/net/http/httpTools"
 	"github.com/helays/utils/tools"
 	"net/http"
@@ -45,8 +46,10 @@ func (ro *Router) Play(w http.ResponseWriter, r *http.Request, fname string, arg
 	}
 	dir, file := filepath.Split(fname)
 	embedFs := http.Dir(dir)
-	f, d, ok := ro.openEmbedFsFile(w, embedFs, file)
-	if !ok {
+	f, d, respErr := ro.openEmbedFsFile(embedFs, file)
+	defer vclose.Close(f)
+	if respErr != nil {
+		ro.error(w, *respErr)
 		return
 	}
 	if len(args) > 0 && args[0] == "downloader" {

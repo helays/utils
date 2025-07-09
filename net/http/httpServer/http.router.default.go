@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/net/http/httpServer/http_types"
+	"github.com/helays/utils/net/http/httpfile"
 	"github.com/helays/utils/net/http/mime"
 	"github.com/helays/utils/tools"
 	"io"
 	"io/fs"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -78,10 +78,11 @@ func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 	fl := strings.Split(pathCache[1], ",")
 	rmime := "text/html; charset=utf-8"
 	isFirst := false
+
+	embedFs := httpfile.NoSymlinkFileSystem{Fs: http.Dir(ro.Root)}
 	for _, v := range fl {
-		rp := path.Join(ro.Root, pathCache[0], v)
-		f, err := os.Open(rp)
-		if err != nil {
+		f, _, errResp := ro.openEmbedFsFile(embedFs, path.Join(pathCache[0], v))
+		if errResp != nil {
 			vclose.Close(f)
 			continue
 		}
@@ -97,6 +98,8 @@ func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defaultFile string) {
+	// 添加安全头
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	// 判断path是否以/结尾
 	if strings.HasSuffix(_path, "/") {
 		_path = _path + defaultFile
@@ -120,42 +123,41 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 		}
 	}
 	if embedFs == nil {
-		embedFs = http.Dir(ro.Root)
+		embedFs = httpfile.NoSymlinkFileSystem{Fs: http.Dir(ro.Root)}
 	}
-	f, d, ok := ro.openEmbedFsFile(w, embedFs, _path)
-	if !ok {
+	f, d, errResp := ro.openEmbedFsFile(embedFs, _path)
+	defer vclose.Close(f)
+	if errResp != nil {
+		ro.error(w, *errResp)
 		return
 	}
 	http.ServeContent(w, r, d.Name(), d.ModTime(), f)
 }
 
-func (ro *Router) openEmbedFsFile(w http.ResponseWriter, embedFs http.FileSystem, _path string) (http.File, fs.FileInfo, bool) {
+func (ro *Router) openEmbedFsFile(embedFs http.FileSystem, _path string) (http.File, fs.FileInfo, *http_types.ErrorResp) {
 	f, err := embedFs.Open(_path)
 	if err != nil {
 		msg, code := toHTTPError(err)
-		ro.error(w, http_types.ErrorResp{
+		return nil, nil, &http_types.ErrorResp{
 			Code: code,
 			Msg:  msg,
-		})
-		return nil, nil, false
+		}
 	}
 	d, _err := f.Stat()
 	if _err != nil {
 		msg, code := toHTTPError(err)
-		ro.error(w, http_types.ErrorResp{
+		return nil, nil, &http_types.ErrorResp{
 			Code: code,
 			Msg:  msg,
-		})
-		return nil, nil, false
+		}
 	}
 	if d.IsDir() {
-		ro.error(w, http_types.ErrorResp{
+		return nil, nil, &http_types.ErrorResp{
 			Code: http.StatusForbidden,
 			Msg:  http.StatusText(http.StatusForbidden),
-		})
-		return nil, nil, false
+		}
 	}
-	return f, d, true
+	return f, d, nil
 }
 
 func toHTTPError(err error) (msg string, httpStatus int) {
