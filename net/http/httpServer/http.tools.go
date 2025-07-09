@@ -234,9 +234,10 @@ func SetReturnCode(w http.ResponseWriter, r *http.Request, code int, msg any, da
 }
 
 type resp struct {
-	Code int `json:"code"`
-	Msg  any `json:"msg"`
-	Data any `json:"data,omitempty"`
+	Code  int `json:"code"`
+	Msg   any `json:"msg"`
+	Data  any `json:"data,omitempty"`
+	AddOn any `json:"add_on,omitempty"`
 }
 
 // SetReturnData 设置返回函数
@@ -252,10 +253,11 @@ func SetReturnData(w http.ResponseWriter, code int, msg any, data ...any) {
 		Code: code,
 		Msg:  msg,
 	}
-	if len(data) == 1 {
+	if len(data) > 0 {
 		r.Data = data[0]
-	} else if len(data) > 1 {
-		r.Data = data
+		if len(data) > 1 {
+			r.AddOn = data[1:]
+		}
 	}
 	_ = json.NewEncoder(w).Encode(r)
 }
