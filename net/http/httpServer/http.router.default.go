@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/net/http/httpServer/http_types"
-	"github.com/helays/utils/net/http/httpfile"
 	"github.com/helays/utils/net/http/mime"
 	"github.com/helays/utils/tools"
 	"io"
@@ -79,7 +78,7 @@ func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 	rmime := "text/html; charset=utf-8"
 	isFirst := false
 
-	embedFs := httpfile.NoSymlinkFileSystem{Fs: http.Dir(ro.Root)}
+	embedFs := http.Dir(ro.Root)
 	for _, v := range fl {
 		f, _, errResp := ro.openEmbedFsFile(embedFs, path.Join(pathCache[0], v))
 		if errResp != nil {
@@ -123,7 +122,7 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 		}
 	}
 	if embedFs == nil {
-		embedFs = httpfile.NoSymlinkFileSystem{Fs: http.Dir(ro.Root)}
+		embedFs = http.Dir(ro.Root)
 	}
 	f, d, errResp := ro.openEmbedFsFile(embedFs, _path)
 	defer vclose.Close(f)
