@@ -1,11 +1,11 @@
-package httpServerWithDb
+package dbresponse
 
 import (
 	"fmt"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/db/userDb"
 	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/net/http/httpServer"
+	"github.com/helays/utils/net/http/httpServer/response"
 	"github.com/helays/utils/tools"
 	"gorm.io/gorm"
 	"net/http"
@@ -47,13 +47,13 @@ func RespListsWithFilter[B any, T RespFilter](w http.ResponseWriter, r *http.Req
 	_tx.Order(p.Order)
 	var respData T
 	if err := _tx.Scopes(userDb.Paginate(r, p.PageField, p.PageSizeField, p.PageSize)).Find(&respData).Error; err != nil {
-		httpServer.SetReturn(w, 1, "数据查询失败")
+		response.SetReturn(w, 1, "数据查询失败")
 		ulogs.Error(err, r.URL.Path, r.URL.RawQuery, "respLists", "tx.Find")
 		return
 	}
 	// 调用 FiltterDatas 方法
 	respData.RespFilter()
-	httpServer.SetReturnData(w, 0, "成功", pageListResp{Lists: respData, Total: totals})
+	response.SetReturnData(w, 0, "成功", pageListResp{Lists: respData, Total: totals})
 }
 
 // 查询返回数据列 base
@@ -67,7 +67,7 @@ func queryBase(w http.ResponseWriter, r *http.Request, tx *gorm.DB, model any, c
 		for k, rule := range c.MustField {
 			v := query.Get(k)
 			if !rule.MatchString(v) {
-				httpServer.SetReturnErrorDisableLog(w, fmt.Errorf("参数%s值格式错误", k), http.StatusBadRequest, "参数错误")
+				response.SetReturnErrorDisableLog(w, fmt.Errorf("参数%s值格式错误", k), http.StatusBadRequest, "参数错误")
 				return nil, false
 			}
 		}
@@ -182,9 +182,9 @@ func respLists(w http.ResponseWriter, r *http.Request, tx *gorm.DB, resp any, pa
 	//// 创建一个与 model 类型相同的切片
 	//lst := reflect.MakeSlice(reflect.SliceOf(modelType), 0, 0).Interface()
 	if err := tx.Scopes(userDb.Paginate(r, pager.PageField, pager.PageSizeField, pager.PageSize)).Find(&resp).Error; err != nil {
-		httpServer.SetReturn(w, 1, "数据查询失败")
+		response.SetReturn(w, 1, "数据查询失败")
 		ulogs.Error(err, r.URL.Path, r.URL.RawQuery, "respLists", "tx.Find")
 		return
 	}
-	httpServer.SetReturnData(w, 0, "成功", pageListResp{Lists: resp, Total: totals})
+	response.SetReturnData(w, 0, "成功", pageListResp{Lists: resp, Total: totals})
 }

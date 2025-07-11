@@ -1,7 +1,8 @@
-package httpServer
+package router
 
 import (
 	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/net/http/httpServer/response"
 	"github.com/helays/utils/net/http/httpTools"
 	"github.com/helays/utils/tools"
 	"net/http"
@@ -37,7 +38,7 @@ import (
 
 func (ro *Router) Play(w http.ResponseWriter, r *http.Request, fname string, args ...any) {
 	if r.Method == "POST" {
-		MethodNotAllow(w)
+		response.MethodNotAllow(w)
 		return
 	}
 	if tools.ContainsDotDot(fname) {

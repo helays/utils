@@ -1,8 +1,8 @@
-package httpServerWithDb
+package dbresponse
 
 import (
 	"github.com/helays/utils/db/userDb"
-	"github.com/helays/utils/net/http/httpServer"
+	"github.com/helays/utils/net/http/httpServer/response"
 	"gorm.io/gorm"
 	"net/http"
 )
@@ -13,7 +13,7 @@ import (
 // 如果删除操作失败，它将返回一个500错误和"删除数据失败"的消息。
 // 如果删除成功，它将返回状态码0和"成功"的消息。
 func ModelDelete[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, c userDb.Curd) {
-	if !httpServer.CheckReqPost(w, r) {
+	if !response.CheckReqPost(w, r) {
 		return
 	}
 	_tx := tx.Model(new(T))
@@ -22,20 +22,20 @@ func ModelDelete[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, c u
 	}
 	err := _tx.Delete(nil).Error
 	if err != nil {
-		httpServer.SetReturnError(w, r, err, 500, "销毁数据失败")
+		response.SetReturnError(w, r, err, 500, "销毁数据失败")
 		return
 	}
-	httpServer.SetReturnData(w, 0, "成功")
+	response.SetReturnData(w, 0, "成功")
 }
 
 // PostModelUpdate 执行模型删除操作。是通过更新状态字段的方式实现的
 func PostModelUpdate[T any](w http.ResponseWriter, r *http.Request, tx *gorm.DB, c userDb.Curd, errMsg string) {
-	if !httpServer.CheckReqPost(w, r) {
+	if !response.CheckReqPost(w, r) {
 		return
 	}
 	if err := userDb.UpdateWithoutValid[T](tx, c); err != nil {
-		httpServer.SetReturnError(w, r, err, 500, errMsg)
+		response.SetReturnError(w, r, err, 500, errMsg)
 		return
 	}
-	httpServer.SetReturnCode(w, r, 0, "成功")
+	response.SetReturnCode(w, r, 0, "成功")
 }

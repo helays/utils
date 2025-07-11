@@ -1,4 +1,4 @@
-package httpServer
+package request
 
 import (
 	"bufio"

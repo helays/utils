@@ -1,20 +1,11 @@
-package httpServer
+package router
 
 import (
-	"bytes"
-	"github.com/dchest/captcha"
 	"github.com/helays/utils/logger/ulogs"
-	"io"
+	"github.com/helays/utils/net/http/httpServer/response"
 	"net/http"
 	"time"
 )
-
-// 显示 favicon
-func (ro Router) favicon(w http.ResponseWriter) {
-	w.WriteHeader(200)
-	rd := bytes.NewReader(favicon[:])
-	_, _ = io.Copy(w, rd)
-}
 
 // BeforeAction 所有应用前置操作
 func (ro *Router) BeforeAction(w http.ResponseWriter, r *http.Request) bool {
@@ -45,32 +36,10 @@ func (ro *Router) BeforeAction(w http.ResponseWriter, r *http.Request) bool {
 	}
 	// 控制管理员访问的
 	if ro.validManagePage(r.URL.Path) && !loginInfo.IsManage {
-		SetReturnCode(w, r, http.StatusForbidden, "无权限访问")
+		response.SetReturnCode(w, r, http.StatusForbidden, "无权限访问")
 		return false
 	}
 	return true
-}
-
-func (ro Router) Captcha(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "0")
-	var content bytes.Buffer
-
-	// 验证码存储在session中
-	captchaId := captcha.NewLen(4)
-	if err := ro.Store.Set(w, r, "captcha", captchaId, 4*time.Minute); err != nil {
-		InternalServerError(w)
-		return
-	}
-
-	if err := captcha.WriteImage(&content, captchaId, 106, 40); err != nil {
-		InternalServerError(w)
-		ulogs.Error(err, "captcha writeImage")
-		return
-	}
-	w.Header().Set("Content-Type", "image/png")
-	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(content.Bytes()))
 }
 
 // Middleware 中间件

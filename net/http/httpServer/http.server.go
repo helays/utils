@@ -1,25 +1,20 @@
 package httpServer
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"github.com/gorilla/handlers"
-	"github.com/helays/utils/close/httpClose"
-	"github.com/helays/utils/close/vclose"
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/crypto/md5"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/logger/zaploger"
-	"github.com/helays/utils/net/http/httpServer/responsewriter"
+	"github.com/helays/utils/net/http/httpServer/request"
+	"github.com/helays/utils/net/http/httpServer/response"
 	"github.com/helays/utils/net/ipAccess"
 	"github.com/helays/utils/tools"
-	"go.uber.org/zap"
-	"golang.org/x/net/websocket"
 	"net"
 	"net/http"
-	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
@@ -38,14 +33,14 @@ func (h *HttpServer) HttpServerStart() {
 		ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
 	}
 	h.iptablesInit()
-	mux := http.NewServeMux()
-	h.initRouter(mux)
+	h.initMux()
+	h.initRouter()
 
 	server := &http.Server{Addr: h.ListenAddr}
 	if h.EnableGzip {
-		server.Handler = handlers.CompressHandler(mux)
+		server.Handler = handlers.CompressHandler(h.mux)
 	} else {
-		server.Handler = mux
+		server.Handler = h.mux
 	}
 	defer Closehttpserver(server)
 	ulogs.Log("启动Http(s) Server", h.ListenAddr)
@@ -93,6 +88,12 @@ func (h *HttpServer) HttpServerStart() {
 	}
 }
 
+func (h *HttpServer) initMux() {
+	if h.mux == nil {
+		h.mux = http.NewServeMux()
+	}
+}
+
 // ip 黑白名单初始化
 func (h *HttpServer) iptablesInit() {
 	var err error
@@ -114,146 +115,22 @@ func (h *HttpServer) iptablesInit() {
 	ulogs.DieCheckerr(err, "http server debug ip白名单初始化失败")
 }
 
-// 设置路由
-func (h *HttpServer) initRouter(mux *http.ServeMux) {
-	h.Route["/debug/switch-debug"] = SwitchDebug
-	if config.Dbg {
-		h.Route["/debug/pprof/"] = pprof.Index
-		h.Route["/debug/pprof/cmdline"] = pprof.Cmdline
-		h.Route["/debug/pprof/profile"] = pprof.Profile
-		h.Route["/debug/pprof/symbol"] = pprof.Symbol
-		h.Route["/debug/pprof/trace"] = pprof.Trace
-	}
-	if h.Route != nil {
-		for u, funcName := range h.Route {
-			h.middleware(mux, u, funcName)
-		}
-	}
-
-	if h.RouteHandle != nil {
-		for u, funcName := range h.RouteHandle {
-			h.middleware(mux, u, funcName)
-		}
-	}
-
-	if h.RouteSocket != nil {
-		for u, funcName := range h.RouteSocket {
-			//mux.Handle(u, websocket.Handler(funcName))
-			h.socketMiddleware(mux, u, funcName)
-		}
-	}
-}
-
-func (h *HttpServer) middleware(mux *http.ServeMux, u string, f http.Handler) {
-	mux.HandleFunc(u, func(w http.ResponseWriter, r *http.Request) {
-		defer httpClose.CloseReq(r)
-		// 创建包装器
-		recorder := responsewriter.New(w) // 默认200
-		if len(h.serverNameMap) > 0 {
-			// 提取并转换为小写的host（忽略端口部分）
-			host := strings.ToLower(strings.SplitN(r.Host, ":", 2)[0])
-			if _, ok := h.serverNameMap[host]; !ok {
-				recorder.WriteHeader(http.StatusBadGateway)
-				return
-			}
-		}
-		start := time.Now()
-		defer func() {
-			ua := r.Header.Get("User-Agent")
-			elapsed := time.Since(start).Milliseconds() // 耗时
-			if h.logger != nil {
-				// 这里输出info 级别的请求日志
-				h.logger.Info(context.Background(),
-					Getip(r),
-					zap.String(r.Method, r.URL.String()),
-					zap.Int("status", recorder.GetStatus()),
-					zap.Int64("bytes_send", recorder.GetBytesWritten()),
-					zap.String("http_user_agent", ua),
-					zap.Int64("elapsed", elapsed),
-				)
-			} else {
-				ulogs.Debug(Getip(r), r.Method, r.URL.String(), recorder.GetStatus(), recorder.GetBytesWritten(), ua, elapsed)
-			}
-		}()
-
-		// add header
-		recorder.Header().Set("server", "vs/1.0")
-		recorder.Header().Set("connection", "keep-alive")
-		// 白名单验证
-		if h.enableCheckIpAccess && !h.checkIpAccess(recorder, r) {
-			return
-		}
-
-		if !h.debugIpAccess(recorder, r) {
-			return
-		}
-
-		if h.CommonCallback != nil && !h.CommonCallback(recorder, r) {
-			return
-		}
-		f.ServeHTTP(recorder, r)
-	})
-}
-
-func (h *HttpServer) socketMiddleware(mux *http.ServeMux, u string, f websocket.Handler) {
-	handler := websocket.Handler(func(ws *websocket.Conn) {
-		defer vclose.Close(ws)
-		// 提取并转换为小写的host（忽略端口部分）
-		host := strings.ToLower(strings.SplitN(ws.Request().Host, ":", 2)[0])
-		if _, ok := h.serverNameMap[host]; !ok {
-			// 对于WebSocket，我们可能不能直接返回HTTP状态码，但可以决定是否关闭连接
-			vclose.Close(ws)
-			return
-		}
-		start := time.Now()
-		ua := ws.Request().Header.Get("User-Agent")
-		defer func() {
-			elapsed := time.Since(start).Milliseconds() // 耗时
-			if h.logger != nil {
-				// 这里输出info级别的请求日志
-				h.logger.Info(context.Background(),
-					Getip(ws.Request()),
-					zap.String("method", "WEBSOCKET"),
-					zap.String("url", u),
-					zap.String("http_user_agent", ua),
-					zap.Int64("elapsed", elapsed),
-				)
-			} else {
-				ulogs.Debug(Getip(ws.Request()), "WEBSOCKET", u, ua, elapsed)
-			}
-		}()
-		// 白名单验证
-		if h.enableCheckIpAccess && !h.checkIpAccess(nil, ws.Request()) {
-			vclose.Close(ws)
-			return
-		}
-
-		// 如果有通用回调并且该回调不允许继续，则不进行后续处理
-		if h.CommonCallback != nil && !h.CommonCallback(nil, ws.Request()) {
-			vclose.Close(ws)
-			return
-		}
-		f(ws)
-	})
-	mux.Handle(u, handler)
-}
-
 // 检测ip白名单和黑名单
 func (this *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bool {
-	addr := Getip(r)
+	addr := request.Getip(r)
 	ip, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		ip = addr // 如果无端口，则直接使用原地址
 	}
 	if this.allowIpList != nil {
 		if !this.allowIpList.Contains(ip) {
-			Forbidden(w, "你的IP不在系统白名单内")
+			response.Forbidden(w, "你的IP不在系统白名单内")
 			return false
 		}
 		return true
 	}
 	if this.denyIpList != nil && this.denyIpList.Contains(ip) {
-		Forbidden(w, "你的IP已被监管")
+		response.Forbidden(w, "你的IP已被监管")
 		return false
 	}
 	return true
@@ -264,13 +141,13 @@ func (h *HttpServer) debugIpAccess(w http.ResponseWriter, r *http.Request) bool 
 	if !strings.HasPrefix(r.URL.Path, "/debug/") {
 		return true
 	}
-	addr := Getip(r)
+	addr := request.Getip(r)
 	ip, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		ip = addr // 如果无端口，则直接使用原地址
 	}
 	if !h.debugAllowIpList.Contains(ip) {
-		Forbidden(w, http.StatusText(http.StatusForbidden))
+		response.Forbidden(w, http.StatusText(http.StatusForbidden))
 		return false
 	}
 	return true

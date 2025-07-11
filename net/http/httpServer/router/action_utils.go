@@ -1,9 +1,10 @@
-package httpServer
+package router
 
 import (
 	"github.com/helays/utils/config"
 	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/net/http/httpServer/http_types"
+	"github.com/helays/utils/net/http/httpServer/response"
 	"github.com/pkg/errors"
 	"net/http"
 	"regexp"
@@ -39,7 +40,7 @@ import (
 // SwitchDebug 切换调试模式开关
 func SwitchDebug(w http.ResponseWriter, r *http.Request) {
 	config.Dbg = !config.Dbg
-	SetReturnData(w, 0, "成功")
+	response.SetReturnData(w, 0, "成功")
 }
 
 // 辅助函数，用于匹配正则表达式
@@ -74,7 +75,7 @@ func (ro *Router) validMustLogin(path string) bool {
 // 无授权的响应
 func (ro *Router) unAuthorizedResp(w http.ResponseWriter, r *http.Request) bool {
 	if ro.UnauthorizedRespMethod == 401 {
-		SetReturnData(w, ro.UnauthorizedRespMethod, "未登录，请先登录！！")
+		response.SetReturnData(w, ro.UnauthorizedRespMethod, "未登录，请先登录！！")
 		return false
 	}
 	http.Redirect(w, r, ro.LoginPath, 302)

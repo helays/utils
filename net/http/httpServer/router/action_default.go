@@ -1,10 +1,14 @@
-package httpServer
+package router
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"github.com/dchest/captcha"
 	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/logger/ulogs"
 	"github.com/helays/utils/net/http/httpServer/http_types"
+	"github.com/helays/utils/net/http/httpServer/response"
 	"github.com/helays/utils/net/http/mime"
 	"github.com/helays/utils/tools"
 	"io"
@@ -13,6 +17,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 //
@@ -55,7 +60,7 @@ const defaultIndexPage = "index.html"
 // 上面的后续待定
 func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		MethodNotAllow(w)
+		response.MethodNotAllow(w)
 		return
 	}
 	_path := r.URL.Path
@@ -168,4 +173,33 @@ func toHTTPError(err error) (msg string, httpStatus int) {
 	}
 	// Default:
 	return "500 Internal Server Error", http.StatusInternalServerError
+}
+
+// 显示 favicon
+func (ro Router) favicon(w http.ResponseWriter) {
+	w.WriteHeader(200)
+	rd := bytes.NewReader(favicon[:])
+	_, _ = io.Copy(w, rd)
+}
+
+func (ro Router) Captcha(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+	var content bytes.Buffer
+
+	// 验证码存储在session中
+	captchaId := captcha.NewLen(4)
+	if err := ro.Store.Set(w, r, "captcha", captchaId, 4*time.Minute); err != nil {
+		response.InternalServerError(w)
+		return
+	}
+
+	if err := captcha.WriteImage(&content, captchaId, 106, 40); err != nil {
+		response.InternalServerError(w)
+		ulogs.Error(err, "captcha writeImage")
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(content.Bytes()))
 }

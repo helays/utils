@@ -1,4 +1,4 @@
-package httpServer
+package response
 
 import (
 	"bytes"
@@ -8,12 +8,12 @@ import (
 	"github.com/helays/utils/close/osClose"
 	"github.com/helays/utils/dataType/customWriter"
 	"github.com/helays/utils/logger/ulogs"
+	"github.com/helays/utils/net/http/httpServer/request"
 	"github.com/helays/utils/net/http/httpTools"
 	mime2 "github.com/helays/utils/net/http/mime"
 	"github.com/helays/utils/tools"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/textproto"
 	"os"
@@ -118,53 +118,10 @@ func Play(path string, w http.ResponseWriter, r *http.Request, args ...any) {
 	_, _ = io.Copy(w, f)
 }
 
-// Forbidden 设置系统返回403
-func Forbidden(w http.ResponseWriter, msg ...string) {
-	w.WriteHeader(http.StatusForbidden)
-	w.Header().Set("Content-Type", "text/html;charset=utf-8")
-	_html := `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>403 Forbidden!</title></head><body><h3 style="text-align:center">` + strings.Join(msg, " ") + `</h3></body></html>`
-	_, _ = fmt.Fprintln(w, _html)
-	return
-}
-
-// NotFound 设置返回 404
-func NotFound(w http.ResponseWriter, msg ...string) {
-	w.WriteHeader(http.StatusNotFound)
-	w.Header().Set("Content-Type", "text/html;charset=utf-8")
-	_html := `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>404 Not Found!</title></head><body><h3 style="text-align:center">` + strings.Join(msg, " ") + `</h3></body></html>`
-	_, _ = fmt.Fprintln(w, _html)
-	return
-}
-
-// MethodNotAllow 405
-func MethodNotAllow(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusNotFound)
-	w.Header().Set("Content-Type", "text/html;charset=utf-8")
-	_, _ = w.Write([]byte(`<h1 style="text-align:center;">405 Error!</h1>
-<p style="text-align:center;">` + http.StatusText(http.StatusMethodNotAllowed) + `</p>`))
-}
-
-func InternalServerError(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusInternalServerError)
-	w.Header().Set("Content-Type", "text/html;charset=utf-8")
-	_, _ = w.Write([]byte(`<h1 style="text-align:center;">500 Error!</h1>
-<p style="text-align:center;">` + http.StatusText(http.StatusInternalServerError) + `</p>`))
-}
-
 func ReqError(r *http.Request, i ...any) {
 	log.SetPrefix("")
 	log.SetOutput(os.Stderr)
-	var msg = []any{Getip(r), r.URL.String()}
+	var msg = []any{request.Getip(r), r.URL.String()}
 	log.Println(append(msg, i...)...)
 }
 
@@ -231,13 +188,6 @@ func SetReturnCode(w http.ResponseWriter, r *http.Request, code int, msg any, da
 		}
 	}
 	SetReturnData(w, code, msg, data...)
-}
-
-type resp struct {
-	Code  int `json:"code"`
-	Msg   any `json:"msg"`
-	Data  any `json:"data,omitempty"`
-	AddOn any `json:"add_on,omitempty"`
 }
 
 // SetReturnData 设置返回函数
@@ -369,24 +319,6 @@ func CheckReqPost(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	return true
-}
-
-// Getip 获取客户端IP
-func Getip(r *http.Request) string {
-	remoteAddr := r.RemoteAddr
-	if ip := r.Header.Get("HTTP_CLIENT_IP"); ip != "" {
-		remoteAddr = ip
-	} else if ip = r.Header.Get("HTTP_X_FORWARDED_FOR"); ip != "" {
-		remoteAddr = ip
-	} else if ip = r.Header.Get("X-Real-IP"); ip != "" {
-		remoteAddr = ip
-	} else {
-		remoteAddr, _, _ = net.SplitHostPort(remoteAddr)
-	}
-	if remoteAddr == "::1" {
-		remoteAddr = "127.0.0.1"
-	}
-	return remoteAddr
 }
 
 // flushingWriter 是一个带有自动 Flush 的 io.Writer
