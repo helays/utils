@@ -1,4 +1,4 @@
-module github.com/helays/utils
+module github.com/helays/utils/v2
 
 go 1.23.0
 
