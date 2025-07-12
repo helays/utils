@@ -3,9 +3,9 @@ package request
 import (
 	"bufio"
 	"fmt"
-	"github.com/helays/utils/dataType/customWriter"
-	"github.com/helays/utils/excelTools"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/dataType/customWriter"
+	"github.com/helays/utils/v2/excelTools"
+	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
 	"io"
 	"net/http"

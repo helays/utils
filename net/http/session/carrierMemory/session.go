@@ -3,9 +3,9 @@ package carrierMemory
 import (
 	"context"
 	"fmt"
-	"github.com/helays/utils/dataType"
-	session2 "github.com/helays/utils/net/http/session"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/dataType"
+	session2 "github.com/helays/utils/v2/net/http/session"
+	"github.com/helays/utils/v2/tools"
 	"net/http"
 	"reflect"
 	"sync"

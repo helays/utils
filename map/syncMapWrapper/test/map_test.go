@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	"github.com/helays/utils/map/syncMapWrapper"
+	"github.com/helays/utils/v2/map/syncMapWrapper"
 	"sync"
 	"testing"
 )

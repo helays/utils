@@ -1,8 +1,8 @@
 package httpServer
 
 import (
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/net/http/httpServer/router"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/net/http/httpServer/router"
 	"net/http/pprof"
 )
 

@@ -2,8 +2,8 @@ package db
 
 import (
 	"fmt"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/tools"
 	"net/url"
 	"strings"
 )

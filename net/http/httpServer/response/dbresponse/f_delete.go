@@ -1,8 +1,8 @@
 package dbresponse
 
 import (
-	"github.com/helays/utils/db/userDb"
-	"github.com/helays/utils/net/http/httpServer/response"
+	"github.com/helays/utils/v2/db/userDb"
+	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"gorm.io/gorm"
 	"net/http"
 )

@@ -9,8 +9,8 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/crypto/sha256"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/crypto/sha256"
 )
 
 // RsaVerify 签名验证，用公钥进行验证

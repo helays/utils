@@ -2,9 +2,9 @@ package db
 
 import (
 	"database/sql/driver"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/dataType"
-	"github.com/helays/utils/logger/zaploger"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/logger/zaploger"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"time"

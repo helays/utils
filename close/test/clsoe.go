@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/v2/close/vclose"
 	"os"
 )
 

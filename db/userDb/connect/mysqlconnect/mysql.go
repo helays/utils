@@ -1,7 +1,7 @@
 package mysqlconnect
 
 import (
-	"github.com/helays/utils/db"
+	"github.com/helays/utils/v2/db"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

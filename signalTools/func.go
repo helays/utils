@@ -1,8 +1,8 @@
 package signalTools
 
 import (
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/logger/ulogs"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/logger/ulogs"
 	"os"
 	"os/signal"
 	"syscall"

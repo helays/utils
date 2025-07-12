@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"net/http"
 	"time"
 )

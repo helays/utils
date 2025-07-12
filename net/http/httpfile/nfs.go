@@ -1,7 +1,7 @@
 package httpfile
 
 import (
-	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/v2/close/vclose"
 	"net/http"
 	"os"
 )

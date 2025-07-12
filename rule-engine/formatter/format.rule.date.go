@@ -3,7 +3,7 @@ package formatter
 import (
 	"fmt"
 	"github.com/araddon/dateparse"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"time"
 )
 

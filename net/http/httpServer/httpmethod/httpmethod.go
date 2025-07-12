@@ -2,7 +2,7 @@
 package httpmethod
 
 import (
-	"github.com/helays/utils/net/http/httpServer/response"
+	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"net/http"
 )
 

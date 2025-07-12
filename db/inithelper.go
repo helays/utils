@@ -2,9 +2,9 @@ package db
 
 import (
 	"fmt"
-	"github.com/helays/utils/close/gormClose"
-	"github.com/helays/utils/logger/zaploger"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/close/gormClose"
+	"github.com/helays/utils/v2/logger/zaploger"
+	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"

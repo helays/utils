@@ -3,7 +3,7 @@ package simpleHttpClient
 import (
 	"context"
 	"crypto/tls"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"golang.org/x/net/proxy"
 	"net"
 	"net/http"

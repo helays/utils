@@ -2,7 +2,7 @@ package session
 
 import (
 	"errors"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 	"regexp"

@@ -1,10 +1,10 @@
 package userDb
 
 import (
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/dataType"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"net/http"

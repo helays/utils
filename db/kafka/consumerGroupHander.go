@@ -3,8 +3,8 @@ package kafka
 import (
 	"context"
 	"github.com/IBM/sarama"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/tools/backoff"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/tools/backoff"
 	"time"
 )
 

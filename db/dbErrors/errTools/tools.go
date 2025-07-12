@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
-	"github.com/helays/utils/db/dbErrors"
-	"github.com/helays/utils/db/dbErrors/errPostgres"
+	"github.com/helays/utils/v2/db/dbErrors"
+	"github.com/helays/utils/v2/db/dbErrors/errPostgres"
 	"github.com/jackc/pgx/v5/pgconn"
 	"strings"
 )

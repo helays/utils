@@ -3,7 +3,7 @@ package userDb
 import (
 	"errors"
 	"fmt"
-	"github.com/helays/utils/db/dbErrors/errTools"
+	"github.com/helays/utils/v2/db/dbErrors/errTools"
 	"gorm.io/gorm"
 	"regexp"
 )

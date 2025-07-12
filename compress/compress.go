@@ -3,7 +3,7 @@ package compress
 import (
 	"archive/zip"
 	"fmt"
-	"github.com/helays/utils/close/osClose"
+	"github.com/helays/utils/v2/close/osClose"
 	"io"
 	"os"
 	"path/filepath"

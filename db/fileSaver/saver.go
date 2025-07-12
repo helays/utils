@@ -2,12 +2,12 @@ package fileSaver
 
 import (
 	"fmt"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/db/fileSaver/ftp"
-	"github.com/helays/utils/db/fileSaver/hdfs"
-	"github.com/helays/utils/db/fileSaver/local"
-	"github.com/helays/utils/db/fileSaver/minio"
-	"github.com/helays/utils/db/fileSaver/sftp"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/db/fileSaver/ftp"
+	"github.com/helays/utils/v2/db/fileSaver/hdfs"
+	"github.com/helays/utils/v2/db/fileSaver/local"
+	"github.com/helays/utils/v2/db/fileSaver/minio"
+	"github.com/helays/utils/v2/db/fileSaver/sftp"
 	"io"
 	"path"
 	"strings"

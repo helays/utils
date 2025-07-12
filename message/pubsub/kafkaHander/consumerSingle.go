@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/IBM/sarama"
-	"github.com/helays/utils/message/pubsub"
-	"github.com/helays/utils/tools/backoff"
+	"github.com/helays/utils/v2/message/pubsub"
+	"github.com/helays/utils/v2/tools/backoff"
 	"strings"
 	"time"
 )

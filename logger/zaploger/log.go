@@ -2,7 +2,7 @@ package zaploger
 
 import (
 	"context"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

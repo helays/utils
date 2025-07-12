@@ -1,7 +1,7 @@
 package template_engine
 
 import (
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"html/template"
 	"time"
 )

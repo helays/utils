@@ -3,14 +3,14 @@ package zookeeper
 import (
 	"errors"
 	"fmt"
-	"github.com/helays/utils/tools/backoff"
+	"github.com/helays/utils/v2/tools/backoff"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/go-zookeeper/zk"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/tools"
 )
 
 // Config Zookeeper客户端配置

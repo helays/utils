@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"github.com/helays/utils/close/esClose"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/close/esClose"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/tools"
 )
 
 type IlmPolicy struct {

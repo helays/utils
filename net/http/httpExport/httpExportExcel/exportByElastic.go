@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/helays/utils/db/elastic/elasticModel"
+	"github.com/helays/utils/v2/db/elastic/elasticModel"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/excelTools"
-	"github.com/helays/utils/net/http/httpTools"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/excelTools"
+	"github.com/helays/utils/v2/net/http/httpTools"
+	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
 )
 

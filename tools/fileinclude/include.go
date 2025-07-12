@@ -3,7 +3,7 @@ package fileinclude
 import (
 	"bufio"
 	"fmt"
-	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/v2/close/vclose"
 	"io"
 	"os"
 	"path/filepath"

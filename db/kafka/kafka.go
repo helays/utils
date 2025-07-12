@@ -2,8 +2,8 @@ package kafka
 
 import (
 	"github.com/IBM/sarama"
-	"github.com/helays/utils/scram"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/scram"
+	"github.com/helays/utils/v2/tools"
 	"time"
 )
 

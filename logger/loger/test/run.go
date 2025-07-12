@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/helays/utils/config/loadIni"
-	"github.com/helays/utils/config/parseCmd"
-	"github.com/helays/utils/logger/loger"
+	"github.com/helays/utils/v2/config/loadIni"
+	"github.com/helays/utils/v2/config/parseCmd"
+	"github.com/helays/utils/v2/logger/loger"
 	"strings"
 	"time"
 )

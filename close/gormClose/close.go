@@ -1,7 +1,7 @@
 package gormClose
 
 import (
-	"github.com/helays/utils/close/vclose"
+	"github.com/helays/utils/v2/close/vclose"
 	"gorm.io/gorm"
 )
 

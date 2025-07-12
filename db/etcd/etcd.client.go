@@ -2,8 +2,8 @@ package etcd
 
 import (
 	"context"
-	tlsconfig "github.com/helays/utils/crypto/tls.config"
-	"github.com/helays/utils/tools"
+	tlsconfig "github.com/helays/utils/v2/crypto/tls.config"
+	"github.com/helays/utils/v2/tools"
 	"go.etcd.io/etcd/client/v3"
 	"time"
 )

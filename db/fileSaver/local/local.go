@@ -2,8 +2,8 @@ package local
 
 import (
 	"fmt"
-	"github.com/helays/utils/close/vclose"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/tools"
 	"io"
 	"os"
 	"path"

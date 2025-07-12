@@ -1,7 +1,7 @@
 package postgresconnect
 
 import (
-	"github.com/helays/utils/db"
+	"github.com/helays/utils/v2/db"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

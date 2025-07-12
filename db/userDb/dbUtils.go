@@ -2,9 +2,9 @@ package userDb
 
 import (
 	"fmt"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/db/dbErrors/errTools"
-	"github.com/helays/utils/logger/ulogs"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/db/dbErrors/errTools"
+	"github.com/helays/utils/v2/logger/ulogs"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"

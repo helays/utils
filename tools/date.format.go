@@ -1,7 +1,7 @@
 package tools
 
 import (
-	"github.com/helays/utils/config"
+	"github.com/helays/utils/v2/config"
 	"strings"
 )
 

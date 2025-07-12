@@ -1,8 +1,8 @@
 package test
 
 import (
-	session2 "github.com/helays/utils/net/http/session"
-	"github.com/helays/utils/net/http/session/carrierMemory"
+	session2 "github.com/helays/utils/v2/net/http/session"
+	"github.com/helays/utils/v2/net/http/session/carrierMemory"
 	"time"
 )
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/helays/utils/map/syncMap"
+	"github.com/helays/utils/v2/map/syncMap"
 )
 
 // 使用示例

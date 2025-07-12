@@ -8,8 +8,8 @@
 package test
 
 import (
-	"github.com/helays/utils/http/session"
-	"github.com/helays/utils/http/session/memory"
+	"github.com/helays/utils/v2/http/session"
+	"github.com/helays/utils/v2/http/session/memory"
 	"time"
 )
 
@@ -42,8 +42,8 @@ func run() {
 package test
 
 import (
-	"github.com/helays/utils/http/session"
-	"github.com/helays/utils/http/session/file"
+	"github.com/helays/utils/v2/http/session"
+	"github.com/helays/utils/v2/http/session/file"
 	"time"
 )
 

@@ -2,8 +2,8 @@ package router
 
 import (
 	"embed"
-	"github.com/helays/utils/net/http/httpServer/http_types"
-	"github.com/helays/utils/net/http/session"
+	"github.com/helays/utils/v2/net/http/httpServer/http_types"
+	"github.com/helays/utils/v2/net/http/session"
 	"gorm.io/gorm"
 	"net/http"
 	"regexp"

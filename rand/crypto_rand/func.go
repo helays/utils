@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"github.com/helays/utils/crypto/md5"
+	"github.com/helays/utils/v2/crypto/md5"
 	"math/big"
 )
 

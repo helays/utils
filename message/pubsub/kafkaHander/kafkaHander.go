@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/IBM/sarama"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/logger/zaploger"
-	"github.com/helays/utils/message/pubsub"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/logger/zaploger"
+	"github.com/helays/utils/v2/message/pubsub"
+	"github.com/helays/utils/v2/tools"
 	"sync"
 )
 

@@ -1,7 +1,7 @@
 package tableRotate
 
 import (
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"sort"
 	"strings"

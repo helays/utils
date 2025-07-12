@@ -1,10 +1,10 @@
 package router
 
 import (
-	"github.com/helays/utils/close/vclose"
-	"github.com/helays/utils/net/http/httpServer/response"
-	"github.com/helays/utils/net/http/httpTools"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/net/http/httpServer/response"
+	"github.com/helays/utils/v2/net/http/httpTools"
+	"github.com/helays/utils/v2/tools"
 	"net/http"
 	"path/filepath"
 )

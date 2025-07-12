@@ -1,8 +1,8 @@
 package httpServer
 
 import (
-	"github.com/helays/utils/logger/zaploger"
-	"github.com/helays/utils/net/ipAccess"
+	"github.com/helays/utils/v2/logger/zaploger"
+	"github.com/helays/utils/v2/net/ipAccess"
 	"golang.org/x/net/websocket"
 	"net/http"
 	"time"

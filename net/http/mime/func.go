@@ -3,7 +3,7 @@ package mime
 import (
 	"bytes"
 	"fmt"
-	"github.com/helays/utils/close/osClose"
+	"github.com/helays/utils/v2/close/osClose"
 	"io"
 	"net/http"
 	"os"

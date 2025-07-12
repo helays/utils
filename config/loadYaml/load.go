@@ -2,11 +2,11 @@ package loadYaml
 
 import (
 	"fmt"
-	"github.com/helays/utils/close/osClose"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/tools"
-	"github.com/helays/utils/tools/fileinclude"
+	"github.com/helays/utils/v2/close/osClose"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/tools"
+	"github.com/helays/utils/v2/tools/fileinclude"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"

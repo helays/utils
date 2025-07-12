@@ -1,11 +1,11 @@
 package httpServer
 
 import (
-	"github.com/helays/utils/close/httpClose"
-	"github.com/helays/utils/close/vclose"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/net/http/httpServer/request"
-	"github.com/helays/utils/net/http/httpServer/responsewriter"
+	"github.com/helays/utils/v2/close/httpClose"
+	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/net/http/httpServer/request"
+	"github.com/helays/utils/v2/net/http/httpServer/responsewriter"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"golang.org/x/net/websocket"

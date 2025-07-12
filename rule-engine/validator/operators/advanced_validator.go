@@ -2,7 +2,7 @@ package operators
 
 import (
 	"fmt"
-	"github.com/helays/utils/rule-engine/validator/types"
+	"github.com/helays/utils/v2/rule-engine/validator/types"
 )
 
 func ValidateAdvanced(operator types.Operator, value any, rule []any) (string, bool) {

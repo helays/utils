@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"os"
 )
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/helays/utils/map/syncMap" // 替换为你的包路径
+	"github.com/helays/utils/v2/map/syncMap" // 替换为你的包路径
 )
 
 // go test -bench=BenchmarkAll -benchmem 测试指令
