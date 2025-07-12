@@ -8,13 +8,14 @@ import (
 
 // 设置路由
 func (h *HttpServer) initRouter() {
-	h.Route["/debug/switch-debug"] = router.SwitchDebug
+	debugGroup := h.Group("/debug")
+	debugGroup.Get("/switch-debug", router.SwitchDebug)
 	if config.Dbg {
-		h.Route["/debug/pprof/"] = pprof.Index
-		h.Route["/debug/pprof/cmdline"] = pprof.Cmdline
-		h.Route["/debug/pprof/profile"] = pprof.Profile
-		h.Route["/debug/pprof/symbol"] = pprof.Symbol
-		h.Route["/debug/pprof/trace"] = pprof.Trace
+		debugGroup.Get("/pprof/", pprof.Index)
+		debugGroup.Get("/pprof/cmdline", pprof.Cmdline)
+		debugGroup.Get("/pprof/profile", pprof.Profile)
+		debugGroup.Get("/pprof/symbol", pprof.Symbol)
+		debugGroup.Get("/pprof/trace", pprof.Trace)
 	}
 	if h.Route != nil {
 		for u, funcName := range h.Route {
