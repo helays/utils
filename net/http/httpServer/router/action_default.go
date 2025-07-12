@@ -82,7 +82,7 @@ func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 	fl := strings.Split(pathCache[1], ",")
 	rmime := "text/html; charset=utf-8"
 	isFirst := false
-
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	embedFs := http.Dir(ro.Root)
 	for _, v := range fl {
 		f, _, errResp := ro.openEmbedFsFile(embedFs, path.Join(pathCache[0], v))

@@ -1,11 +1,10 @@
 package httpServer
 
 import (
-	"github.com/helays/utils/net/http/httpServer/response"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/net/http/httpServer/httpmethod"
 	"golang.org/x/net/websocket"
 	"net/http"
-	"path"
+	"strings"
 )
 
 type RouterGroup struct {
@@ -16,14 +15,14 @@ type RouterGroup struct {
 }
 
 func (h *HttpServer) Group(g string) *RouterGroup {
-	return &RouterGroup{service: h, prefix: g}
+	return &RouterGroup{service: h, prefix: strings.TrimSpace(g)}
 }
 
 // Group 创建新分组
 func (g *RouterGroup) Group(prefix string) *RouterGroup {
 	return &RouterGroup{
 		service:     g.service,
-		prefix:      g.calculatePrefix(prefix),
+		prefix:      g.calculatePrefix(strings.TrimSpace(prefix)),
 		parent:      g,
 		middlewares: g.middlewares[:], // 继承父级中间件
 	}
@@ -31,23 +30,18 @@ func (g *RouterGroup) Group(prefix string) *RouterGroup {
 
 // 计算完整路径前缀
 func (g *RouterGroup) calculatePrefix(p string) string {
-	prefix := tools.Ternary(g.prefix == "", "/", g.prefix)
-	return path.Join(prefix, p)
-}
-
-// 验证请求方法是否正确
-func (g *RouterGroup) methodValid(method string, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != method {
-			response.MethodNotAllow(w)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+	prefix := "/" + strings.Trim(g.prefix, "/")
+	if p == "" {
+		return prefix
+	} else if prefix == "/" {
+		prefix = ""
+	}
+	p = strings.TrimLeft(p, "/")
+	return prefix + "/" + p
 }
 
 func (g *RouterGroup) addRoute(method, p string, handler http.Handler) {
-	fullPath := path.Join(g.prefix, p)
+	fullPath := g.calculatePrefix(strings.TrimSpace(p))
 	var finalHandler = handler
 	if len(g.middlewares) > 0 {
 		finalHandler = Chain(g.middlewares...)(finalHandler)
@@ -55,7 +49,7 @@ func (g *RouterGroup) addRoute(method, p string, handler http.Handler) {
 	var cb []MiddlewareFunc
 	if method != "" {
 		vm := func(next http.Handler) http.Handler {
-			return g.methodValid(method, next)
+			return httpmethod.Method(method, next)
 		}
 		cb = append(cb, vm)
 	}
@@ -64,7 +58,7 @@ func (g *RouterGroup) addRoute(method, p string, handler http.Handler) {
 
 // WS 添加 WebSocket 支持
 func (g *RouterGroup) WS(p string, handler func(ws *websocket.Conn)) {
-	fullPath := path.Join(g.prefix, p)
+	fullPath := g.calculatePrefix(p)
 	g.service.socketMiddleware(fullPath, handler)
 }
 
@@ -74,68 +68,68 @@ func (g *RouterGroup) Use(middleware ...MiddlewareFunc) *RouterGroup {
 	return g
 }
 
-func (g *RouterGroup) GET(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Get(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodGet, p, handler)
 }
-func (g *RouterGroup) GETHandler(p string, handler http.Handler) {
+func (g *RouterGroup) GetHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodGet, p, handler)
 }
 
-func (g *RouterGroup) HEAD(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Head(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodHead, p, handler)
 }
 
-func (g *RouterGroup) HEADHandler(p string, handler http.Handler) {
+func (g *RouterGroup) HeadHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodPost, p, handler)
 }
 
-func (g *RouterGroup) POST(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Post(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodPost, p, handler)
 }
 
-func (g *RouterGroup) POSTHandler(p string, handler http.Handler) {
+func (g *RouterGroup) PostHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodPost, p, handler)
 }
 
-func (g *RouterGroup) PUT(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Put(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodPut, p, handler)
 }
-func (g *RouterGroup) PUTHandler(p string, handler http.Handler) {
+func (g *RouterGroup) PutHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodPut, p, handler)
 }
 
-func (g *RouterGroup) PATCH(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Patch(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodPatch, p, handler)
 }
-func (g *RouterGroup) PATCHHandler(p string, handler http.Handler) {
+func (g *RouterGroup) PatchHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodPatch, p, handler)
 }
 
-func (g *RouterGroup) DELETE(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Delete(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodDelete, p, handler)
 }
-func (g *RouterGroup) DELETEHandler(p string, handler http.Handler) {
+func (g *RouterGroup) DeleteHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodDelete, p, handler)
 }
 
-func (g *RouterGroup) CONNECT(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Connect(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodConnect, p, handler)
 }
-func (g *RouterGroup) CONNECTHandler(p string, handler http.Handler) {
+func (g *RouterGroup) ConnectHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodConnect, p, handler)
 }
 
-func (g *RouterGroup) OPTIONS(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Options(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodOptions, p, handler)
 }
-func (g *RouterGroup) OPTIONSHandler(p string, handler http.Handler) {
+func (g *RouterGroup) OptionsHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodOptions, p, handler)
 }
 
-func (g *RouterGroup) TRACE(p string, handler http.HandlerFunc) {
+func (g *RouterGroup) Trace(p string, handler http.HandlerFunc) {
 	g.addRoute(http.MethodTrace, p, handler)
 }
-func (g *RouterGroup) TRACEHandler(p string, handler http.Handler) {
+func (g *RouterGroup) TraceHandler(p string, handler http.Handler) {
 	g.addRoute(http.MethodTrace, p, handler)
 }
 
