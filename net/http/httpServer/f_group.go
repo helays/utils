@@ -56,8 +56,8 @@ func (g *RouterGroup) addRoute(method, p string, handler http.Handler) {
 	g.service.middleware(fullPath, finalHandler, cb...) // 注册路由
 }
 
-// WS 添加 WebSocket 支持
-func (g *RouterGroup) WS(p string, handler func(ws *websocket.Conn)) {
+// Ws 添加 WebSocket 支持
+func (g *RouterGroup) Ws(p string, handler func(ws *websocket.Conn)) {
 	fullPath := g.calculatePrefix(p)
 	g.service.socketMiddleware(fullPath, handler)
 }
