@@ -86,13 +86,16 @@ func (h *HttpServer) defaultValid(next http.Handler) http.HandlerFunc {
 func (h *HttpServer) socketMiddleware(u string, f websocket.Handler) {
 	handler := websocket.Handler(func(ws *websocket.Conn) {
 		defer vclose.Close(ws)
-		// 提取并转换为小写的host（忽略端口部分）
-		host := strings.ToLower(strings.SplitN(ws.Request().Host, ":", 2)[0])
-		if _, ok := h.serverNameMap[host]; !ok {
-			// 对于WebSocket，我们可能不能直接返回HTTP状态码，但可以决定是否关闭连接
-			vclose.Close(ws)
-			return
+		if len(h.serverNameMap) > 0 {
+			// 提取并转换为小写的host（忽略端口部分）
+			host := strings.ToLower(strings.SplitN(ws.Request().Host, ":", 2)[0])
+			if _, ok := h.serverNameMap[host]; !ok {
+				// 对于WebSocket，我们可能不能直接返回HTTP状态码，但可以决定是否关闭连接
+				vclose.Close(ws)
+				return
+			}
 		}
+
 		start := time.Now()
 		ua := ws.Request().Header.Get("User-Agent")
 		defer func() {
