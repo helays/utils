@@ -65,3 +65,15 @@ func Slice2Map[Key comparable, Elem any](slice []Elem, keyFunc func(Elem) Key) m
 	}
 	return result
 }
+
+// SliceToMultiMap 将切片转换为映射，允许键重复，相同键的值会保存在切片中
+// slice: 要转换的切片
+// keyFunc: 从元素中提取键的函数
+func SliceToMultiMap[Key comparable, Elem any](slice []Elem, keyFunc func(Elem) Key) map[Key][]Elem {
+	result := make(map[Key][]Elem)
+	for _, item := range slice {
+		key := keyFunc(item)
+		result[key] = append(result[key], item)
+	}
+	return result
+}
