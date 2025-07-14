@@ -42,6 +42,12 @@ func (sr *SafeResourceRWMutex[T]) ReadWith(fn func(T)) {
 	fn(sr.resource)
 }
 
+func (sr *SafeResourceRWMutex[T]) ReadWithResult(fn func(T) error) error {
+	sr.mu.RLock()
+	defer sr.mu.RUnlock()
+	return fn(sr.resource)
+}
+
 func (sr *SafeResourceRWMutex[T]) Write(newResource T) {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
