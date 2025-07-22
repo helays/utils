@@ -75,15 +75,16 @@ func (this *CustomTime) GobDecode(b []byte) error {
 }
 
 func (this CustomTime) MarshalJSON() ([]byte, error) {
-	b := []byte{'"'}
-	b = append(b, []byte(time.Time(this).Format(time.DateTime))...)
-	b = append(b, '"')
-	return b, nil
+	t := time.Time(this)
+	//if t.IsZero() {
+	//	return []byte("null"), nil
+	//}
+	return []byte(`"` + t.Format(time.DateTime) + `"`), nil
 }
 func (this *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	s := strings.Trim(string(b), "\"")
-	if s == "null" {
-		*this = CustomTime{}
+	if s == "null" || s == "" {
+		//*this = CustomTime{}
 		return nil
 	}
 	_t, err := time.ParseInLocation(time.DateTime, s, config.CstSh)
