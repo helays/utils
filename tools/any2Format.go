@@ -425,6 +425,137 @@ func Any2Map(src any) (any, error) {
 	}
 }
 
+func Object2MapStringAny(input any) (map[string]any, bool) {
+	if input == nil {
+		return nil, false
+	}
+
+	// 情况1: 直接是 map[string]any
+	if m, ok := input.(map[string]any); ok {
+		return m, true
+	}
+	// 情况2: 其他类型的 map
+	if m, ok := tryConvertOtherMap(input); ok {
+		return m, true
+	}
+	// 情况3: []any 切片 - 只取第一个元素
+	if slice, ok := input.([]any); ok && len(slice) > 0 {
+		// 只尝试转换第一个元素
+		return Object2MapStringAny(slice[0])
+	}
+	// 情况4: 结构体
+	if m, ok := tryConvertStruct(input); ok {
+		return m, true
+	}
+
+	return nil, false
+}
+
+// 尝试转换其他类型的 map
+func tryConvertOtherMap(input any) (map[string]any, bool) {
+	switch m := input.(type) {
+	case map[string]string:
+		result := make(map[string]any, len(m))
+		for k, v := range m {
+			result[k] = v
+		}
+		return result, true
+
+	case map[string]int:
+		result := make(map[string]any, len(m))
+		for k, v := range m {
+			result[k] = v
+		}
+		return result, true
+
+	case map[string]float64:
+		result := make(map[string]any, len(m))
+		for k, v := range m {
+			result[k] = v
+		}
+		return result, true
+
+	case map[string]bool:
+		result := make(map[string]any, len(m))
+		for k, v := range m {
+			result[k] = v
+		}
+		return result, true
+
+	case map[int]any:
+		result := make(map[string]any, len(m))
+		for k, v := range m {
+			result[fmt.Sprint(k)] = v
+		}
+		return result, true
+
+	case map[any]any:
+		result := make(map[string]any, len(m))
+		for k, v := range m {
+			if strKey, ok := k.(string); ok {
+				result[strKey] = v
+			} else {
+				result[fmt.Sprint(k)] = v
+			}
+		}
+		return result, true
+
+	default:
+		return nil, false
+	}
+}
+
+// 尝试将结构体转换为 map
+func tryConvertStruct(input any) (map[string]any, bool) {
+	val := reflect.ValueOf(input)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return nil, false
+	}
+
+	result := make(map[string]any)
+	typ := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		field := typ.Field(i)
+		// 跳过非导出字段
+		if field.PkgPath != "" {
+			continue
+		}
+
+		fieldValue := val.Field(i)
+		// 获取字段名，可以使用json tag
+		fieldName := field.Name
+		if jsonTag := field.Tag.Get("json"); jsonTag != "" {
+			if jsonTag == "-" {
+				continue // 跳过明确忽略的字段
+			}
+			// 取json tag中逗号前的部分
+			if commaIdx := strings.Index(jsonTag, ","); commaIdx != -1 {
+				jsonTag = jsonTag[:commaIdx]
+			}
+			if jsonTag != "" {
+				fieldName = jsonTag
+			}
+		}
+
+		// 递归处理嵌套结构体
+		if fieldValue.Kind() == reflect.Struct {
+			if nestedMap, ok := tryConvertStruct(fieldValue.Interface()); ok {
+				result[fieldName] = nestedMap
+				continue
+			}
+		}
+
+		result[fieldName] = fieldValue.Interface()
+	}
+
+	return result, true
+}
+
 // 预定义常见类型，减少反射调用
 var (
 	mapStringInterfaceType = reflect.TypeOf(map[string]any(nil))
@@ -436,7 +567,7 @@ var (
 func CheckIsObject(v any) bool {
 	// 先尝试类型断言（最快路径）
 	switch v.(type) {
-	case map[string]any, []any, // 最常见
+	case map[string]any, []any,     // 最常见
 		map[any]any,                // 任意 key 的 map
 		[]map[string]any,           // map 数组
 		[]int, []float64, []string, // 基本类型 slice
