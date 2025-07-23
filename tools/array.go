@@ -77,3 +77,34 @@ func SliceToMultiMap[Key comparable, Elem any](slice []Elem, keyFunc func(Elem) 
 	}
 	return result
 }
+
+// RemoveDuplicates 对slice去重
+func RemoveDuplicates[T comparable](slice []T) []T {
+	encountered := map[T]struct{}{}
+	result := make([]T, 0, len(slice))
+
+	for _, v := range slice {
+		if _, ok := encountered[v]; !ok {
+			encountered[v] = struct{}{}
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
+
+// RemoveDuplicatesWithKeyFunc 对slice去重，使用keyFunc生成比较键
+func RemoveDuplicatesWithKeyFunc[T any, K comparable](slice []T, keyFunc func(T) K) []T {
+	encountered := map[K]struct{}{}
+	result := make([]T, 0, len(slice))
+
+	for _, v := range slice {
+		key := keyFunc(v)
+		if _, exists := encountered[key]; !exists {
+			encountered[key] = struct{}{}
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
