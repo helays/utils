@@ -59,7 +59,7 @@ const defaultIndexPage = "index.html"
 //
 // 上面的后续待定
 func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+	if r.Method == http.MethodPost || r.Method == http.MethodPut {
 		response.MethodNotAllow(w)
 		return
 	}
@@ -135,6 +135,7 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 		ro.error(w, *errResp)
 		return
 	}
+
 	http.ServeContent(w, r, d.Name(), d.ModTime(), f)
 }
 

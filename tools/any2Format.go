@@ -567,7 +567,7 @@ var (
 func CheckIsObject(v any) bool {
 	// 先尝试类型断言（最快路径）
 	switch v.(type) {
-	case map[string]any, []any,     // 最常见
+	case map[string]any, []any, // 最常见
 		map[any]any,                // 任意 key 的 map
 		[]map[string]any,           // map 数组
 		[]int, []float64, []string, // 基本类型 slice

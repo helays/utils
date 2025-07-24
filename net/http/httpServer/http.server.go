@@ -11,6 +11,7 @@ import (
 	"github.com/helays/utils/v2/logger/zaploger"
 	"github.com/helays/utils/v2/net/http/httpServer/request"
 	"github.com/helays/utils/v2/net/http/httpServer/response"
+	"github.com/helays/utils/v2/net/http/mime"
 	"github.com/helays/utils/v2/net/ipAccess"
 	"github.com/helays/utils/v2/tools"
 	"net"
@@ -22,6 +23,7 @@ import (
 
 // HttpServerStart 公功 http server 启动函数
 func (h *HttpServer) HttpServerStart() {
+	mime.InitMimeTypes()
 	h.serverNameMap = make(map[string]byte)
 	for _, dom := range h.ServerName {
 		h.serverNameMap[strings.ToLower(dom)] = 0
@@ -77,7 +79,7 @@ func (h *HttpServer) HttpServerStart() {
 	go h.hotUpdate(server)
 	var isQuit bool
 	go h.stopServer(server, &isQuit)
-	if err := server.ListenAndServe(); err != nil {
+	if err = server.ListenAndServe(); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
 			ulogs.Error("HTTP Service 启动失败", server.Addr, err)
 			os.Exit(1)
