@@ -176,7 +176,8 @@ func respLists(w http.ResponseWriter, r *http.Request, tx *gorm.DB, resp any, pa
 	var totals int64
 	tx.Scopes(userDb.QueryDateTimeRange(r))
 	tx.Count(&totals)
-	tx.Order(pager.Order)
+	tx.Scopes(userDb.AutoSetSort(r, pager.Order, true)) // 通过 请求中的 get参数、tx 自动解析
+
 	// 下面用反射创建 slice ，貌似开销较大
 	//modelType := reflect.TypeOf(tx.Statement.Model) // 直接获取 tx 里面指向的模型
 	//// 创建一个与 model 类型相同的切片
