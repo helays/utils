@@ -5,6 +5,7 @@ import (
 	"github.com/helays/utils/v2/tools"
 	"net"
 	"net/http"
+	"net/url"
 )
 
 // Getip 获取客户端IP
@@ -37,4 +38,23 @@ func GetHeaderValueFormatInt(header http.Header, fields ...string) (map[string]i
 		resp[field] = int(v)
 	}
 	return resp, nil
+}
+
+func GetQueryValueFromRequest2Int(r *http.Request, fields string, defaultValue ...int) (int, bool) {
+	return GetQueryValueFromQuery2Int(r.URL.Query(), fields, defaultValue...)
+}
+
+func GetQueryValueFromQuery2Int(qs url.Values, fields string, defaultValue ...int) (int, bool) {
+	val := qs.Get(fields)
+	if val == "" {
+		if len(defaultValue) > 0 {
+			return defaultValue[0], true
+		}
+		return 0, false
+	}
+	_v, err := tools.Any2int(val)
+	if err != nil {
+		return 0, true
+	}
+	return int(_v), true
 }
