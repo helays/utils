@@ -377,11 +377,12 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string, t reflect.Typ
 		if tag == "" {
 			continue
 		}
-		if tag == "-:all" || tag == "-:migration" || strings.Contains(tag, "-:migration") {
+		tagArr := strings.Split(tag, ";")
+		if tools.ContainsAny([]string{"-:all", "-:migration", "-"}, tagArr) {
 			continue
 		}
 		column := tools.SnakeString(t.Field(i).Name)
-		for _, item := range strings.Split(tag, ";") {
+		for _, item := range tagArr {
 			if !strings.HasPrefix(item, "column") {
 				continue
 			}
