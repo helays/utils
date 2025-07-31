@@ -2,7 +2,6 @@ package router
 
 import (
 	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"github.com/helays/utils/v2/net/http/httpTools"
 	"github.com/helays/utils/v2/tools"
 	"net/http"
@@ -37,10 +36,6 @@ import (
 //
 
 func (ro *Router) Play(w http.ResponseWriter, r *http.Request, fname string, args ...any) {
-	if r.Method == "POST" {
-		response.MethodNotAllow(w)
-		return
-	}
 	if tools.ContainsDotDot(fname) {
 		http.Error(w, "invalid URL path", http.StatusBadRequest)
 		return
