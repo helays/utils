@@ -1,4 +1,4 @@
-package request
+package streamdecode_json
 
 import (
 	"bufio"
@@ -9,7 +9,6 @@ import (
 	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
 	"io"
-	"net/http"
 	"strings"
 )
 
@@ -20,36 +19,51 @@ type Import struct {
 	Sep      string `json:"sep"`       // csv 分割符
 }
 
-type JSONHandler func(ctx context.Context, obj map[string]interface{}) error
+// 参数验证
+func (i *Import) valid() error {
+	if i.FieldRow == 0 || i.FieldRow >= i.DataRow {
+		return fmt.Errorf("无有效字段、数据所在的行数")
+	}
+	return nil
+}
 
-func (i *Import) Import(r *http.Request) ([]any, int64, error) {
+func (i *Import) Import(ctx context.Context, r io.Reader) ([]any, int64, error) {
+	var data []any
 	switch i.FileType {
 	case "excel":
-		return i.ImportExcel(r)
+		flow, err := i.ImportExcelWithHandler(ctx, r, func(ctx context.Context, obj map[string]interface{}) error {
+			data = append(data, obj)
+			return nil
+		})
+		return data, flow, err
 	case "csv":
-		return i.ImportCsv(r)
+		flow, err := i.ImportCsvWithHandler(ctx, r, func(ctx context.Context, obj map[string]interface{}) error {
+			data = append(data, obj)
+			return nil
+		})
+		return data, flow, err
 	default:
 		return nil, 0, fmt.Errorf("不支持的文件类型：%s", i.FileType)
 	}
 }
 
-func (i *Import) ImportWithHandler(r *http.Request, handler JSONHandler) (int64, error) {
+func (i *Import) ImportWithHandler(ctx context.Context, r io.Reader, handler JSONHandler) (int64, error) {
 	switch i.FileType {
 	case "excel":
-		return i.ImportExcelWithHandler(r, handler)
+		return i.ImportExcelWithHandler(ctx, r, handler)
 	case "csv":
-		return i.ImportCsvWithHandler(r, handler)
+		return i.ImportCsvWithHandler(ctx, r, handler)
 	default:
 		return 0, fmt.Errorf("不支持的文件类型：%s", i.FileType)
 	}
 }
 
-func (i *Import) ImportExcelWithHandler(r *http.Request, handler JSONHandler) (int64, error) {
+func (i *Import) ImportExcelWithHandler(ctx context.Context, r io.Reader, handler JSONHandler) (int64, error) {
 	if err := i.valid(); err != nil {
 		return 0, err
 	}
 	counter := &customWriter.SizeCounter{}
-	teeReader := io.TeeReader(r.Body, counter)
+	teeReader := io.TeeReader(r, counter)
 
 	excel, err := excelize.OpenReader(teeReader)
 	defer excelTools.CloseExcel(excel)
@@ -72,7 +86,7 @@ func (i *Import) ImportExcelWithHandler(r *http.Request, handler JSONHandler) (i
 		if idx < dataRow {
 			continue
 		}
-		err = handler(r.Context(), tools.Slice2MapWithHeader(row, fieldRowMap))
+		err = handler(ctx, tools.Slice2MapWithHeader(row, fieldRowMap))
 		if err != nil {
 			return counter.TotalSize, err
 		}
@@ -80,12 +94,12 @@ func (i *Import) ImportExcelWithHandler(r *http.Request, handler JSONHandler) (i
 	return counter.TotalSize, nil
 }
 
-func (i *Import) ImportCsvWithHandler(r *http.Request, handler JSONHandler) (int64, error) {
+func (i *Import) ImportCsvWithHandler(ctx context.Context, r io.Reader, handler JSONHandler) (int64, error) {
 	if err := i.valid(); err != nil {
 		return 0, err
 	}
 	counter := &customWriter.SizeCounter{}
-	teeReader := io.TeeReader(r.Body, counter)
+	teeReader := io.TeeReader(r, counter)
 	var (
 		scanner   = bufio.NewScanner(teeReader)
 		idx       int
@@ -103,38 +117,9 @@ func (i *Import) ImportCsvWithHandler(r *http.Request, handler JSONHandler) (int
 		if idx < i.DataRow {
 			continue
 		}
-		if err := handler(r.Context(), tools.Slice2MapWithHeader(lineRows, fieldRows)); err != nil {
+		if err := handler(ctx, tools.Slice2MapWithHeader(lineRows, fieldRows)); err != nil {
 			return 0, err
 		}
 	}
 	return counter.TotalSize, nil
-}
-
-// ImportExcel 获取excel内容
-func (i *Import) ImportExcel(r *http.Request) ([]any, int64, error) {
-	var data []any
-	flow, err := i.ImportExcelWithHandler(r, func(ctx context.Context, obj map[string]interface{}) error {
-		data = append(data, obj)
-		return nil
-	})
-	return data, flow, err
-
-}
-
-// ImportCsv 获取csv内容
-func (i *Import) ImportCsv(r *http.Request) ([]any, int64, error) {
-	var data []any
-	flow, err := i.ImportCsvWithHandler(r, func(ctx context.Context, obj map[string]interface{}) error {
-		data = append(data, obj)
-		return nil
-	})
-	return data, flow, err
-}
-
-// 参数验证
-func (i *Import) valid() error {
-	if i.FieldRow == 0 || i.FieldRow >= i.DataRow {
-		return fmt.Errorf("无有效字段、数据所在的行数")
-	}
-	return nil
 }
