@@ -3,6 +3,7 @@ package dataType
 import (
 	"database/sql/driver"
 	"errors"
+	"github.com/helays/utils/v2/config"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -37,11 +38,11 @@ func (Binary) GormDataType() string {
 // GormDBDataType 返回数据库特定的数据类型名称
 func (Binary) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
-	case "mysql":
+	case config.DbTypeMysql:
 		return "longblob"
-	case "postgres":
+	case config.DbTypePostgres:
 		return "BYTEA"
-	case "sqlite":
+	case config.DbTypeSqlite:
 		return "BLOB"
 	default:
 		return "BLOB"

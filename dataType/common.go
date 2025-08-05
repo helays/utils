@@ -131,7 +131,7 @@ func arrayScan(m any, val any) error {
 func arrayGormValue(jm any, db *gorm.DB) clause.Expr {
 	data, _ := marshalSlice(jm)
 	switch db.Dialector.Name() {
-	case "mysql":
+	case config.DbTypeMysql:
 		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
 			fmt.Println(v.ServerVersion)
 			return gorm.Expr("CAST(? AS JSON)", string(data))

@@ -3,6 +3,7 @@ package dataType
 import (
 	"database/sql"
 	"database/sql/driver"
+	"github.com/helays/utils/v2/config"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -27,13 +28,13 @@ func (this String) GormDataType() string {
 // GormDBDataType gorm db data type
 func (String) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
-	case "sqlite":
+	case config.DbTypeSqlite:
 		return "text"
-	case "mysql":
+	case config.DbTypeMysql:
 		return "LONGTEXT"
-	case "postgres":
+	case config.DbTypePostgres:
 		return "text"
-	case "sqlserver":
+	case config.DbTypeSqlserver:
 		return "VARCHAR(MAX)"
 	}
 	return ""

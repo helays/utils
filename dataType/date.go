@@ -54,13 +54,13 @@ func (this CustomTime) GormDataType() string {
 // GormDBDataType gorm db data type
 func (CustomTime) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
-	case "sqlite":
+	case config.DbTypeSqlite:
 		return "timestamp"
-	case "mysql":
+	case config.DbTypeMysql:
 		return "timestamp"
-	case "postgres":
+	case config.DbTypePostgres:
 		return "timestamp with time zone"
-	case "sqlserver":
+	case config.DbTypeSqlserver:
 		return "timestamp"
 	}
 	return ""

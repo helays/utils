@@ -2,7 +2,6 @@ package streamdecode_json
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"github.com/helays/utils/v2/dataType/customWriter"
 	"github.com/helays/utils/v2/excelTools"
@@ -12,13 +11,6 @@ import (
 	"strings"
 )
 
-type Import struct {
-	FileType string `json:"file_type"` // 文件类型 excel、csv
-	FieldRow int    `json:"field_row"` // 字段所在行
-	DataRow  int    `json:"data_row"`  // 数据开始行
-	Sep      string `json:"sep"`       // csv 分割符
-}
-
 // 参数验证
 func (i *Import) valid() error {
 	if i.FieldRow == 0 || i.FieldRow >= i.DataRow {
@@ -27,43 +19,12 @@ func (i *Import) valid() error {
 	return nil
 }
 
-func (i *Import) Import(ctx context.Context, r io.Reader) ([]any, int64, error) {
-	var data []any
-	switch i.FileType {
-	case "excel":
-		flow, err := i.ImportExcelWithHandler(ctx, r, func(ctx context.Context, obj map[string]interface{}) error {
-			data = append(data, obj)
-			return nil
-		})
-		return data, flow, err
-	case "csv":
-		flow, err := i.ImportCsvWithHandler(ctx, r, func(ctx context.Context, obj map[string]interface{}) error {
-			data = append(data, obj)
-			return nil
-		})
-		return data, flow, err
-	default:
-		return nil, 0, fmt.Errorf("不支持的文件类型：%s", i.FileType)
-	}
-}
-
-func (i *Import) ImportWithHandler(ctx context.Context, r io.Reader, handler JSONHandler) (int64, error) {
-	switch i.FileType {
-	case "excel":
-		return i.ImportExcelWithHandler(ctx, r, handler)
-	case "csv":
-		return i.ImportCsvWithHandler(ctx, r, handler)
-	default:
-		return 0, fmt.Errorf("不支持的文件类型：%s", i.FileType)
-	}
-}
-
-func (i *Import) ImportExcelWithHandler(ctx context.Context, r io.Reader, handler JSONHandler) (int64, error) {
+func (i *Import) importExcelWithHandler(handler JSONHandler) (int64, error) {
 	if err := i.valid(); err != nil {
 		return 0, err
 	}
 	counter := &customWriter.SizeCounter{}
-	teeReader := io.TeeReader(r, counter)
+	teeReader := io.TeeReader(i.rd, counter)
 
 	excel, err := excelize.OpenReader(teeReader)
 	defer excelTools.CloseExcel(excel)
@@ -86,7 +47,7 @@ func (i *Import) ImportExcelWithHandler(ctx context.Context, r io.Reader, handle
 		if idx < dataRow {
 			continue
 		}
-		err = handler(ctx, tools.Slice2MapWithHeader(row, fieldRowMap))
+		err = handler(i.ctx, tools.Slice2MapWithHeader(row, fieldRowMap))
 		if err != nil {
 			return counter.TotalSize, err
 		}
@@ -94,12 +55,12 @@ func (i *Import) ImportExcelWithHandler(ctx context.Context, r io.Reader, handle
 	return counter.TotalSize, nil
 }
 
-func (i *Import) ImportCsvWithHandler(ctx context.Context, r io.Reader, handler JSONHandler) (int64, error) {
+func (i *Import) importCsvWithHandler(handler JSONHandler) (int64, error) {
 	if err := i.valid(); err != nil {
 		return 0, err
 	}
 	counter := &customWriter.SizeCounter{}
-	teeReader := io.TeeReader(r, counter)
+	teeReader := io.TeeReader(i.rd, counter)
 	var (
 		scanner   = bufio.NewScanner(teeReader)
 		idx       int
@@ -117,7 +78,7 @@ func (i *Import) ImportCsvWithHandler(ctx context.Context, r io.Reader, handler 
 		if idx < i.DataRow {
 			continue
 		}
-		if err := handler(ctx, tools.Slice2MapWithHeader(lineRows, fieldRows)); err != nil {
+		if err := handler(i.ctx, tools.Slice2MapWithHeader(lineRows, fieldRows)); err != nil {
 			return 0, err
 		}
 	}

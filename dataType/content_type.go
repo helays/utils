@@ -30,6 +30,21 @@ func (ct ContentType) String() string {
 	}
 }
 
+func (ct ContentType) Ext() string {
+	switch ct {
+	case JSON:
+		return ".json"
+	case PlainText:
+		return ".txt"
+	case CSV:
+		return ".csv"
+	case Excel:
+		return ".xlsx"
+	default:
+		return ""
+	}
+}
+
 const (
 	Unknown ContentType = iota
 	JSON
