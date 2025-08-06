@@ -15,7 +15,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/textproto"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -354,15 +353,6 @@ func CopyBuffer(dst io.Writer, src io.Reader, buf []byte) (written int64, err er
 		return 0, errors.New("Streaming unsupported!")
 	}
 	return io.CopyBuffer(&flushingWriter{w: dst, flusher: flusher}, src, buf)
-}
-
-type Files []File
-
-type File struct {
-	Filename string
-	Size     int64
-	Header   textproto.MIMEHeader
-	Body     *bytes.Buffer
 }
 
 // PostQueryFieldWithValidRegexp 检查POST请求中的查询参数是否符合指定的正则表达式规则，并返回匹配结果。
