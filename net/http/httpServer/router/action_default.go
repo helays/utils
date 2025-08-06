@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dchest/captcha"
+	"github.com/helays/utils/v2"
 	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/net/http/httpServer/http_types"
 	"github.com/helays/utils/v2/net/http/httpServer/response"
@@ -116,12 +118,14 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 		return
 	}
 	var embedFs http.FileSystem
+	isEmbedFs := false
 	// 注意，当发现响应状态非正常时，浏览器显示乱码，是标准库[http/fs.go]里面会删除Content-Encoding，
 	// 所以这里不用 http.ServeFile,http.ServeFileFS
 	if len(ro.staticEmbedFS) > 0 {
 		for k, _embedFS := range ro.staticEmbedFS {
 			if strings.HasPrefix(r.URL.Path, k) {
 				embedFs = http.FS(_embedFS)
+				isEmbedFs = true
 				break
 			}
 		}
@@ -129,14 +133,22 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 	if embedFs == nil {
 		embedFs = http.Dir(ro.Root)
 	}
+
 	f, d, errResp := ro.openEmbedFsFile(embedFs, _path)
 	defer vclose.Close(f)
 	if errResp != nil {
 		ro.error(w, *errResp)
 		return
 	}
+	modTime := d.ModTime()
+	if isEmbedFs {
+		var err error
+		if modTime, err = time.ParseInLocation(time.DateTime, utils.BuildTime, config.CstSh); err != nil {
+			modTime = time.Date(1994, time.January, 1, 0, 0, 0, 0, time.UTC)
+		}
+	}
 
-	http.ServeContent(w, r, d.Name(), d.ModTime(), f)
+	http.ServeContent(w, r, d.Name(), modTime, f)
 }
 
 func (ro *Router) openEmbedFsFile(embedFs http.FileSystem, _path string) (http.File, fs.FileInfo, *http_types.ErrorResp) {
