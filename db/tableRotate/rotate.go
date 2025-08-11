@@ -32,6 +32,12 @@ func Close() error {
 	return nil
 }
 
+type CallbackParams struct {
+	Tx       *gorm.DB
+	SrcTable string
+	DstTable string
+}
+
 // TableRotate db自动轮转配置
 type TableRotate struct {
 	Enable                  bool          `json:"enable" yaml:"enable" ini:"enable"` // 是否启用自动轮转
@@ -46,10 +52,21 @@ type TableRotate struct {
 	FilterField             string        `json:"filter_field" yaml:"filter_field" ini:"filter_field"`                                           // 过滤字段 默认create_time
 	tx                      *gorm.DB
 	tableName               string
+
+	splitCallback  func(p *CallbackParams) error // 分表回调
+	rotateCallback func(p *CallbackParams) error // 轮转数据回调
+}
+
+func (r *TableRotate) SetSplitCallback(callback func(p *CallbackParams) error) {
+	r.splitCallback = callback
+}
+
+func (r *TableRotate) SetRotateCallback(callback func(p *CallbackParams) error) {
+	r.rotateCallback = callback
 }
 
 // AddTask 添加自动轮转任务
-func (r TableRotate) AddTask(ctx context.Context, tx *gorm.DB, tableName string) {
+func (r *TableRotate) AddTask(ctx context.Context, tx *gorm.DB, tableName string) {
 	if !r.Enable {
 		return
 	}
@@ -121,8 +138,7 @@ func (r *TableRotate) runSplitTable() {
 			return fmt.Errorf("修改表名失败 %s to %s :%s", r.tableName, newTableName, err.Error())
 		}
 		switch tx.Dialector.Name() {
-		case config.DbTypePostgres:
-			// 创建新表
+		case config.DbTypePostgres: // 创建新表
 			err = tx.Debug().Exec("CREATE TABLE ? (LIKE ? INCLUDING ALL)", clause.Table{Name: r.tableName}, clause.Table{Name: newTableName}).Error
 			if err != nil {
 				return fmt.Errorf("创建表失败 %s :%s", r.tableName, err.Error())
@@ -138,7 +154,9 @@ func (r *TableRotate) runSplitTable() {
 				return fmt.Errorf("创建表失败 %s :%s", r.tableName, err.Error())
 			}
 		}
-
+		if r.splitCallback != nil {
+			return r.splitCallback(&CallbackParams{Tx: tx, SrcTable: r.tableName, DstTable: newTableName})
+		}
 		return nil
 	})
 	if err != nil {
@@ -196,7 +214,17 @@ func (r *TableRotate) runRotateTableData() {
 			WithoutParentheses: false,
 		}
 	}
-	err := r.tx.Table(r.tableName).Where(r.FilterField+" < ?", queryVal).Delete(nil).Error
+
+	err := r.tx.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table(r.tableName).Where(r.FilterField+" < ?", queryVal).Delete(nil).Error; err != nil {
+			return err
+		}
+		if r.rotateCallback != nil {
+			return r.rotateCallback(&CallbackParams{DstTable: r.tableName, SrcTable: r.tableName, Tx: tx})
+		}
+		return nil
+	})
+	
 	if err != nil {
 		switch _err := err.(type) {
 		case *pgconn.PgError:
