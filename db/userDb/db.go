@@ -2,17 +2,18 @@ package userDb
 
 import (
 	"context"
-	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/tools"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/tools"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 //
@@ -117,8 +118,13 @@ func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, lik
 			}
 			switch fieldInfo.kind {
 			case reflect.String:
-				lastVal := applyLikes(val, fieldInfo.dblike, likes, fieldInfo.fieldName)
-				conditions = append(conditions, clause.Like{Column: column, Value: lastVal})
+				valList := strings.Split(val, ",")
+				if len(valList) == 1 {
+					lastVal := applyLikes(val, fieldInfo.dblike, likes, fieldInfo.fieldName)
+					conditions = append(conditions, clause.Like{Column: column, Value: lastVal})
+				} else {
+					conditions = append(conditions, clause.Eq{Column: column, Value: valList})
+				}
 			case reflect.Int, reflect.Int8, reflect.Int32, reflect.Int64, reflect.Int16, reflect.Float64, reflect.Float32:
 				valList := strings.Split(val, ",")
 				if len(valList) > 1 {
