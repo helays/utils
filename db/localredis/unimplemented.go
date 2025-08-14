@@ -2,8 +2,9 @@ package localredis
 
 import (
 	"context"
-	"github.com/redis/go-redis/v9"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // 以下是未实现的redis.UniversalClient接口方法
@@ -2600,5 +2601,44 @@ func (l *LocalCache) SSubscribe(ctx context.Context, channels ...string) *redis.
 }
 
 func (l *LocalCache) PoolStats() *redis.PoolStats {
+	return nil
+}
+
+func (l *LocalCache) BitOpDiff(ctx context.Context, destKey string, keys ...string) *redis.IntCmd {
+	return nil
+}
+func (l *LocalCache) BitOpDiff1(ctx context.Context, destKey string, keys ...string) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) BitOpAndOr(ctx context.Context, destKey string, keys ...string) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) BitOpOne(ctx context.Context, destKey string, keys ...string) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) XAckDel(ctx context.Context, stream string, group string, mode string, ids ...string) *redis.SliceCmd {
+	return nil
+}
+
+func (l *LocalCache) XDelEx(ctx context.Context, stream string, mode string, ids ...string) *redis.SliceCmd {
+	return nil
+}
+
+func (l *LocalCache) XTrimMaxLenMode(ctx context.Context, key string, maxLen int64, mode string) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) XTrimMaxLenApproxMode(ctx context.Context, key string, maxLen int64, limit int64, mode string) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) XTrimMinIDMode(ctx context.Context, key string, minID string, mode string) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) XTrimMinIDApproxMode(ctx context.Context, key string, minID string, limit int64, mode string) *redis.IntCmd {
 	return nil
 }
