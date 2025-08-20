@@ -170,3 +170,28 @@ func FindTableWithPrefix(tx *gorm.DB, prefix string) ([]string, error) {
 	}
 	return tables, nil
 }
+
+func Truncate(tx *gorm.DB, tableName string) error {
+	var sql string
+	dialect := tx.Dialector.Name()
+	switch dialect {
+	case config.DbTypeSqlite:
+		sql = fmt.Sprintf("DELETE FROM %s", tableName)
+	case config.DbTypeMysql:
+		sql = fmt.Sprintf("TRUNCATE TABLE %s", tableName)
+	case config.DbTypePostgres:
+		sql = fmt.Sprintf("TRUNCATE TABLE %s", tableName)
+	default:
+		return fmt.Errorf("不支持的数据库类型：%s", dialect)
+	}
+	err := tx.Exec(sql).Error
+	if err != nil {
+		return fmt.Errorf("清空表失败：%s", err.Error())
+	}
+	if dialect == "sqlite" {
+		if err = tx.Exec(fmt.Sprintf("DELETE FROM sqlite_sequence WHERE name = '%s'", tableName)).Error; err != nil {
+			return fmt.Errorf("sqlite重置序列失败：%s", err.Error())
+		}
+	}
+	return nil
+}
