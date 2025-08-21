@@ -3,8 +3,9 @@ package streamdecode_json
 import (
 	"context"
 	"fmt"
-	"github.com/helays/utils/v2/dataType"
 	"io"
+
+	"github.com/helays/utils/v2/dataType"
 )
 
 type JSONHandler func(ctx context.Context, obj map[string]interface{}) error
@@ -13,6 +14,7 @@ type Import struct {
 	fileType dataType.ContentType
 	ctx      context.Context
 	rd       io.Reader
+	bigLine  bool   // 是否启用大行模式
 	FieldRow int    `json:"field_row"` // 字段所在行
 	DataRow  int    `json:"data_row"`  // 数据开始行
 	Sep      string `json:"sep"`       // csv 分割符
@@ -38,6 +40,10 @@ func (i *Import) SetSep(sep string) {
 	i.Sep = sep
 }
 
+func (i *Import) SetBigLine(bigLine bool) {
+	i.bigLine = bigLine
+}
+
 func (i *Import) Import() ([]any, int64, error) {
 	var data []any
 	flow, err := i.ImportWithHandler(func(ctx context.Context, obj map[string]interface{}) error {
@@ -50,6 +56,9 @@ func (i *Import) Import() ([]any, int64, error) {
 func (i *Import) ImportWithHandler(handler JSONHandler) (int64, error) {
 	switch i.fileType {
 	case dataType.PlainText:
+		if i.bigLine {
+			return i.processLineEnhanced(handler)
+		}
 		return i.processLine(handler)
 	case dataType.JSON:
 		return i.processJSON(handler)
