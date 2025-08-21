@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -22,8 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/close/vclose"
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/logger/ulogs"
 )
@@ -121,64 +118,6 @@ func DeleteStrarr(arr []string, val string) []string {
 		}
 	}
 	return arr
-}
-
-// FilePutContents 快速简易写文件
-func FilePutContents(path, content string) error {
-	if err := Mkdir(filepath.Dir(path)); err != nil {
-		return err
-	}
-	file, err := os.OpenFile(path, os.O_TRUNC|os.O_RDWR|os.O_CREATE, 0755)
-	if err != nil {
-		return err
-	}
-	_, err = file.WriteString(content)
-	osClose.CloseFile(file)
-	return err
-}
-
-func FilePutContentsbytes(path string, content []byte) error {
-	_path := filepath.Dir(path)
-	if _, err := os.Stat(_path); err != nil {
-		if err := Mkdir(_path); err != nil {
-			return err
-		}
-	}
-
-	file, err := os.OpenFile(path, os.O_TRUNC|os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	_, err = file.Write(content)
-	osClose.CloseFile(file)
-	return err
-}
-
-// FileAppendContents 快速简易写文件（追加）
-func FileAppendContents(path, content string) error {
-	_path := filepath.Dir(path)
-	if _, err := os.Stat(_path); err != nil {
-		if err := Mkdir(_path); err != nil {
-			return err
-		}
-	}
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		return err
-	}
-	_, err = file.WriteString(content)
-	osClose.CloseFile(file)
-	return err
-}
-
-// FileGetContents 快速简易读取文件
-func FileGetContents(path string) ([]byte, error) {
-	file, err := os.Open(path)
-	defer vclose.Close(file)
-	if err != nil {
-		return nil, err
-	}
-	return io.ReadAll(file)
 }
 
 // Mkdir 判断目录是否存在，否则创建目录

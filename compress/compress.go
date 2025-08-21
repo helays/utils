@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"github.com/helays/utils/v2/close/osClose"
+	"github.com/helays/utils/v2/close/vclose"
 	"io"
 	"os"
 	"path/filepath"
@@ -146,13 +147,13 @@ func CloseZipWriter(f *zip.Writer) {
 // UnCompressZip 解压zip包
 func UnCompressZip(zipFilePath string, targetDir string) error {
 	reader, err := zip.OpenReader(zipFilePath)
-	defer CloseZipReader(reader)
+	defer vclose.Close(reader)
 	if err != nil {
-		return fmt.Errorf("failed to open ZIP file: %w", err)
+		return fmt.Errorf("打开压缩文件失败: %w", err)
 	}
 	// 遍历zip文件中的所有条目
 	for _, file := range reader.File {
-		err := func(file *zip.File) error {
+		err = func(file *zip.File) error {
 			// 获取条目的相对路径
 			filePath := filepath.Join(targetDir, file.Name)
 			// 如果是目录，则创建它
@@ -163,16 +164,16 @@ func UnCompressZip(zipFilePath string, targetDir string) error {
 				return nil
 			}
 			// 创建目标文件
-			outputFile, err := os.Create(filePath)
+			outputFile, _err := os.Create(filePath)
 			defer osClose.CloseFile(outputFile)
-			if err != nil {
-				return err
+			if _err != nil {
+				return _err
 			}
 			// 从zip文件中打开条目的读取流
-			zipFile, err := file.Open()
+			zipFile, _opErr := file.Open()
 			defer CloseIoReader(zipFile)
-			if err != nil {
-				return err
+			if _opErr != nil {
+				return _opErr
 			}
 			// 将条目内容复制到目标文件
 			_, err = io.Copy(outputFile, zipFile)
