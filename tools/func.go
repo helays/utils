@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	url2 "net/url"
 	"os"
@@ -566,7 +566,7 @@ func RandomString(n int, allowedChars ...[]rune) string {
 
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letters[rng.Intn(len(letters))]
+		b[i] = letters[rng.IntN(len(letters))]
 	}
 	return string(b)
 }

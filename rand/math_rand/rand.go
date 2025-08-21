@@ -1,7 +1,7 @@
 package math_rand
 
 import (
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/helays/utils/v2/config"
 )
@@ -43,7 +43,7 @@ func RandomElement[T any](collection []T) (T, bool) {
 	rng := config.RandPool.Get().(*rand.Rand)
 	defer config.RandPool.Put(rng)
 	// 生成随机索引
-	randomIndex := rng.Intn(len(collection))
+	randomIndex := rng.IntN(len(collection))
 
 	return collection[randomIndex], true
 }
@@ -51,7 +51,7 @@ func RandomElement[T any](collection []T) (T, bool) {
 func RandomInt(min, max int) int {
 	rng := config.RandPool.Get().(*rand.Rand)
 	defer config.RandPool.Put(rng)
-	return rng.Intn(max-min+1) + min
+	return rng.IntN(max-min+1) + min
 }
 
 func RandomFloat(min, max float64) float64 {
