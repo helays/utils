@@ -43,7 +43,7 @@ func (i *Import) processLineEnhanced(handler JSONHandler) (totalSize int64, err 
 		default:
 			line, _err := i.readFullLine(reader)
 			if _err != nil {
-				if err == io.EOF {
+				if _err == io.EOF {
 					return counter.TotalSize, nil
 				}
 				return counter.TotalSize, _err

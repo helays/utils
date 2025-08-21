@@ -21,6 +21,7 @@ func (ro *Router) BeforeAction(w http.ResponseWriter, r *http.Request) bool {
 
 	// 这里改用session 系统
 	var loginInfo LoginInfo
+
 	// 如果session 存在，那么当session 剩余24小时的时候，更新session。
 	err := ro.Store.GetUpByTimeLeft(w, r, ro.SessionLoginName, &loginInfo, time.Hour*24)
 	if err != nil || !loginInfo.IsLogin {
@@ -28,7 +29,6 @@ func (ro *Router) BeforeAction(w http.ResponseWriter, r *http.Request) bool {
 		// 未登录的，终止请求，响应401 或者302
 		return ro.unAuthorizedResp(w, r)
 	}
-
 	// 登录禁止访问的页面
 	if ro.validDisableLoginRequestPath(r.URL.Path) {
 		http.Redirect(w, r, ro.HomePage, 302)
