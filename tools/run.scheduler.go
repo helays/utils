@@ -2,8 +2,10 @@ package tools
 
 import (
 	"context"
-	"math/rand"
+	"math/rand/v2"
 	"time"
+
+	"github.com/helays/utils/v2/config"
 )
 
 // RunSyncFunc 同步运行
@@ -74,9 +76,6 @@ func RunAsyncTickerProbabilityFunc(ctx context.Context, enable bool, d time.Dura
 	}()
 }
 
-// threadSafeRand 是一个全局变量，用于提供线程安全的随机数。
-var threadSafeRand = rand.New(rand.NewSource(time.Now().UnixNano()))
-
 // ProbabilityTrigger 使用线程安全的随机数生成器根据给定的概率触发事件
 func ProbabilityTrigger(probability float64) bool {
 	if probability <= 0 {
@@ -84,8 +83,11 @@ func ProbabilityTrigger(probability float64) bool {
 	} else if probability >= 1 {
 		return true
 	}
+
+	rng := config.RandPool.Get().(*rand.Rand)
+	defer config.RandPool.Put(rng)
 	// 生成一个0到1之间的随机浮点数
-	randomNumber := threadSafeRand.Float64()
+	randomNumber := rng.Float64()
 	// 比较随机数和概率
 	return randomNumber < probability
 }

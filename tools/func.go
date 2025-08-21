@@ -10,10 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
 	"io"
 	"math"
 	"math/rand"
@@ -25,6 +21,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/close/osClose"
+	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/logger/ulogs"
 )
 
 // NestedMapSet 自动初始化嵌套 map 并设置值
@@ -559,10 +560,13 @@ func RandomString(n int, allowedChars ...[]rune) string {
 	} else {
 		letters = allowedChars[0]
 	}
-	rd := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	rng := config.RandPool.Get().(*rand.Rand)
+	defer config.RandPool.Put(rng)
+
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letters[rd.Intn(len(letters))]
+		b[i] = letters[rng.Intn(len(letters))]
 	}
 	return string(b)
 }

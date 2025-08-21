@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
 	"os"
 	"path/filepath"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/logger/ulogs"
 )
 
 func init() {
