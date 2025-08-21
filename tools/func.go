@@ -215,17 +215,15 @@ func Int64tostring(i int64) string {
 }
 
 func Float32tostring(f float32) string {
-	f64 := float64(f)
-	if math.IsNaN(f64) || math.IsInf(f64, 0) {
-		return "0"
-	}
-
-	return strconv.FormatFloat(f64, 'f', 6, 64)
+	return Float64tostring(float64(f))
 }
 
 func Float64tostring(f float64) string {
 	if math.IsNaN(f) || math.IsInf(f, 0) {
 		return "0"
+	}
+	if f == math.Trunc(f) {
+		return strconv.FormatInt(int64(f), 10)
 	}
 	return strconv.FormatFloat(f, 'f', 6, 64)
 }

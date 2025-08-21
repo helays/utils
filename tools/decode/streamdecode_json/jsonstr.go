@@ -2,9 +2,10 @@ package streamdecode_json
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/goccy/go-json"
 	"github.com/helays/utils/v2/dataType/customWriter"
-	"io"
 )
 
 func (i *Import) processJSON(handler JSONHandler) (totalSize int64, err error) {
