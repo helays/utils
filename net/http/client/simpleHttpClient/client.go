@@ -9,10 +9,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/helays/utils/v2/map/syncMapWrapper"
 	"golang.org/x/net/proxy"
 )
-
-var simpleClient *http.Client
 
 func New(timeout time.Duration, args ...string) (*http.Client, error) {
 	var arg = make([]string, 0, 2)
@@ -30,6 +29,23 @@ func New(timeout time.Duration, args ...string) (*http.Client, error) {
 	}
 	return newClient(timeout, args...)
 }
+
+var cache = syncMapWrapper.SyncMap[string, *http.Client]{}
+
+func NewWithCache(ck string, timeout time.Duration, args ...string) (*http.Client, error) {
+	c, ok := cache.Load(ck)
+	if ok {
+		return c, nil
+	}
+	c, err := New(timeout, args...)
+	if err != nil {
+		return nil, err
+	}
+	cache.Store(ck, c)
+	return c, nil
+}
+
+var simpleClient *http.Client
 
 // InitHttpClient 初始化http client
 func InitHttpClient(timeout time.Duration, args ...string) (*http.Client, error) {
