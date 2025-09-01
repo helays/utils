@@ -3,12 +3,94 @@ package dataType
 import (
 	"database/sql"
 	"database/sql/driver"
+	"strings"
+	"time"
+
 	"github.com/helays/utils/v2/config"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"strings"
-	"time"
 )
+
+type CustomDate time.Time
+
+func (this CustomDate) String() string {
+	return time.Time(this).Format(time.DateOnly)
+}
+
+func (this CustomDate) Format(layout string) string {
+	return time.Time(this).Format(layout)
+}
+
+func (this CustomDate) After(u time.Time) bool {
+	return time.Time(this).After(u)
+}
+
+func (this CustomDate) Before(u time.Time) bool {
+	return time.Time(this).Before(u)
+}
+
+func (this CustomDate) Sub(u time.Time) time.Duration {
+	return time.Time(this).Sub(u)
+}
+
+func (this CustomDate) Unix() int64 {
+	return time.Time(this).Unix()
+}
+
+func (this *CustomDate) Scan(value interface{}) (err error) {
+	nullTime := &sql.NullTime{}
+	err = nullTime.Scan(value)
+	*this = CustomDate(nullTime.Time)
+	return
+}
+
+func (this CustomDate) Value() (driver.Value, error) {
+	return time.Time(this), nil
+}
+
+func (this CustomDate) GormDataType() string {
+	return "date"
+}
+
+func (CustomDate) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	switch db.Dialector.Name() {
+	case config.DbTypeSqlite:
+		return "date"
+	case config.DbTypeMysql:
+		return "date"
+	case config.DbTypePostgres:
+		return "date"
+	case config.DbTypeSqlserver:
+		return "date"
+	}
+	return ""
+}
+func (this CustomDate) GobEncode() ([]byte, error) {
+	return time.Time(this).GobEncode()
+}
+func (this *CustomDate) GobDecode(b []byte) error {
+	return (*time.Time)(this).GobDecode(b)
+}
+func (this CustomDate) MarshalJSON() ([]byte, error) {
+	t := time.Time(this)
+	//if t.IsZero() {
+	//	return []byte("null"), nil
+	//}
+	return []byte(`"` + t.Format(time.DateOnly) + `"`), nil
+}
+func (this *CustomDate) UnmarshalJSON(b []byte) (err error) {
+	s := strings.Trim(string(b), "\"")
+	if s == "null" || s == "" {
+		//*this = CustomTime{}
+		return nil
+	}
+	_t, err := time.ParseInLocation(time.DateTime, s, config.CstSh)
+	if err != nil {
+		_t, err = time.ParseInLocation(time.RFC3339Nano, s, config.CstSh)
+	}
+	*this = CustomDate(_t)
+	return err
+}
 
 type CustomTime time.Time
 
