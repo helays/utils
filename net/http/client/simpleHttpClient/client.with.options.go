@@ -3,13 +3,14 @@ package simpleHttpClient
 import (
 	"context"
 	"crypto/tls"
-	"github.com/helays/utils/v2/tools"
-	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"time"
+
+	"github.com/helays/utils/v2/tools"
+	"golang.org/x/net/proxy"
 )
 
 const (
@@ -19,10 +20,10 @@ const (
 )
 
 type HttpClient struct {
-	NewClient    bool                                                `json:"new_client" yaml:"new_client" ini:"new_client"`          // 是否启用新的client
-	EnableCookie bool                                                `json:"enable_cookie" yaml:"enable_cookie" ini:"enable_cookie"` // 是否启用cookie
-	Timeout      time.Duration                                       `json:"timeout" yaml:"timeout" ini:"timeout"`                   // 超时时间
-	Transport    `json:"transport" yaml:"transport" ini:"transport"` // 传输配置
+	NewClient    bool          `json:"new_client" yaml:"new_client" ini:"new_client"`          // 是否启用新的client
+	EnableCookie bool          `json:"enable_cookie" yaml:"enable_cookie" ini:"enable_cookie"` // 是否启用cookie
+	Timeout      time.Duration `json:"timeout" yaml:"timeout" ini:"timeout"`                   // 超时时间
+	Transport    `json:"transport" yaml:"transport" ini:"transport"`                           // 传输配置
 }
 
 type Transport struct {

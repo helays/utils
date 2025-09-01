@@ -4,21 +4,47 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
+
+	"golang.org/x/net/proxy"
 )
 
 var simpleClient *http.Client
+
+func New(timeout time.Duration, args ...string) (*http.Client, error) {
+	var arg = make([]string, 0, 2)
+	if len(args) >= 1 {
+		u, err := url.Parse(args[0])
+		if err != nil {
+			return nil, fmt.Errorf("解析代理地址失败 %v", err)
+		}
+		arg = append(arg, u.Scheme)
+		if u.Scheme == "socks5" {
+			arg = append(arg, u.Host)
+		} else {
+			arg = append(arg, args[0])
+		}
+	}
+	return newClient(timeout, args...)
+}
 
 // InitHttpClient 初始化http client
 func InitHttpClient(timeout time.Duration, args ...string) (*http.Client, error) {
 	if simpleClient != nil {
 		return simpleClient, nil
 	}
+	var err error
+	simpleClient, err = newClient(timeout, args...)
+	if err != nil {
+		return nil, err
+	}
+	return simpleClient, nil
+}
 
+func newClient(timeout time.Duration, args ...string) (*http.Client, error) {
 	trans := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // client 不对https 证书进行校验
@@ -40,7 +66,6 @@ func InitHttpClient(timeout time.Duration, args ...string) (*http.Client, error)
 		ReadBufferSize:         0,     // 读缓冲区大小。0表示使用系统默认值。
 		ForceAttemptHTTP2:      false, // 强制尝试使用HTTP/2。如果设置为true，即使服务端不明确支持HTTP/2，也会尝试升级。
 	}
-
 	if len(args) >= 2 {
 		proxyAddr := args[1]
 		switch args[0] {
@@ -60,10 +85,8 @@ func InitHttpClient(timeout time.Duration, args ...string) (*http.Client, error)
 			trans.Proxy = http.ProxyURL(u)
 		}
 	}
-	simpleClient = &http.Client{
-
+	return &http.Client{
 		Transport: trans,
 		Timeout:   timeout,
-	}
-	return simpleClient, nil
+	}, nil
 }
