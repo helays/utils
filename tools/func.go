@@ -633,20 +633,3 @@ func GetLevel2MapValue[K any](inp map[string]map[string]K, key1, key2 string) (K
 	var zeroValue K
 	return zeroValue, false
 }
-
-type RetryCallbackFunc func() error
-
-// RetryRunner 重试执行函数
-func RetryRunner(retry int, sleep time.Duration, callback RetryCallbackFunc) {
-	for i := 0; i < retry; i++ {
-		err := callback()
-		if err == nil {
-			return
-		}
-		// 最后一次不睡眠
-		if i == retry-1 {
-			break
-		}
-		time.Sleep(sleep)
-	}
-}
