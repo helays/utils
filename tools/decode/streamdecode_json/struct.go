@@ -14,10 +14,11 @@ type Import struct {
 	fileType dataType.ContentType
 	ctx      context.Context
 	rd       io.Reader
-	bigLine  bool   // 是否启用大行模式
-	FieldRow int    `json:"field_row"` // 字段所在行
-	DataRow  int    `json:"data_row"`  // 数据开始行
-	Sep      string `json:"sep"`       // csv 分割符
+	bigLine  bool     // 是否启用大行模式
+	FieldRow int      `json:"field_row"` // 字段所在行
+	DataRow  int      `json:"data_row"`  // 数据开始行
+	Sep      string   `json:"sep"`       // csv 分割符
+	fields   []string // 字段清单
 }
 
 func New(ctx context.Context, ft dataType.ContentType, rd io.Reader) *Import {
@@ -30,6 +31,10 @@ func New(ctx context.Context, ft dataType.ContentType, rd io.Reader) *Import {
 
 func (i *Import) SetFieldRow(fieldRow int) {
 	i.FieldRow = fieldRow
+}
+
+func (i *Import) SetFields(fields []string) {
+	i.fields = fields
 }
 
 func (i *Import) SetDataRow(dataRow int) {

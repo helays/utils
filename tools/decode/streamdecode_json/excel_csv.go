@@ -3,17 +3,19 @@ package streamdecode_json
 import (
 	"bufio"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/helays/utils/v2/dataType/customWriter"
 	"github.com/helays/utils/v2/excelTools"
 	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
-	"io"
-	"strings"
 )
 
 // 参数验证
 func (i *Import) valid() error {
-	if i.FieldRow == 0 || i.FieldRow >= i.DataRow {
+
+	if (i.FieldRow == 0 && (i.fields == nil || len(i.fields) == 0)) || i.FieldRow >= i.DataRow {
 		return fmt.Errorf("无有效字段、数据所在的行数")
 	}
 	return nil
@@ -40,8 +42,11 @@ func (i *Import) importExcelWithHandler(handler JSONHandler) (int64, error) {
 	}
 	var (
 		dataRow     = i.DataRow - 1
-		fieldRowMap = rows[i.FieldRow-1]
+		fieldRowMap = i.fields
 	)
+	if i.FieldRow > 0 {
+		fieldRowMap = rows[i.FieldRow-1]
+	}
 
 	for idx, row := range rows {
 		if idx < dataRow {

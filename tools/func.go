@@ -16,7 +16,6 @@ import (
 	url2 "net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -558,34 +557,6 @@ func Str2StrSlice(values string) ([]string, error) {
 		return nil, fmt.Errorf("解析数据 [%s] 失败：%v", values, err)
 	}
 	return slice, nil
-}
-
-// Slice2MapWithHeader 主要是将excel 或者 csv的每一行转为map，键为header，值为cell
-func Slice2MapWithHeader(rows any, header []string) map[string]any {
-	// 获取 rows 的反射值
-	rowsValue := reflect.ValueOf(rows)
-	// 检查 rows 是否为切片类型
-	if rowsValue.Kind() != reflect.Slice && rowsValue.Kind() != reflect.Ptr {
-		return nil
-	}
-	// 如果 rows 是切片的指针，则获取指向的切片
-	if rowsValue.Kind() == reflect.Ptr {
-		if rowsValue.IsNil() {
-			return nil
-		}
-		rowsValue = rowsValue.Elem()
-	}
-	fieldLen := len(header)
-	var tmp = make(map[string]any)
-	//判断rows是切片，或者是切片的指针，如果是就遍历，不是就返回nil
-	// 遍历 rows 切片
-	for i := 0; i < rowsValue.Len(); i++ {
-		if i >= fieldLen {
-			continue
-		}
-		tmp[header[i]] = rowsValue.Index(i).Interface()
-	}
-	return tmp
 }
 
 // Ternary 是一个通用的三元运算函数。
