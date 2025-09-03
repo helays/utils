@@ -54,7 +54,13 @@ func AnySlice2StrWithEmpty(slice []any, _sep ...string) string {
 	}
 	for index, elem := range slice {
 		// 使用 fmt.Sprint 将任何类型转换为字符串形式
-		strElem := fmt.Sprint(elem)
+		var strElem string
+		if elem == nil {
+			strElem = ""
+		} else {
+			strElem = Any2string(elem)
+		}
+
 		builder.WriteString(strElem)
 		// 可以选择在此处添加分隔符，如空格、逗号等
 		if index < (l - 1) {
