@@ -68,7 +68,7 @@ func (i *Import) ImportWithHandler(handler JSONHandler) (int64, error) {
 	case dataType.JSON:
 		return i.processJSON(handler)
 	case dataType.Excel:
-		return i.importExcelWithHandler(handler)
+		return i.importExcelWithHandlerStream(handler)
 	case dataType.CSV:
 		return i.importCsvWithHandler(handler)
 	default:
