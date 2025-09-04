@@ -45,8 +45,13 @@ func (i *Import) importExcelWithHandlerStream(handler JSONHandler) (int64, error
 	ulogs.Debugf("sheet读取完成 耗时 %.2f秒", time.Since(start).Seconds())
 	var fieldRowMap = i.fields
 	idx := 0 // 为了方便，就直接从1开始计数
+	batchStart := time.Now()
 	for rows.Next() {
 		idx++
+		if idx%5000 == 0 {
+			ulogs.Debugf("已处理 %d 行, 本批次耗时: %v, 总耗时: %v\n", idx, time.Since(batchStart), time.Since(start))
+			batchStart = time.Now()
+		}
 		if i.FieldRow > 0 && idx == i.FieldRow {
 			r, e := rows.Columns()
 			if e != nil {
