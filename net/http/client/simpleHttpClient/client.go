@@ -27,7 +27,7 @@ func New(timeout time.Duration, args ...string) (*http.Client, error) {
 			arg = append(arg, args[0])
 		}
 	}
-	return newClient(timeout, args...)
+	return newClient(timeout, arg...)
 }
 
 var cache = syncMapWrapper.SyncMap[string, *http.Client]{}
