@@ -196,6 +196,8 @@ func (ro Router) favicon(w http.ResponseWriter) {
 	_, _ = io.Copy(w, rd)
 }
 
+const CaptchaID = "captcha"
+
 func (ro Router) Captcha(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
@@ -204,7 +206,7 @@ func (ro Router) Captcha(w http.ResponseWriter, r *http.Request) {
 
 	// 验证码存储在session中
 	captchaId := captcha.NewLen(4)
-	if err := ro.Store.Set(w, r, "captcha", captchaId, 4*time.Minute); err != nil {
+	if err := ro.Store.Set(w, r, CaptchaID, captchaId, 4*time.Minute); err != nil {
 		response.InternalServerError(w)
 		return
 	}
