@@ -123,9 +123,13 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 	// 注意，当发现响应状态非正常时，浏览器显示乱码，是标准库[http/fs.go]里面会删除Content-Encoding，
 	// 所以这里不用 http.ServeFile,http.ServeFileFS
 	if len(ro.staticEmbedFS) > 0 {
-		for k, _embedFS := range ro.staticEmbedFS {
+		for k, _embedFSInfo := range ro.staticEmbedFS {
 			if strings.HasPrefix(r.URL.Path, k) {
-				embedFs = http.FS(_embedFS)
+				if _embedFSInfo.prefix != "" {
+					_path = path.Join(_embedFSInfo.prefix, _path)
+				}
+				embedFs = http.FS(_embedFSInfo.embedFS)
+
 				isEmbedFs = true
 				break
 			}

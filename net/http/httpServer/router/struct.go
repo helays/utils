@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -48,8 +49,8 @@ type Router struct {
 	Error        ErrPageFunc // 错误页面处理函数
 	ErrorWithLog ErrPageFunc // 错误页面处理函数
 
-	dev           bool                 // 开发模式
-	staticEmbedFS map[string]*embed.FS // 静态文件
+	dev           bool                  // 开发模式
+	staticEmbedFS map[string]*embedInfo // 静态文件
 
 	Store                  *session.Store   // session 系统
 	IsLogin                bool             // 是否登录
@@ -65,13 +66,25 @@ type Router struct {
 	ManagePageRegexp       []*regexp.Regexp
 }
 
+type embedInfo struct {
+	embedFS *embed.FS
+	prefix  string
+}
+
 func (ro *Router) SetDev(dev bool) {
 	ro.dev = dev
 }
 
-func (ro *Router) SetStaticEmbedFs(p string, embedFS *embed.FS) {
+// SetStaticEmbedFs 设置内置 embedFS
+func (ro *Router) SetStaticEmbedFs(p string, embedFS *embed.FS, prefix ...string) {
 	if ro.staticEmbedFS == nil {
-		ro.staticEmbedFS = make(map[string]*embed.FS)
+		ro.staticEmbedFS = make(map[string]*embedInfo)
 	}
-	ro.staticEmbedFS[p] = embedFS
+	ro.staticEmbedFS[p] = &embedInfo{embedFS: embedFS}
+	if len(prefix) > 0 {
+		if !strings.HasPrefix(prefix[0], "/") {
+			prefix[0] = "/" + prefix[0]
+		}
+		ro.staticEmbedFS[p].prefix = prefix[0]
+	}
 }
