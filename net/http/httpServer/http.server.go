@@ -1,11 +1,18 @@
 package httpServer
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/gorilla/handlers"
-	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/close/httpClose"
 	"github.com/helays/utils/v2/crypto/md5"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/logger/zaploger"
@@ -14,21 +21,44 @@ import (
 	"github.com/helays/utils/v2/net/http/mime"
 	"github.com/helays/utils/v2/net/ipAccess"
 	"github.com/helays/utils/v2/tools"
-	"net"
-	"net/http"
-	"os"
-	"strings"
-	"time"
 )
 
 // HttpServerStart 公功 http server 启动函数
 func (h *HttpServer) HttpServerStart() {
+	h.ctx, h.cancel = context.WithCancel(context.Background())
+	defer h.cancel()
+	defer httpClose.Server(h.server)
+	for {
+		h.initParams()   // 初始化参数
+		go h.hotUpdate() // 启用热更新检测模块
+		var err error
+		ulogs.Log("启动Http(s) Server", h.ListenAddr)
+		h.isStop.Write(false)
+		if h.Ssl {
+			err = h.server.ListenAndServeTLS(tools.Fileabs(h.Crt), tools.Fileabs(h.Key))
+		} else {
+			err = h.server.ListenAndServe()
+		}
+		if err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				ulogs.Error("HTTP Service 启动失败", h.server.Addr, err)
+				os.Exit(1)
+			}
+		}
+		// 未启用热更新，或者检测到退出信号 就退出
+		if !h.Hotupdate || h.isStop.Read() {
+			break
+		}
+	}
+
+}
+
+func (h *HttpServer) initParams() {
 	mime.InitMimeTypes()
 	h.serverNameMap = make(map[string]byte)
 	for _, dom := range h.ServerName {
 		h.serverNameMap[strings.ToLower(dom)] = 0
 	}
-
 	if h.Logger.LogLevelConfigs != nil {
 		var err error
 		h.logger, err = zaploger.New(&h.Logger)
@@ -37,18 +67,15 @@ func (h *HttpServer) HttpServerStart() {
 	h.iptablesInit()
 	h.initMux()
 	h.initRouter()
-
-	server := &http.Server{Addr: h.ListenAddr}
+	h.server = &http.Server{Addr: h.ListenAddr}
 	if h.EnableGzip {
-		server.Handler = handlers.CompressHandler(h.mux)
+		h.server.Handler = handlers.CompressHandler(h.mux)
 	} else {
-		server.Handler = h.mux
+		h.server.Handler = h.mux
 	}
-	defer Closehttpserver(server)
-	ulogs.Log("启动Http(s) Server", h.ListenAddr)
-	var err error
+
 	if h.Ssl {
-		server.TLSConfig = &tls.Config{
+		h.server.TLSConfig = &tls.Config{
 			CipherSuites: []uint16{
 				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
@@ -67,26 +94,9 @@ func (h *HttpServer) HttpServerStart() {
 			}
 			pool := x509.NewCertPool()
 			pool.AppendCertsFromPEM(caCrt)
-			server.TLSConfig.ClientCAs = pool
-			server.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
+			h.server.TLSConfig.ClientCAs = pool
+			h.server.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 		}
-		if err = server.ListenAndServeTLS(tools.Fileabs(h.Crt), tools.Fileabs(h.Key)); err != nil {
-			ulogs.Error("HTTPS Service 服务启动失败", server.Addr, err)
-			os.Exit(1)
-		}
-		return
-	}
-	go h.hotUpdate(server)
-	var isQuit bool
-	go h.stopServer(server, &isQuit)
-	if err = server.ListenAndServe(); err != nil {
-		if !errors.Is(err, http.ErrServerClosed) {
-			ulogs.Error("HTTP Service 启动失败", server.Addr, err)
-			os.Exit(1)
-		}
-	}
-	if h.Hotupdate && !isQuit {
-		h.HttpServerStart()
 	}
 }
 
@@ -118,20 +128,20 @@ func (h *HttpServer) iptablesInit() {
 }
 
 // 检测ip白名单和黑名单
-func (this *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bool {
+func (h *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bool {
 	addr := request.Getip(r)
 	ip, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		ip = addr // 如果无端口，则直接使用原地址
 	}
-	if this.allowIpList != nil {
-		if !this.allowIpList.Contains(ip) {
+	if h.allowIpList != nil {
+		if !h.allowIpList.Contains(ip) {
 			response.Forbidden(w, "你的IP不在系统白名单内")
 			return false
 		}
 		return true
 	}
-	if this.denyIpList != nil && this.denyIpList.Contains(ip) {
+	if h.denyIpList != nil && h.denyIpList.Contains(ip) {
 		response.Forbidden(w, "你的IP已被监管")
 		return false
 	}
@@ -155,51 +165,47 @@ func (h *HttpServer) debugIpAccess(w http.ResponseWriter, r *http.Request) bool 
 	return true
 }
 
-// Closehttpserver 关闭http server
-func Closehttpserver(s *http.Server) {
-	if s != nil {
-		_ = s.Close()
-	}
-}
-
 // 用于检测参数变更，然后热更新。
-func (this *HttpServer) hotUpdate(server *http.Server) {
-	if this.Hotupdate {
+func (h *HttpServer) hotUpdate() {
+	if h.Hotupdate {
 		go func() {
-			hash := this.hash()
+			hash := h.hash()
 			tck := time.NewTicker(1 * time.Second)
 			defer tck.Stop()
-			for range tck.C {
-				if hash == this.hash() {
-					continue
+			for {
+				select {
+				case <-h.ctx.Done():
+					return
+				case <-tck.C:
+					if hash == h.hash() {
+						continue
+					}
+					// 关闭client,重启程序
+					httpClose.Server(h.server)
+					return
 				}
-				tck.Stop()
-				break
 			}
-			Closehttpserver(server)
 		}()
 	}
 }
 
 // 计算 httpserver 模块摘要
-func (this HttpServer) hash() string {
+func (h *HttpServer) hash() string {
 	strArr := append([]string{
-		this.ListenAddr,
-		this.Auth,
-		tools.Booltostring(this.Ssl),
-		this.Ca,
-		this.Crt,
-		this.Key,
-		this.SocketTimeout.String(),
-	}, append(this.Allowip, this.Denyip...)...)
+		h.ListenAddr,
+		h.Auth,
+		tools.Booltostring(h.Ssl),
+		h.Ca,
+		h.Crt,
+		h.Key,
+		h.SocketTimeout.String(),
+	}, append(h.Allowip, h.Denyip...)...)
 	return md5.Md5string(strings.Join(strArr, ""))
 }
 
-func (this HttpServer) stopServer(server *http.Server, isQuit *bool) {
-	config.SetEnableHttpServer(true)
-	_ = <-config.CloseHttpserverSig
-	*isQuit = true
+func (h *HttpServer) StopServer() {
+	h.cancel()
+	h.isStop.Write(true)
 	ulogs.Log("http server已关闭")
-	Closehttpserver(server)
-	config.CloseHttpserverSig <- 1
+	httpClose.Server(h.server)
 }

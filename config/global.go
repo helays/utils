@@ -21,31 +21,11 @@ var (
 
 	CstSh = time.FixedZone("CST", 8*3600) // 东八区
 
-	PublicKeyByt  []byte // 公钥
-	PrivateKeyByt []byte // 私钥
-
-	CloseHttpserverSig   = make(chan byte, 1)
+	PublicKeyByt         []byte // 公钥
+	PrivateKeyByt        []byte // 私钥
 	EnableParseParamsLog = true
-)
-
-// 用于控制 是否启用http server的
-var (
-	enableHttpserver   bool
-	enableHttpserverMu sync.RWMutex
 )
 
 var (
 	ErrNotFound = errors.New(http.StatusText(http.StatusNotFound))
 )
-
-func GetIsEnableHttpServer() bool {
-	enableHttpserverMu.RLock()
-	defer enableHttpserverMu.RUnlock()
-	return enableHttpserver
-}
-
-func SetEnableHttpServer(b bool) {
-	enableHttpserverMu.Lock()
-	defer enableHttpserverMu.Unlock()
-	enableHttpserver = b
-}

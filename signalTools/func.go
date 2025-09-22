@@ -1,11 +1,11 @@
 package signalTools
 
 import (
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/helays/utils/v2/logger/ulogs"
 )
 
 // SignalHandle 系统信号
@@ -14,8 +14,8 @@ func SignalHandle(funds ...func()) {
 	exitsin := make(chan os.Signal)
 	//  syscall.SIGHUP 用作重载信号
 	signal.Notify(exitsin, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM) // 注意，syscall.SIGKILL 不能被捕获
-	ulogs.Log("退出信号", <-exitsin)                                             // 日志记录
-	exit()
+	ulogs.Log("退出信号", <-exitsin)                                         // 日志记录
+	exit(funds...)
 
 }
 
@@ -28,9 +28,5 @@ func exit(funds ...func()) {
 		f()
 	}
 	ulogs.Log("各个组件关闭完成，系统即将自动关闭", os.Getpid())
-	if config.GetIsEnableHttpServer() {
-		config.CloseHttpserverSig <- 1
-		_ = <-config.CloseHttpserverSig
-	}
 	os.Exit(0)
 }

@@ -1,11 +1,14 @@
 package httpServer
 
 import (
-	"github.com/helays/utils/v2/logger/zaploger"
-	"github.com/helays/utils/v2/net/ipAccess"
-	"golang.org/x/net/websocket"
+	"context"
 	"net/http"
 	"time"
+
+	"github.com/helays/utils/v2/logger/zaploger"
+	"github.com/helays/utils/v2/net/ipAccess"
+	"github.com/helays/utils/v2/tools/mutex"
+	"golang.org/x/net/websocket"
 )
 
 type HttpServer struct {
@@ -35,5 +38,9 @@ type HttpServer struct {
 	denyIpList          *ipAccess.IPList
 	debugAllowIpList    *ipAccess.IPList
 
-	mux *http.ServeMux
+	mux    *http.ServeMux
+	server *http.Server
+	ctx    context.Context
+	cancel context.CancelFunc
+	isStop mutex.SafeResourceRWMutex[bool]
 }

@@ -24,3 +24,10 @@ func Closeresponse(resp *http.Response) {
 	}
 	_ = resp.Body.Close()
 }
+
+// Server 关闭http server
+func Server(s *http.Server) {
+	if s != nil {
+		_ = s.Close()
+	}
+}
