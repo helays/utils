@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	_ "github.com/helays/utils/v2/net/http/http-proxy"
 	"github.com/pkg/errors"
 	"golang.org/x/net/proxy"
 )
@@ -27,6 +28,7 @@ type Proxy struct {
 	proxyType ProxyTypes
 	dialer    proxy.Dialer
 	httpProxy func(r *http.Request) (*url.URL, error)
+	u         *url.URL
 }
 
 func (p *Proxy) Valid() error {
@@ -40,6 +42,7 @@ func (p *Proxy) Valid() error {
 		p.proxyType = ProxyUnknown
 		return fmt.Errorf("无效的代理地址 %v", errors.WithStack(err))
 	}
+	p.u = u
 
 	switch u.Scheme {
 	case "http":
@@ -82,4 +85,18 @@ func (p *Proxy) HttpProxy() func(r *http.Request) (*url.URL, error) {
 
 func (p *Proxy) Dialer() proxy.Dialer {
 	return p.dialer
+}
+
+func (p *Proxy) GetProxyUrl() *url.URL {
+	return p.u
+}
+
+func (p *Proxy) AutoDialer() (proxy.Dialer, error) {
+	if p.proxyType == ProxySocks5 {
+		return p.dialer, nil
+	}
+	if p.proxyType == ProxyUnknown || p.proxyType == ProxyNone {
+		return nil, nil
+	}
+	return proxy.FromURL(p.u, proxy.Direct)
 }
