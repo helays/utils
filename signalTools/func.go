@@ -14,7 +14,7 @@ func SignalHandle(funds ...func()) {
 	exitsin := make(chan os.Signal)
 	//  syscall.SIGHUP 用作重载信号
 	signal.Notify(exitsin, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM) // 注意，syscall.SIGKILL 不能被捕获
-	ulogs.Log("退出信号", <-exitsin)                                         // 日志记录
+	ulogs.Log("退出信号", <-exitsin)                                             // 日志记录
 	exit(funds...)
 
 }
