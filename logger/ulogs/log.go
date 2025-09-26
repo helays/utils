@@ -130,6 +130,14 @@ func Checkerr(err error, i ...interface{}) {
 	Error(append(i, err)...)
 }
 
+// CheckErrf 检查错误
+func CheckErrf(err error, format string, a ...any) {
+	if err == nil {
+		return
+	}
+	Errorf(format+" 原始错误 %v", append(a, err)...)
+}
+
 // DieCheckerr 检查错误，打印并输出错误信息
 func DieCheckerr(err error, i ...any) {
 	if err == nil {
