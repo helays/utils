@@ -75,12 +75,12 @@ func (m *SyncMap[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
 	return actual, loaded
 }
 
-func (m *SyncMap[K, V]) LoadOrStoreFunc(key K, valueFunc func() (V, bool)) (actual V, loaded bool) {
+func (m *SyncMap[K, V]) LoadOrStoreFunc(key K, valueFunc func(k K) (V, bool)) (actual V, loaded bool) {
 	// 先尝试快速读取
 	if v, ok := m.mu.Load(key); ok {
 		return v.(V), true
 	}
-	val, ok := valueFunc()
+	val, ok := valueFunc(key)
 	if !ok {
 		return val, false
 	}
