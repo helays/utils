@@ -1,9 +1,10 @@
 package userDb
 
 import (
+	"reflect"
+
 	"github.com/helays/utils/v2/map/syncMapWrapper"
 	"github.com/helays/utils/v2/tools"
-	"reflect"
 )
 
 var modelFieldsCache = &syncMapWrapper.SyncMap[string, *modelFieldTypes]{}
@@ -31,7 +32,7 @@ func getModelFields(model any, alias string) *modelFieldTypes {
 		return nil
 	}
 
-	modelFields, _ := modelFieldsCache.LoadOrStoreFunc(structName, func() (*modelFieldTypes, bool) {
+	modelFields, _ := modelFieldsCache.LoadOrStoreFunc(structName, func(_ string) (*modelFieldTypes, bool) {
 		v := reflect.ValueOf(model)
 		_modelFields := autoGetStructFieldJsonTag(mt, v)
 		_modelFields.tableName = alias
