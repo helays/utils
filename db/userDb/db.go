@@ -2,6 +2,7 @@ package userDb
 
 import (
 	"context"
+	"github.com/helays/utils/v2/db/tablename"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -354,6 +355,11 @@ func QueryDateTimeRange(r *http.Request, filed ...string) func(db *gorm.DB) *gor
 		}
 		return db
 	}
+}
+
+// AutoMigrate 根据结构体自动创建表
+func AutoMigrate(db *gorm.DB, c tablename.TableName, model any) {
+	AutoCreateTableWithStruct(db.Set(c.MigrateComment()), model, c.MigrateError())
 }
 
 // AutoCreateTableWithStruct 根据结构体判断是否需要创建表
