@@ -3,6 +3,7 @@ package dataType
 import (
 	"database/sql"
 	"database/sql/driver"
+
 	"github.com/helays/utils/v2/config"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
