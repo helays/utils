@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/helays/utils/v2/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
-	"reflect"
-	"strconv"
-	"strings"
 )
 
 func JsonDbDataType(db *gorm.DB, field *schema.Field) string {
@@ -30,7 +31,7 @@ func JsonDbDataType(db *gorm.DB, field *schema.Field) string {
 	case config.DbTypeSqlserver:
 		return "NVARCHAR(MAX)"
 	}
-	return ""
+	return "TEXT"
 }
 
 func DriverValueWithJson(val any) (driver.Value, error) {
@@ -120,7 +121,7 @@ func arrayScan(m any, val any) error {
 	case string:
 		ba = []byte(v)
 	default:
-		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", val))
+		return fmt.Errorf("unsupported type: %T", val)
 	}
 	rd := bytes.NewReader(ba)
 	decoder := json.NewDecoder(rd)

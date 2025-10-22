@@ -3,6 +3,7 @@ package dataType
 import (
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 
 	"github.com/helays/utils/v2/config"
 	"gorm.io/gorm"
@@ -11,18 +12,15 @@ import (
 
 type String string
 
-func (this *String) Scan(val interface{}) (err error) {
-	nullStr := sql.NullString{}
-	err = nullStr.Scan(val)
-	*this = String(nullStr.String)
-	return
+func (s *String) Scan(val interface{}) (err error) {
+	return HelperStringScan(val, s)
 }
 
-func (this String) Value() (driver.Value, error) {
-	return string(this), nil
+func (s String) Value() (driver.Value, error) {
+	return string(s), nil
 }
 
-func (this String) GormDataType() string {
+func (s String) GormDataType() string {
 	return "string"
 }
 
@@ -39,4 +37,28 @@ func (String) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 		return "VARCHAR(MAX)"
 	}
 	return ""
+}
+
+// HelperStringScan  通用的 string 自定义类型 SCAN函数
+func HelperStringScan[T ~string](val any, dst *T) error {
+	nullStr := sql.NullString{}
+	if err := nullStr.Scan(val); err != nil {
+		return err
+	}
+	if !nullStr.Valid {
+		*dst = *new(T)
+		return nil
+	}
+	*dst = T(nullStr.String)
+	return nil
+}
+
+func HelperStringGormDBDataType(db *gorm.DB, field *schema.Field, length int) string {
+	switch db.Dialector.Name() {
+	case config.DbTypeSqlite, config.DbTypeMysql, config.DbTypePostgres:
+		return fmt.Sprintf("varchar(%d)", length)
+	case config.DbTypeSqlserver:
+		return fmt.Sprintf("VARCHAR(%d)", length)
+	}
+	return fmt.Sprintf("varchar(%d)", length)
 }

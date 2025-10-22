@@ -3,10 +3,34 @@ package dataType
 import (
 	"context"
 	"database/sql/driver"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
 )
+
+// AnyArray 泛型版本的数组
+type AnyArray[T any] []T
+
+func (a AnyArray[T]) Value() (driver.Value, error) {
+	return arrayValue(a)
+}
+
+func (a *AnyArray[T]) Scan(val interface{}) error {
+	return arrayScan(a, val)
+}
+
+func (AnyArray[T]) GormDataType() string {
+	return "any_array"
+}
+
+func (AnyArray[T]) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	return JsonDbDataType(db, field)
+}
+
+func (a AnyArray[T]) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
+	return arrayGormValue(a, db)
+}
 
 type Array []any
 

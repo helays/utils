@@ -6,12 +6,13 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/helays/utils/v2/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
-	"strings"
 )
 
 // JSONMap defined JSON data type, need to implements driver.Valuer, sql.Scanner interface
