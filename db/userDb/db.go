@@ -2,13 +2,15 @@ package userDb
 
 import (
 	"context"
-	"github.com/helays/utils/v2/db/tablename"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/db/tablename"
 
 	"github.com/helays/utils/v2/dataType"
 	"github.com/helays/utils/v2/logger/ulogs"
@@ -359,7 +361,13 @@ func QueryDateTimeRange(r *http.Request, filed ...string) func(db *gorm.DB) *gor
 
 // AutoMigrate 根据结构体自动创建表
 func AutoMigrate(db *gorm.DB, c tablename.TableName, model any) {
-	AutoCreateTableWithStruct(db.Set(c.MigrateComment()), model, c.MigrateError())
+	switch db.Dialector.Name() {
+	case config.DbTypeMysql:
+		AutoCreateTableWithStruct(db.Set(c.MigrateComment()), model, c.MigrateError())
+	default:
+		AutoCreateTableWithStruct(db, model, c.MigrateError())
+	}
+
 }
 
 // AutoCreateTableWithStruct 根据结构体判断是否需要创建表
