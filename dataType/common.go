@@ -140,3 +140,14 @@ func arrayGormValue(jm any, db *gorm.DB) clause.Expr {
 	}
 	return gorm.Expr("?", string(data))
 }
+
+func MapGormValue(data string, db *gorm.DB) clause.Expr {
+	switch db.Dialector.Name() {
+	case config.DbTypeMysql:
+		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
+			fmt.Println("MapGormValue", v.ServerVersion)
+			return gorm.Expr("CAST(? AS JSON)", data)
+		}
+	}
+	return gorm.Expr("?", data)
+}

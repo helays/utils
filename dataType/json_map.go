@@ -5,11 +5,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
-	"strings"
 
-	"github.com/helays/utils/v2/config"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
@@ -79,14 +75,7 @@ func (JSONMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return JsonDbDataType(db, field)
 }
 
-func (jm JSONMap) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
+func (jm JSONMap) GormValue(_ context.Context, db *gorm.DB) clause.Expr {
 	data, _ := jm.MarshalJSON()
-	switch db.Dialector.Name() {
-	case config.DbTypeMysql:
-		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
-			fmt.Println(v.ServerVersion)
-			return gorm.Expr("CAST(? AS JSON)", string(data))
-		}
-	}
-	return gorm.Expr("?", string(data))
+	return MapGormValue(string(data), db)
 }
