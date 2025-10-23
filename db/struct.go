@@ -117,8 +117,17 @@ type TableDefaultUserField struct {
 	UpdateTime     dataType.CustomTime `json:"update_time,omitempty" gorm:"autoUpdateTime:true;index;comment:记录更新时间" form:"-"`
 }
 
-type TableBaseModelFull struct {
+type TableBaseModelAutoIncrement struct {
 	Id int64 `json:"id,omitempty" gorm:"primaryKey;not null;autoIncrement;comment:行ID" form:"id"`
+
+	CreateTime dataType.CustomTime `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
+	CreateBy   int64               `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`
+	UpdateTime dataType.CustomTime `json:"update_time,omitempty" gorm:"autoUpdateTime:true;comment:记录更新时间" form:"-"`
+	UpdateBy   int64               `json:"update_by,omitempty" gorm:"comment:更新人ID" form:"update_by"`
+}
+
+type TableBaseModelFull struct {
+	Id int64 `json:"id,omitempty" gorm:"primaryKey;not null;comment:行ID" form:"id"`
 
 	CreateTime dataType.CustomTime `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
 	CreateBy   int64               `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`
