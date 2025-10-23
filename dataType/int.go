@@ -38,7 +38,7 @@ func (b *Byte) Scan(value any) error {
 }
 
 func (b Byte) GormDataType() string {
-	return "byte"
+	return "custom_byte"
 }
 
 func (Byte) GormDBDataType(db *gorm.DB, field *schema.Field) string {

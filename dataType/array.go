@@ -46,7 +46,7 @@ func (m *Array) Scan(val interface{}) error {
 
 // GormDataType gorm common data type
 func (m Array) GormDataType() string {
-	return "jsonmap"
+	return "custom_array"
 }
 
 // GormDBDataType gorm db data type

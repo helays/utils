@@ -26,7 +26,7 @@ func (this *Config) Scan(val interface{}) error {
 }
 
 func (this Config) GormDataType() string {
-	return "json"
+	return "custom_socket_config"
 }
 
 func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {

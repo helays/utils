@@ -65,7 +65,7 @@ func (this *Dbbase) Scan(val interface{}) error {
 }
 
 func (this Dbbase) GormDataType() string {
-	return "json"
+	return "dbbase"
 }
 
 func (Dbbase) GormDBDataType(db *gorm.DB, field *schema.Field) string {

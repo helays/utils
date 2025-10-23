@@ -32,7 +32,7 @@ func (bf Binary) Value() (driver.Value, error) {
 
 // GormDataType 返回GORM的数据类型名称
 func (Binary) GormDataType() string {
-	return "binary"
+	return "custom_binary"
 }
 
 // GormDBDataType 返回数据库特定的数据类型名称

@@ -49,7 +49,7 @@ func (this CustomDate) Value() (driver.Value, error) {
 }
 
 func (this CustomDate) GormDataType() string {
-	return "date"
+	return "custom_date"
 }
 
 func (CustomDate) GormDBDataType(db *gorm.DB, field *schema.Field) string {
@@ -130,7 +130,7 @@ func (this CustomTime) Value() (driver.Value, error) {
 }
 
 func (this CustomTime) GormDataType() string {
-	return "time"
+	return "custom_time"
 }
 
 // GormDBDataType gorm db data type

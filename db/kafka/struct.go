@@ -53,7 +53,7 @@ func (this *KafkaConfig) Scan(val interface{}) error {
 }
 
 func (this KafkaConfig) GormDataType() string {
-	return "json"
+	return "custom_kafka_config"
 }
 
 func (KafkaConfig) GormDBDataType(db *gorm.DB, field *schema.Field) string {

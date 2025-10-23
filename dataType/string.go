@@ -21,7 +21,7 @@ func (s String) Value() (driver.Value, error) {
 }
 
 func (s String) GormDataType() string {
-	return "string"
+	return "custom_string"
 }
 
 // GormDBDataType gorm db data type

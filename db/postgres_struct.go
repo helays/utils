@@ -45,7 +45,7 @@ func (d *PostgresOpt) Scan(val interface{}) error {
 }
 
 func (d PostgresOpt) GormDataType() string {
-	return "json"
+	return "postgres_opt"
 }
 
 func (PostgresOpt) GormDBDataType(db *gorm.DB, field *schema.Field) string {

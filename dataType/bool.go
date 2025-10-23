@@ -32,7 +32,7 @@ func (b *Bool) Scan(value any) error {
 }
 
 func (b Bool) GormDataType() string {
-	return "bool"
+	return "custom_bool"
 }
 
 func (Bool) GormDBDataType(db *gorm.DB, field *schema.Field) string {

@@ -67,7 +67,7 @@ func (m *JSONMap) UnmarshalJSON(b []byte) error {
 
 // GormDataType gorm common data type
 func (m JSONMap) GormDataType() string {
-	return "jsonmap"
+	return "custom_json_map"
 }
 
 // GormDBDataType gorm db data type
