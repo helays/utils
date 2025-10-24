@@ -40,7 +40,7 @@ func AutoCreateTableWithStruct(db *gorm.DB, tb any, errmsg string) {
 // 一次性拿到数据库的字段结构以及索引结构
 // 根据结构体信息，生成本地模型的字段结构和索引结构
 // 首先比对数据库与本地索引结构，将多余的索引删除调
-// 比对字段信息变化，如果有，就自动改变表结构
+// 比对字段信息变化，如果有,就进行alter操作
 // 最后再次比对数据库与本地模型的索引结构，将缺失的索引补充上。
 func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 	stmt := db.Statement
