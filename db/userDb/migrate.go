@@ -2,6 +2,7 @@ package userDb
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/db/tablename"
@@ -80,8 +81,12 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 		idxName := index.Name()
 		if _, ok := srcIndexTypesMap[idxName]; !ok {
 			ulogs.Infof("表【%s】字段[%s]索引需要删除", stmt.Schema.Table, idxName)
-			err = db.Debug().Migrator().DropIndex(tb, idxName)
-			ulogs.DieCheckerr(err, "删除数据库索引失败", errmsg)
+			if err = db.Debug().Migrator().DropIndex(tb, idxName); err != nil {
+				if !strings.Contains(err.Error(), "check that it exists") {
+					ulogs.DieCheckerr(err, "删除数据库索引失败", errmsg)
+				}
+				ulogs.Errorf("表【%s】字段[%s]索引删除失败，可能是索引名有特殊字符，请人工删除 %v", stmt.Schema.Table, idxName, err)
+			}
 			continue
 		}
 		dstIndexTypesMap[index.Name()] = index
@@ -99,23 +104,23 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
 			return
 		}
-		// 判断主键是否改变
-		if v, ok := dstColumn.PrimaryKey(); ok && v != item.PrimaryKey {
-			ulogs.Infof("表【%s】字段[%s]主键不一致，正在自动重建", stmt.Schema.Table, item.DBName)
-			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
-			return
-		}
+		// 主键无相关方法，暂不处理
+
 		// 判断自增是否改变
 		if v, ok := dstColumn.AutoIncrement(); ok && v != item.AutoIncrement {
 			ulogs.Infof("表【%s】字段[%s]自增字段不一致，正在自动重建", stmt.Schema.Table, item.DBName)
-			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
-			return
+			if err = db.Debug().Migrator().AlterColumn(tb, item.DBName); err != nil {
+				ulogs.Errorf("表【%s】字段[%s]自增字段变更失败 %v", stmt.Schema.Table, item.DBName, err)
+			}
+			continue
 		}
 		// 判断字段说明是否改变
 		if v, ok := dstColumn.Comment(); ok && v != item.Comment {
 			ulogs.Infof("表【%s】字段[%s]字段说明不一致，正在自动重建", stmt.Schema.Table, item.DBName)
-			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
-			return
+			if err = db.Debug().Migrator().AlterColumn(tb, item.DBName); err != nil {
+				ulogs.Errorf("表【%s】字段[%s]字段说明修改失败 %v", stmt.Schema.Table, item.DBName, err)
+			}
+			continue
 		}
 		// 判断允许null 是否改变
 		if !item.PrimaryKey {
@@ -123,8 +128,11 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 			// 注意数据库 是 nullable false 是不允许空
 			// 而模型中 NotNull true 是不允许空
 			if v, ok := dstColumn.Nullable(); ok && v == item.NotNull {
-				ulogs.Infof("表【%s】字段[%s]是否默认值不一致，正在自动重建", stmt.Schema.Table, item.DBName)
-				ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
+				ulogs.Infof("表【%s】字段[%s]是否NULl不一致，正在自动重建", stmt.Schema.Table, item.DBName)
+				if err = db.Debug().Migrator().AlterColumn(tb, item.DBName); err != nil {
+					ulogs.Errorf("表【%s】字段[%s]是否NULL 修改失败 %v", stmt.Schema.Table, item.DBName, err)
+				}
+				continue
 			}
 		}
 	}
@@ -133,7 +141,7 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 	for _, item := range srcIndexTypes {
 		idxName := item.Name
 		if _, ok := dstIndexTypesMap[idxName]; !ok {
-			err = db.Debug().Migrator().CreateIndex(tb, item.Name)
+			err = db.Debug().Migrator().CreateIndex(tb, idxName)
 		}
 	}
 }
