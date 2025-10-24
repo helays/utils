@@ -127,7 +127,7 @@ type TableBaseModelAutoIncrement struct {
 }
 
 type TableBaseModelFull struct {
-	Id int64 `json:"id,omitempty" gorm:"primaryKey;comment:行ID" form:"id"`
+	Id int64 `json:"id,omitempty" gorm:"primaryKey;autoIncrement:false;comment:行ID" form:"id"`
 
 	CreateTime dataType.CustomTime `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
 	CreateBy   int64               `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`

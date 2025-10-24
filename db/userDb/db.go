@@ -9,14 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/db/tablename"
-
 	"github.com/helays/utils/v2/dataType"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/schema"
 )
 
 //
@@ -357,65 +355,6 @@ func QueryDateTimeRange(r *http.Request, filed ...string) func(db *gorm.DB) *gor
 		}
 		return db
 	}
-}
-
-// AutoMigrate 根据结构体自动创建表
-func AutoMigrate(db *gorm.DB, c tablename.TableName, model any) {
-	switch db.Dialector.Name() {
-	case config.DbTypeMysql:
-		AutoCreateTableWithStruct(db.Set(c.MigrateComment()), model, c.MigrateError())
-	default:
-		AutoCreateTableWithStruct(db, model, c.MigrateError())
-	}
-
-}
-
-// AutoCreateTableWithStruct 根据结构体判断是否需要创建表
-func AutoCreateTableWithStruct(db *gorm.DB, tb any, errmsg string) {
-	t := reflect.TypeOf(tb)
-	if t.Kind() != reflect.Struct {
-		return
-	}
-	if !db.Migrator().HasTable(tb) {
-		ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
-	}
-	// 如果表存在，在判断结构体中是否有新增字段，如果有，就自动改变表
-	AutoCreateTableWithColumn(db, tb, errmsg, t)
-}
-
-// AutoCreateTableWithColumn 根据表字段判断是否有数据缺失
-func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string, t reflect.Type) bool {
-	// 如果表存在，在判断结构体中是否有新增字段，如果有，就自动改变表
-	for i := 0; i < t.NumField(); i++ {
-		if t.Field(i).Type.Kind() == reflect.Struct && t.Field(i).Tag.Get("gorm") == "" && t.Field(i).Tag.Get("json") == "" {
-			if AutoCreateTableWithColumn(db, tb, errmsg, t.Field(i).Type) {
-				return true
-			}
-			continue
-		}
-		tag := t.Field(i).Tag.Get("gorm")
-		if tag == "" {
-			continue
-		}
-		tagArr := strings.Split(tag, ";")
-		if tools.ContainsAny([]string{"-:all", "-:migration", "-"}, tagArr) {
-			continue
-		}
-		column := tools.SnakeString(t.Field(i).Name)
-		for _, item := range tagArr {
-			if !strings.HasPrefix(item, "column") {
-				continue
-			}
-			column = item[7:]
-		}
-
-		if !db.Migrator().HasColumn(tb, column) {
-			ulogs.Log("表字段有缺失，正在自动创建表字段：", reflect.TypeOf(tb).String(), column)
-			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
-			return true // 创建一次就行了
-		}
-	}
-	return false
 }
 
 func AutoSetSort(r *http.Request, order string, fieldInfoInReq bool, alias ...string) func(db *gorm.DB) *gorm.DB {
