@@ -10,11 +10,9 @@ import (
 	"time"
 
 	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"gorm.io/gorm/schema"
 )
 
 //
