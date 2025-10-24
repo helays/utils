@@ -22,7 +22,8 @@ func JsonDbDataType(db *gorm.DB, field *schema.Field) string {
 	case config.DbTypeSqlite:
 		return "JSON"
 	case config.DbTypeMysql:
-		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
+		v, ok := db.Dialector.(*mysql.Dialector)
+		if ok && CheckVersionSupportsJSON(v.ServerVersion) {
 			return "JSON"
 		}
 		return "LONGTEXT"
@@ -75,7 +76,10 @@ func DriverScanWithJson[T any](val any, dst *T) error {
 // CheckVersionSupportsJSON 检查版本是否支持JSON
 // mysql版本高于 5.7.8 ，才支持json
 func CheckVersionSupportsJSON(versionStr string) bool {
-	versionParts := strings.Split(strings.TrimSpace(strings.Split("versionStr", "-")[0]), ".")
+	if strings.Contains(strings.ToLower(versionStr), "mariadb") {
+		return true
+	}
+	versionParts := strings.Split(strings.TrimSpace(strings.Split(versionStr, "-")[0]), ".")
 	if len(versionParts) < 3 {
 		return false
 	}
@@ -133,8 +137,8 @@ func arrayGormValue(jm any, db *gorm.DB) clause.Expr {
 	data, _ := marshalSlice(jm)
 	switch db.Dialector.Name() {
 	case config.DbTypeMysql:
-		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
-			fmt.Println(v.ServerVersion)
+		v, ok := db.Dialector.(*mysql.Dialector)
+		if ok && CheckVersionSupportsJSON(v.ServerVersion) {
 			return gorm.Expr("CAST(? AS JSON)", string(data))
 		}
 	}
@@ -144,8 +148,8 @@ func arrayGormValue(jm any, db *gorm.DB) clause.Expr {
 func MapGormValue(data string, db *gorm.DB) clause.Expr {
 	switch db.Dialector.Name() {
 	case config.DbTypeMysql:
-		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
-			fmt.Println("MapGormValue", v.ServerVersion)
+		v, ok := db.Dialector.(*mysql.Dialector)
+		if ok && CheckVersionSupportsJSON(v.ServerVersion) {
 			return gorm.Expr("CAST(? AS JSON)", data)
 		}
 	}
