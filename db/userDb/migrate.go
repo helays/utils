@@ -93,27 +93,42 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 			continue
 		}
 		dstColumn, _ok := dstColumnTypesMap[item.DBName]
+		// 判断字段缺失
 		if !_ok {
 			ulogs.Infof("表【%s】字段[%s]缺失，正在自动创建表字段", stmt.Schema.Table, item.DBName)
 			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
 			return
 		}
+		// 判断主键是否改变
 		if v, ok := dstColumn.PrimaryKey(); ok && v != item.PrimaryKey {
 			ulogs.Infof("表【%s】字段[%s]主键不一致，正在自动重建", stmt.Schema.Table, item.DBName)
 			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
 			return
 		}
+		// 判断自增是否改变
 		if v, ok := dstColumn.AutoIncrement(); ok && v != item.AutoIncrement {
 			ulogs.Infof("表【%s】字段[%s]自增字段不一致，正在自动重建", stmt.Schema.Table, item.DBName)
 			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
 			return
 		}
+		// 判断字段说明是否改变
 		if v, ok := dstColumn.Comment(); ok && v != item.Comment {
 			ulogs.Infof("表【%s】字段[%s]字段说明不一致，正在自动重建", stmt.Schema.Table, item.DBName)
 			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
 			return
 		}
+		// 判断允许null 是否改变
+		if !item.PrimaryKey {
+			// 非主键字段，比对数据库和本地模型 字段是否允许为空，
+			// 注意数据库 是 nullable false 是不允许空
+			// 而模型中 NotNull true 是不允许空
+			if v, ok := dstColumn.Nullable(); ok && v == item.NotNull {
+				ulogs.Infof("表【%s】字段[%s]是否默认值不一致，正在自动重建", stmt.Schema.Table, item.DBName)
+				ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
+			}
+		}
 	}
+
 	// 判断索引是否有新增
 	for _, item := range srcIndexTypes {
 		idxName := item.Name
