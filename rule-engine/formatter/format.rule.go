@@ -9,19 +9,19 @@ type FormatRule[T any] struct {
 }
 
 // Format 格式化
-func (this FormatRule[T]) Format(src any) (T, error) {
+func (f FormatRule[T]) Format(src any) (T, error) {
 	var (
 		zero   T // 创建一个 T 类型的零值
 		result any
 		err    error
 	)
-	switch this.FormatType {
+	switch f.FormatType {
 	case "date_format":
-		result, err = this.dateFormat(src)
+		result, err = f.dateFormat(src)
 	case "output_date":
-		result, err = this.dateObjectFormat(src)
+		result, err = f.dateObjectFormat(src)
 	default:
-		return zero, fmt.Errorf("不支持的格式化类型：%s", this.FormatType)
+		return zero, fmt.Errorf("不支持的格式化类型：%s", f.FormatType)
 	}
 	if err != nil {
 		return zero, err

@@ -2,13 +2,14 @@ package formatter
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/araddon/dateparse"
 	"github.com/helays/utils/v2/tools"
-	"time"
 )
 
 // 时间格式化
-func (this FormatRule[T]) dateFormat(_src any) (any, error) {
+func (f FormatRule[T]) dateFormat(_src any) (any, error) {
 	var (
 		t   time.Time
 		err error
@@ -22,12 +23,12 @@ func (this FormatRule[T]) dateFormat(_src any) (any, error) {
 	// 首先尝试使用 https://github.com/araddon/dateparse 库
 
 	if err == nil {
-		if this.OutputRule != "" {
-			return t.Format(this.OutputRule), nil
+		if f.OutputRule != "" {
+			return t.Format(f.OutputRule), nil
 		}
 		return t.Format(time.DateTime), err
 	}
-	for _, format := range this.InputRules {
+	for _, format := range f.InputRules {
 		if format == "timestamp" {
 			t, err = tools.AutoDetectTimestampString(src)
 		} else {
@@ -36,8 +37,8 @@ func (this FormatRule[T]) dateFormat(_src any) (any, error) {
 		if err != nil {
 			continue
 		}
-		if this.OutputRule != "" {
-			return t.Format(this.OutputRule), nil
+		if f.OutputRule != "" {
+			return t.Format(f.OutputRule), nil
 		}
 		return t.Format(time.DateTime), err
 	}
@@ -45,7 +46,7 @@ func (this FormatRule[T]) dateFormat(_src any) (any, error) {
 }
 
 // 时间格式化
-func (this FormatRule[T]) dateObjectFormat(_src any) (any, error) {
+func (f FormatRule[T]) dateObjectFormat(_src any) (any, error) {
 	var (
 		t   time.Time
 		err error
@@ -59,7 +60,7 @@ func (this FormatRule[T]) dateObjectFormat(_src any) (any, error) {
 	if err == nil {
 		return t, nil
 	}
-	for _, format := range this.InputRules {
+	for _, format := range f.InputRules {
 		if format == "timestamp" {
 			t, err = tools.AutoDetectTimestampString(src)
 		} else {

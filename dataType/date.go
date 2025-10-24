@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/rule-engine/formatter"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -84,9 +85,10 @@ func (this *CustomDate) UnmarshalJSON(b []byte) (err error) {
 		//*this = CustomTime{}
 		return nil
 	}
-	_t, err := time.ParseInLocation(time.DateTime, s, config.CstSh)
+	tf := formatter.FormatRule[time.Time]{FormatType: "output_date"}
+	_t, err := tf.Format(s)
 	if err != nil {
-		_t, err = time.ParseInLocation(time.RFC3339Nano, s, config.CstSh)
+		return err
 	}
 	*this = CustomDate(_t)
 	return err
@@ -94,42 +96,42 @@ func (this *CustomDate) UnmarshalJSON(b []byte) (err error) {
 
 type CustomTime time.Time
 
-func (this CustomTime) String() string {
-	return time.Time(this).Format(time.DateTime)
+func (c CustomTime) String() string {
+	return time.Time(c).Format(time.DateTime)
 }
 
-func (this CustomTime) Format(layout string) string {
-	return time.Time(this).Format(layout)
+func (c CustomTime) Format(layout string) string {
+	return time.Time(c).Format(layout)
 }
 
-func (this CustomTime) After(u time.Time) bool {
-	return time.Time(this).After(u)
+func (c CustomTime) After(u time.Time) bool {
+	return time.Time(c).After(u)
 }
 
-func (this CustomTime) Before(u time.Time) bool {
-	return time.Time(this).Before(u)
+func (c CustomTime) Before(u time.Time) bool {
+	return time.Time(c).Before(u)
 }
 
-func (this CustomTime) Sub(u time.Time) time.Duration {
-	return time.Time(this).Sub(u)
+func (c CustomTime) Sub(u time.Time) time.Duration {
+	return time.Time(c).Sub(u)
 }
 
-func (this CustomTime) Unix() int64 {
-	return time.Time(this).Unix()
+func (c CustomTime) Unix() int64 {
+	return time.Time(c).Unix()
 }
 
-func (this *CustomTime) Scan(value interface{}) (err error) {
+func (c *CustomTime) Scan(value interface{}) (err error) {
 	nullTime := &sql.NullTime{}
 	err = nullTime.Scan(value)
-	*this = CustomTime(nullTime.Time)
+	*c = CustomTime(nullTime.Time)
 	return
 }
 
-func (this CustomTime) Value() (driver.Value, error) {
-	return time.Time(this), nil
+func (c CustomTime) Value() (driver.Value, error) {
+	return time.Time(c), nil
 }
 
-func (this CustomTime) GormDataType() string {
+func (c CustomTime) GormDataType() string {
 	return "custom_time"
 }
 
@@ -148,32 +150,32 @@ func (CustomTime) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return ""
 }
 
-func (this CustomTime) GobEncode() ([]byte, error) {
-	return time.Time(this).GobEncode()
+func (c CustomTime) GobEncode() ([]byte, error) {
+	return time.Time(c).GobEncode()
 }
 
-func (this *CustomTime) GobDecode(b []byte) error {
-	return (*time.Time)(this).GobDecode(b)
+func (c *CustomTime) GobDecode(b []byte) error {
+	return (*time.Time)(c).GobDecode(b)
 }
 
-func (this CustomTime) MarshalJSON() ([]byte, error) {
-	t := time.Time(this)
-	//if t.IsZero() {
-	//	return []byte("null"), nil
-	//}
+// MarshalJSON 序列化至json字符串
+func (c CustomTime) MarshalJSON() ([]byte, error) {
+	t := time.Time(c)
 	return []byte(`"` + t.Format(time.DateTime) + `"`), nil
 }
-func (this *CustomTime) UnmarshalJSON(b []byte) (err error) {
+
+// UnmarshalJSON 反序列化
+func (c *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	s := strings.Trim(string(b), "\"")
 	if s == "null" || s == "" {
-		//*this = CustomTime{}
 		return nil
 	}
-	_t, err := time.ParseInLocation(time.DateTime, s, config.CstSh)
+	tf := formatter.FormatRule[time.Time]{FormatType: "output_date"}
+	_t, err := tf.Format(s)
 	if err != nil {
-		_t, err = time.ParseInLocation(time.RFC3339Nano, s, config.CstSh)
+		return err
 	}
-	*this = CustomTime(_t)
+	*c = CustomTime(_t)
 	return err
 }
 
