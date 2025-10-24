@@ -73,6 +73,7 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 	for _, index := range srcIndexTypes {
 		srcIndexTypesMap[index.Name] = index
 	}
+	// 删除多余的索引
 	for _, index := range dstIndexTypes {
 		if isPk, ok := index.PrimaryKey(); ok && isPk {
 			continue
@@ -105,15 +106,8 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 			return
 		}
 		// 主键无相关方法，暂不处理
+		// 自增无相关方法，
 
-		// 判断自增是否改变
-		if v, ok := dstColumn.AutoIncrement(); ok && v != item.AutoIncrement {
-			ulogs.Infof("表【%s】字段[%s]自增字段不一致，正在自动重建", stmt.Schema.Table, item.DBName)
-			if err = db.Debug().Migrator().AlterColumn(tb, item.DBName); err != nil {
-				ulogs.Errorf("表【%s】字段[%s]自增字段变更失败 %v", stmt.Schema.Table, item.DBName, err)
-			}
-			continue
-		}
 		// 判断字段说明是否改变
 		if v, ok := dstColumn.Comment(); ok && v != item.Comment {
 			ulogs.Infof("表【%s】字段[%s]字段说明不一致，正在自动重建", stmt.Schema.Table, item.DBName)
@@ -136,7 +130,6 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 			}
 		}
 	}
-
 	// 判断索引是否有新增
 	for _, item := range srcIndexTypes {
 		idxName := item.Name
