@@ -13,11 +13,12 @@ import (
 
 // AutoMigrate 根据结构体自动创建表
 func AutoMigrate(db *gorm.DB, c tablename.TableName, model any) {
+	tx := db.Session(&gorm.Session{NewDB: true})
 	switch db.Dialector.Name() {
 	case config.DbTypeMysql:
-		AutoCreateTableWithStruct(db.Set(c.MigrateComment()), model, c.MigrateError())
+		AutoCreateTableWithStruct(tx.Set(c.MigrateComment()), model, c.MigrateError())
 	default:
-		AutoCreateTableWithStruct(db, model, c.MigrateError())
+		AutoCreateTableWithStruct(tx, model, c.MigrateError())
 	}
 
 }
@@ -29,7 +30,7 @@ func AutoCreateTableWithStruct(db *gorm.DB, tb any, errmsg string) {
 		return
 	}
 	if !db.Migrator().HasTable(tb) {
-		ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
+		ulogs.DieCheckerr(db.Debug().Migrator().CreateTable(tb), errmsg)
 		return
 	}
 	// 如果表存在，在判断结构体中是否有新增字段，如果有，就自动改变表
@@ -92,7 +93,6 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 		}
 		dstIndexTypesMap[index.Name()] = index
 	}
-
 	// 判断字段是否有变化
 	for _, item := range stmt.Schema.Fields {
 		if item.IgnoreMigration {
@@ -110,25 +110,14 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 
 		// 判断字段说明是否改变
 		if v, ok := dstColumn.Comment(); ok && v != item.Comment {
-			ulogs.Infof("表【%s】字段[%s]字段说明不一致，正在自动重建", stmt.Schema.Table, item.DBName)
+			ulogs.Infof("表【%s】字段[%s]字段说明不一致，正在自动重建 %s %s", stmt.Schema.Table, item.DBName, v, item.Comment)
 			if err = db.Debug().Migrator().AlterColumn(tb, item.DBName); err != nil {
 				ulogs.Errorf("表【%s】字段[%s]字段说明修改失败 %v", stmt.Schema.Table, item.DBName, err)
 			}
 			continue
 		}
 		// 判断允许null 是否改变
-		if !item.PrimaryKey {
-			// 非主键字段，比对数据库和本地模型 字段是否允许为空，
-			// 注意数据库 是 nullable false 是不允许空
-			// 而模型中 NotNull true 是不允许空
-			if v, ok := dstColumn.Nullable(); ok && v == item.NotNull {
-				ulogs.Infof("表【%s】字段[%s]是否NULl不一致，正在自动重建", stmt.Schema.Table, item.DBName)
-				if err = db.Debug().Migrator().AlterColumn(tb, item.DBName); err != nil {
-					ulogs.Errorf("表【%s】字段[%s]是否NULL 修改失败 %v", stmt.Schema.Table, item.DBName, err)
-				}
-				continue
-			}
-		}
+		// 这个也不能用，有的数据库时间字段设置的允许null,但是会自动改成not null。
 	}
 	// 判断索引是否有新增
 	for _, item := range srcIndexTypes {

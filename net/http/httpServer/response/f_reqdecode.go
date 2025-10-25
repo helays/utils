@@ -2,8 +2,9 @@ package response
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/net/http/httpServer/request"
 	"net/http"
+
+	"github.com/helays/utils/v2/net/http/httpServer/request"
 )
 
 func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
