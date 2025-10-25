@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+func TrimStringHelper(v string) string {
+	v = strings.TrimSpace(v)
+	v = strings.TrimFunc(v, func(r rune) bool {
+		return r == '"' || r == '`' || r == '\''
+	})
+	return strings.TrimSpace(v)
+}
+
 // Map2Struct 将map转换为结构体
 // dst 需要传入一个变量的指针
 func Map2Struct(dst any, src map[string]any, customConvert map[string]func(dst any, src map[string]any) error) error {
@@ -203,7 +211,7 @@ func Any2int(_v any) (int64, error) {
 }
 
 func String2Int64(v string) (int64, error) {
-	v = strings.TrimSpace(v)
+	v = TrimStringHelper(v)
 	if v == "" || v == "null" || v == "nil" || v == "undefined" {
 		return 0, nil
 	}
@@ -279,10 +287,7 @@ func Any2float64(_v any) (float64, error) {
 	case uint64:
 		return float64(v), nil
 	case string:
-		if v == "" {
-			return 0, nil
-		}
-		return strconv.ParseFloat(v, 64)
+		return String2Float64(v)
 	case nil:
 		return 0, nil
 	case json.Number:
@@ -318,6 +323,49 @@ func Any2float64(_v any) (float64, error) {
 			return 0, fmt.Errorf("无法将类型 %T 转换为 float64", v)
 		}
 	}
+}
+
+func String2Float64(v string) (float64, error) {
+	v = TrimStringHelper(v)
+	if v == "" || v == "null" || v == "nil" || v == "undefined" {
+		return 0, nil
+	}
+
+	if v == "true" {
+		return 1, nil
+	} else if v == "false" {
+		return 0, nil
+	}
+	// 去除千分位逗号
+	v = strings.ReplaceAll(v, ",", "")
+
+	// 处理不同进制（浮点数通常只支持十进制，但为了兼容性可以特殊处理十六进制）
+	if len(v) > 2 {
+		prefix := v[:2]
+		switch prefix {
+		case "0x", "0X": // 十六进制浮点数
+			// Go 的 strconv.ParseFloat 不支持十六进制浮点数，需要特殊处理
+			if strings.ContainsAny(v, "pP") {
+				// 如果是十六进制科学计数法格式，如 "0x1.2p3"
+				return strconv.ParseFloat(v, 64)
+			}
+			// 普通十六进制整数，先转整型再转浮点数
+			if i, err := strconv.ParseInt(v[2:], 16, 64); err == nil {
+				return float64(i), nil
+			}
+		case "0b", "0B": // 二进制
+			if i, err := strconv.ParseInt(v[2:], 2, 64); err == nil {
+				return float64(i), nil
+			}
+		case "0o", "0O": // 八进制
+			if i, err := strconv.ParseInt(v[2:], 8, 64); err == nil {
+				return float64(i), nil
+			}
+		}
+	}
+
+	// 对于浮点数，不需要特殊处理小数点情况，因为 ParseFloat 可以直接处理
+	return strconv.ParseFloat(v, 64)
 }
 
 // Any2bool 尝试将任意类型转换为 bool
@@ -609,7 +657,7 @@ var (
 func CheckIsObject(v any) bool {
 	// 先尝试类型断言（最快路径）
 	switch v.(type) {
-	case map[string]any, []any, // 最常见
+	case map[string]any, []any,     // 最常见
 		map[any]any,                // 任意 key 的 map
 		[]map[string]any,           // map 数组
 		[]int, []float64, []string, // 基本类型 slice
