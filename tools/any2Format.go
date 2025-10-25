@@ -168,14 +168,7 @@ func Any2int(_v any) (int64, error) {
 	case int64:
 		return v, nil
 	case string:
-		if v == "" {
-			return 0, nil
-		}
-		// 包含小数点
-		if strings.Contains(v, ".") {
-			return strconv.ParseInt(strings.Split(v, ".")[0], 10, 64)
-		}
-		return strconv.ParseInt(v, 10, 64)
+		return String2Int64(v)
 	case json.Number:
 		if v == "" {
 			return 0, nil
@@ -207,6 +200,55 @@ func Any2int(_v any) (int64, error) {
 			return 0, fmt.Errorf("无法将类型 %T 转换为 int", _v)
 		}
 	}
+}
+
+func String2Int64(v string) (int64, error) {
+	v = strings.TrimSpace(v)
+	if v == "" || v == "null" || v == "nil" || v == "undefined" {
+		return 0, nil
+	}
+
+	if v == "true" {
+		return 1, nil
+	} else if v == "false" {
+		return 0, nil
+	}
+
+	// 去除千分位逗号
+	v = strings.ReplaceAll(v, ",", "")
+	// 处理科学计数法
+	if strings.ContainsAny(v, "eE") {
+		// 先尝试用浮点数解析，再转整型
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			return int64(f), nil
+		}
+	}
+
+	// 处理不同进制
+	if len(v) > 2 {
+		prefix := v[:2]
+		switch prefix {
+		case "0x", "0X": // 十六进制
+			return strconv.ParseInt(v[2:], 16, 64)
+		case "0b", "0B": // 二进制
+			return strconv.ParseInt(v[2:], 2, 64)
+		case "0o", "0O": // 八进制
+			return strconv.ParseInt(v[2:], 8, 64)
+		}
+	}
+
+	// 包含小数点
+	if strings.Contains(v, ".") {
+		parts := strings.SplitN(v, ".", 2) // 只分割一次
+		if parts[0] == "" && parts[1] == "" {
+			return 0, fmt.Errorf("invalid number: %s", v)
+		}
+		if parts[0] == "" {
+			return 0, nil // ".123" 的情况返回 0
+		}
+		return strconv.ParseInt(parts[0], 10, 64)
+	}
+	return strconv.ParseInt(v, 10, 64)
 }
 
 // Any2float64 尝试将任意类型转换为 float64
