@@ -50,6 +50,7 @@ func (i IntString[T]) Value() (driver.Value, error) {
 }
 
 func (i *IntString[T]) Scan(val any) error {
+	i.jsonAsString = true // 从数据读取出来也默认为字符串
 	if val == nil {
 		i.value = 0
 		i.valid = false
