@@ -96,6 +96,14 @@ func (this *CustomDate) UnmarshalJSON(b []byte) (err error) {
 
 type CustomTime time.Time
 
+func NewCustomTimeNow() CustomTime {
+	return CustomTime(time.Now())
+}
+
+func NewCustomTime(t time.Time) CustomTime {
+	return CustomTime(t)
+}
+
 func (c CustomTime) String() string {
 	return time.Time(c).Format(time.DateTime)
 }
@@ -177,6 +185,10 @@ func (c *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	}
 	*c = CustomTime(_t)
 	return err
+}
+
+func (c CustomTime) ToPtr() *CustomTime {
+	return &c
 }
 
 type DynamicTime struct {

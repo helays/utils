@@ -120,23 +120,23 @@ type TableDefaultUserField struct {
 type TableBaseModelAutoIncrement struct {
 	Id dataType.IntString[int64] `json:"id,omitempty" gorm:"primaryKey;autoIncrement;comment:行ID" form:"id"`
 
-	CreateTime dataType.CustomTime       `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
+	CreateTime *dataType.CustomTime      `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
 	CreateBy   dataType.IntString[int64] `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`
-	UpdateTime dataType.CustomTime       `json:"update_time,omitempty" gorm:"autoUpdateTime:true;comment:记录更新时间" form:"-"`
+	UpdateTime *dataType.CustomTime      `json:"update_time,omitempty" gorm:"autoUpdateTime:true;comment:记录更新时间" form:"-"`
 	UpdateBy   dataType.IntString[int64] `json:"update_by,omitempty" gorm:"comment:更新人ID" form:"update_by"`
 }
 
 type TableBaseModelFull struct {
 	Id dataType.IntString[int64] `json:"id,omitempty" gorm:"primaryKey;autoIncrement:false;comment:行ID" form:"id"`
 
-	CreateTime dataType.CustomTime       `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
+	CreateTime *dataType.CustomTime      `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
 	CreateBy   dataType.IntString[int64] `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`
-	UpdateTime dataType.CustomTime       `json:"update_time,omitempty" gorm:"autoUpdateTime:true;comment:记录更新时间" form:"-"`
+	UpdateTime *dataType.CustomTime      `json:"update_time,omitempty" gorm:"autoUpdateTime:true;comment:记录更新时间" form:"-"`
 	UpdateBy   dataType.IntString[int64] `json:"update_by,omitempty" gorm:"comment:更新人ID" form:"update_by"`
 }
 
 type SoftDeleteModel struct {
 	IsDeleted   dataType.Bool             `json:"is_deleted,omitempty" gorm:"not null;index;default:0;comment:软删除标记 0 正常 1 删除" form:"is_deleted"`
 	DeletedBy   dataType.IntString[int64] `json:"deleted_by,omitempty" gorm:"comment:删除人ID" form:"deleted_by"`
-	DeletedTime dataType.CustomTime       `json:"deleted_time,omitempty" gorm:"index;comment:删除时间" form:"-"`
+	DeletedTime *dataType.CustomTime      `json:"deleted_time,omitempty" gorm:"index;comment:删除时间" form:"-"`
 }

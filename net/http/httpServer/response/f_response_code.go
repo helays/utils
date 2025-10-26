@@ -32,7 +32,7 @@ func RespErrWithCode(w http.ResponseWriter, r *http.Request, resp RespCode, err 
 		respData["data"] = d
 	}
 	if resp.EnableLog() {
-		ulogs.Errorf("IP[%s]调用接口接口[%s]失败，描述 %s，错误信息 %v", request.Getip(r), r.URL.String(), msg, err)
+		ulogs.Errorf("IP[%s]调用接口接口[%s]失败，描述[%s]，错误信息 %v", request.Getip(r), r.URL.String(), msg, err)
 	}
 	_ = json.NewEncoder(w).Encode(respData)
 
