@@ -13,8 +13,8 @@ import (
 
 // AutoMigrate 根据结构体自动创建表
 func AutoMigrate(db *gorm.DB, c tablename.TableName, model any) {
-	tx := db.Session(&gorm.Session{NewDB: true})
-	switch db.Dialector.Name() {
+	tx := db.Session(&gorm.Session{})
+	switch tx.Dialector.Name() {
 	case config.DbTypeMysql:
 		AutoCreateTableWithStruct(tx.Set(c.MigrateComment()), model, c.MigrateError())
 	default:
@@ -44,19 +44,19 @@ func AutoCreateTableWithStruct(db *gorm.DB, tb any, errmsg string) {
 // 比对字段信息变化，如果有,就进行alter操作
 // 最后再次比对数据库与本地模型的索引结构，将缺失的索引补充上。
 func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
-	stmt := db.Statement
+	stmt := db.Session(&gorm.Session{Initialized: true}).Statement
 	if err := stmt.Parse(tb); err != nil {
 		ulogs.DieCheckerr(err, "表模型解析失败", errmsg)
 		return
 	}
 	// 查询数据库表字段元数据
-	columnTypes, err := db.Migrator().ColumnTypes(tb)
+	columnTypes, err := db.Session(&gorm.Session{Initialized: true}).Migrator().ColumnTypes(tb)
 	if err != nil {
 		ulogs.DieCheckerr(err, "查询数据库表字段元数据失败", errmsg)
 		return
 	}
 	// 查询数据库表索引元数据
-	dstIndexTypes, err := db.Migrator().GetIndexes(tb)
+	dstIndexTypes, err := db.Session(&gorm.Session{Initialized: true}).Migrator().GetIndexes(tb)
 	if err != nil {
 		ulogs.DieCheckerr(err, "查询数据库表索引元数据失败", errmsg)
 		return
