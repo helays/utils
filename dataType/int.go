@@ -12,7 +12,7 @@ import (
 type Byte byte
 
 func (b Byte) Value() (driver.Value, error) {
-	return int(b), nil
+	return int64(b), nil
 }
 
 func (b *Byte) Scan(value any) error {

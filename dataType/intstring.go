@@ -42,11 +42,12 @@ func ZeroIntString[T constraints.Integer]() IntString[T] {
 	}
 }
 
+// Value 注意，在写数据库的时候，貌似只支持 int64
 func (i IntString[T]) Value() (driver.Value, error) {
 	if !i.valid {
 		return nil, nil
 	}
-	return i.value, nil
+	return int64(i.value), nil
 }
 
 func (i *IntString[T]) Scan(val any) error {

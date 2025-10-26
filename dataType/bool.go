@@ -13,9 +13,9 @@ type Bool bool
 
 func (b Bool) Value() (driver.Value, error) {
 	if b {
-		return 1, nil
+		return int64(1), nil
 	}
-	return 0, nil
+	return int64(0), nil
 }
 
 func (b *Bool) Scan(value any) error {
