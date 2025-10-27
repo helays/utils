@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// Bool 注意当使用这个类型时，在定义模型时，默认值需要带上括号。不然pg数据库会报错。
 type Bool bool
 
 func (b Bool) Value() (driver.Value, error) {

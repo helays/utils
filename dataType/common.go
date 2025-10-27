@@ -135,20 +135,19 @@ func arrayScan(m any, val any) error {
 
 func arrayGormValue(jm any, db *gorm.DB) clause.Expr {
 	data, _ := marshalSlice(jm)
-	switch db.Dialector.Name() {
-	case config.DbTypeMysql:
-		v, ok := db.Dialector.(*mysql.Dialector)
-		if ok && CheckVersionSupportsJSON(v.ServerVersion) {
-			return gorm.Expr("CAST(? AS JSON)", string(data))
-		}
-	}
-	return gorm.Expr("?", string(data))
+	return MapGormValue(string(data), db)
 }
 
+// MapGormValue 下面的操作是借鉴的
+// https://github.com/go-gorm/datatypes/blob/master/json_map.go#L94
 func MapGormValue(data string, db *gorm.DB) clause.Expr {
 	switch db.Dialector.Name() {
 	case config.DbTypeMysql:
-		return gorm.Expr("?", data)
+		// mysql类型数据库需要专门处理，因为mysql的json类型需要用CAST
+		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") {
+			return gorm.Expr("CAST(? AS JSON)", data)
+		}
 	}
+	// 其他非mysql数据库就直接操作即可。
 	return gorm.Expr("?", data)
 }

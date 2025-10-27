@@ -136,7 +136,7 @@ type TableBaseModelFull struct {
 }
 
 type SoftDeleteModel struct {
-	IsDeleted   dataType.Bool             `json:"is_deleted,omitempty" gorm:"not null;index;default:0;comment:软删除标记 0 正常 1 删除" form:"is_deleted"`
+	IsDeleted   dataType.Bool             `json:"is_deleted,omitempty" gorm:"not null;index;default:(0);comment:软删除标记 0 正常 1 删除" form:"is_deleted"`
 	DeletedBy   dataType.IntString[int64] `json:"deleted_by,omitempty" gorm:"comment:删除人ID" form:"deleted_by"`
 	DeletedTime *dataType.CustomTime      `json:"deleted_time,omitempty" gorm:"index;comment:删除时间" form:"-"`
 }
