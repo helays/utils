@@ -66,9 +66,6 @@ func (i *IntString[T]) Scan(val any) error {
 	return nil
 }
 
-func (i IntString[T]) GormDataType() string {
-	return "custom_int_string"
-}
 func (i IntString[T]) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	var zero T
 	switch db.Dialector.Name() {

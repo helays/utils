@@ -37,10 +37,6 @@ func (b *Byte) Scan(value any) error {
 	return nil
 }
 
-func (b Byte) GormDataType() string {
-	return "custom_byte"
-}
-
 func (Byte) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeSqlite:

@@ -3,6 +3,7 @@ package dataType
 import (
 	"database/sql/driver"
 	"errors"
+
 	"github.com/helays/utils/v2/config"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -28,11 +29,6 @@ func (bf *Binary) Scan(value interface{}) error {
 // Value 实现了 driver.Valuer 接口，用于将 BinaryFile 类型的数据写入数据库
 func (bf Binary) Value() (driver.Value, error) {
 	return []byte(bf), nil
-}
-
-// GormDataType 返回GORM的数据类型名称
-func (Binary) GormDataType() string {
-	return "custom_binary"
 }
 
 // GormDBDataType 返回数据库特定的数据类型名称

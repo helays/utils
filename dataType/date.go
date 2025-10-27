@@ -50,7 +50,7 @@ func (this CustomDate) Value() (driver.Value, error) {
 }
 
 func (this CustomDate) GormDataType() string {
-	return "custom_date"
+	return "time"
 }
 
 func (CustomDate) GormDBDataType(db *gorm.DB, field *schema.Field) string {
@@ -136,11 +136,13 @@ func (c *CustomTime) Scan(value interface{}) (err error) {
 }
 
 func (c CustomTime) Value() (driver.Value, error) {
-	return time.Time(c), nil
+	return time.Time(c).Format(time.DateTime), nil
 }
 
+// GormDataType 这个时间自定义字段，只能用time类型，不然当表中存在AutoUpdate字段时，
+// 使用Update方法，会出现错误。字段时间格式，但是会生成时间戳。
 func (c CustomTime) GormDataType() string {
-	return "custom_time"
+	return "time"
 }
 
 // GormDBDataType gorm db data type

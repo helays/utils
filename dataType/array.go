@@ -20,10 +20,6 @@ func (a *AnyArray[T]) Scan(val interface{}) error {
 	return arrayScan(a, val)
 }
 
-func (AnyArray[T]) GormDataType() string {
-	return "any_array"
-}
-
 func (AnyArray[T]) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return JsonDbDataType(db, field)
 }
@@ -42,11 +38,6 @@ func (m Array) Value() (driver.Value, error) {
 // Scan scan value into Jsonb, implements sql.Scanner interface
 func (m *Array) Scan(val interface{}) error {
 	return arrayScan(m, val)
-}
-
-// GormDataType gorm common data type
-func (m Array) GormDataType() string {
-	return "custom_array"
 }
 
 // GormDBDataType gorm db data type
