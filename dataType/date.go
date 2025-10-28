@@ -139,8 +139,9 @@ func (c CustomTime) Value() (driver.Value, error) {
 	return time.Time(c).Format(time.DateTime), nil
 }
 
-// GormDataType 这个时间自定义字段，只能用time类型，不然当表中存在AutoUpdate字段时，
-// 使用Update方法，会出现错误。字段时间格式，但是会生成时间戳。
+// GormDataType 这个时间自定义字段，只能用time类型，不然当表中设置有 autoUpdateTime控制属性时会有问题。
+// 使用Update方法，只有DataType是time的时候，才会生成time.Time类型，
+// 其他类型都会转成时间戳。
 func (c CustomTime) GormDataType() string {
 	return "time"
 }
