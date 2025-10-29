@@ -2,7 +2,7 @@ module github.com/helays/utils/v2
 
 go 1.24.0
 
-replace go.etcd.io/etcd/client/v3 => go.etcd.io/etcd/client/v3 v3.5.21 // 固定版本，不然pprof可能会冲突
+// go.etcd.io/etcd/client/v3 v3.5.21 // 固定版本，不然pprof可能会冲突
 
 require (
 	github.com/IBM/sarama v1.46.3
