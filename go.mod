@@ -2,7 +2,6 @@ module github.com/helays/utils/v2
 
 go 1.24.0
 
-// go.etcd.io/etcd/client/v3 v3.5.21 // 固定版本，不然pprof可能会冲突
 
 require (
 	github.com/IBM/sarama v1.46.3
@@ -23,7 +22,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/minio/minio-go/v7 v7.0.95
-	github.com/nacos-group/nacos-sdk-go/v2 v2.3.3
+	github.com/nacos-group/nacos-sdk-go/v2 v2.3.5
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.10
@@ -33,7 +32,7 @@ require (
 	github.com/tjfoc/gmsm v1.4.1
 	github.com/xdg-go/scram v1.1.2
 	github.com/xuri/excelize/v2 v2.10.0
-	go.etcd.io/etcd/client/v3 v3.5.21
+	go.etcd.io/etcd/client/v3 v3.6.5
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.43.0
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
