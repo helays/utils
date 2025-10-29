@@ -2642,3 +2642,7 @@ func (l *LocalCache) XTrimMinIDMode(ctx context.Context, key string, minID strin
 func (l *LocalCache) XTrimMinIDApproxMode(ctx context.Context, key string, minID string, limit int64, mode string) *redis.IntCmd {
 	return nil
 }
+
+func (l *LocalCache) ClientMaintNotifications(ctx context.Context, enabled bool, endpointType string) *redis.StatusCmd {
+	return nil
+}
