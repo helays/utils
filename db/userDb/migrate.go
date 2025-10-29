@@ -98,7 +98,7 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 		if item.IgnoreMigration {
 			continue
 		}
-		dstColumn, _ok := dstColumnTypesMap[item.DBName]
+		_, _ok := dstColumnTypesMap[item.DBName]
 		// 判断字段缺失
 		if !_ok {
 			ulogs.Infof("表【%s】字段[%s]缺失，正在自动创建表字段", stmt.Schema.Table, item.DBName)
@@ -109,13 +109,13 @@ func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string) {
 		// 自增无相关方法，
 
 		// 判断字段说明是否改变
-		if v, ok := dstColumn.Comment(); ok && v != item.Comment {
-			ulogs.Infof("表【%s】字段[%s]字段说明不一致，正在自动重建 %s %s", stmt.Schema.Table, item.DBName, v, item.Comment)
-			if err = db.Debug().Migrator().AlterColumn(tb, item.DBName); err != nil {
-				ulogs.Errorf("表【%s】字段[%s]字段说明修改失败 %v", stmt.Schema.Table, item.DBName, err)
-			}
-			continue
-		}
+		//if v, ok := dstColumn.Comment(); ok && v != item.Comment {
+		//	ulogs.Infof("表【%s】字段[%s]字段说明不一致，正在自动重建 %s %s", stmt.Schema.Table, item.DBName, v, item.Comment)
+		//	if err = db.Debug().Migrator().AlterColumn(tb, item.DBName); err != nil {
+		//		ulogs.Errorf("表【%s】字段[%s]字段说明修改失败 %v", stmt.Schema.Table, item.DBName, err)
+		//	}
+		//	continue
+		//}
 		// 判断允许null 是否改变
 		// 这个也不能用，有的数据库时间字段设置的允许null,但是会自动改成not null。
 	}
