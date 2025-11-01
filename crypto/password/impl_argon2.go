@@ -13,15 +13,11 @@ import (
 
 // Argon2Hasher argon2 哈希器
 type Argon2Hasher struct {
-	cfg  Argon2Config
-	mode func(password, salt []byte, time, memory uint32, threads uint8, keyLen uint32) []byte
+	cfg        Argon2Config
+	isArgon2id bool
 }
 
 func (h *Argon2Hasher) Hash(password string) (string, error) {
-	if h.mode == nil {
-		h.mode = argon2.Key // 默认使用 Argon2i
-	}
-
 	// 生成随机盐
 	salt := make([]byte, h.cfg.SaltLength)
 	if _, err := rand.Read(salt); err != nil {
@@ -29,22 +25,23 @@ func (h *Argon2Hasher) Hash(password string) (string, error) {
 	}
 
 	// 使用 Argon2 生成哈希
-	hash := h.mode([]byte(password), salt, h.cfg.Iterations, h.cfg.Memory, h.cfg.Parallelism, h.cfg.KeyLength)
-
-	// 编码为字符串: $argon2{type}$v={version}$m={memory},t={iterations},p={parallelism}${salt}${hash}
-	b64Salt := base64.RawStdEncoding.EncodeToString(salt)
-	b64Hash := base64.RawStdEncoding.EncodeToString(hash)
-
+	var hash []byte
 	var algorithm HashAlgorithm
-	switch h.mode {
-	case argon2.IDKey:
+
+	if h.isArgon2id {
+		hash = argon2.IDKey([]byte(password), salt, h.cfg.Iterations, h.cfg.Memory, h.cfg.Parallelism, h.cfg.KeyLength)
 		algorithm = HashArgon2id
-	default:
+	} else {
+		hash = argon2.Key([]byte(password), salt, h.cfg.Iterations, h.cfg.Memory, h.cfg.Parallelism, h.cfg.KeyLength)
 		algorithm = HashArgon2
 	}
 
+	// 编码为字符串
+	b64Salt := base64.RawStdEncoding.EncodeToString(salt)
+	b64Hash := base64.RawStdEncoding.EncodeToString(hash)
+
 	encoded := fmt.Sprintf("$%s$v=19$m=%d,t=%d,p=%d$%s$%s",
-		algorithm, h.cfg.Memory, h.cfg.Iterations, h.cfg.Parallelism, b64Salt, b64Hash)
+		string(algorithm), h.cfg.Memory, h.cfg.Iterations, h.cfg.Parallelism, b64Salt, b64Hash)
 
 	return encoded, nil
 }

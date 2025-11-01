@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"golang.org/x/crypto/argon2"
 )
 
 // 全局默认密码管理器
@@ -47,7 +45,7 @@ func NewPassword(cogs ...*Security) *Password {
 	// 初始化各算法哈希器
 	pm.hashers[HashBcrypt] = &BcryptHasher{cost: cfg.Bcrypt.Cost}
 	pm.hashers[HashArgon2] = &Argon2Hasher{cfg: cfg.Argon2}
-	pm.hashers[HashArgon2id] = &Argon2Hasher{cfg: cfg.Argon2id, mode: argon2.IDKey}
+	pm.hashers[HashArgon2id] = &Argon2Hasher{cfg: cfg.Argon2id, isArgon2id: true}
 	pm.hashers[HashScrypt] = &ScryptHasher{cfg: cfg.Scrypt}
 	pm.hashers[HashPBKDF2] = &PBKDF2Hasher{cfg: cfg.PBKDF2}
 

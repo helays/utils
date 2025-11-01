@@ -1,6 +1,8 @@
 package password
 
-import "errors"
+import (
+	"errors"
+)
 
 // HashAlgorithm 密码哈希算法
 type HashAlgorithm string
@@ -33,7 +35,6 @@ func (s *Security) ensureDefaults() {
 	if s.PasswordAlgorithm == "" {
 		s.PasswordAlgorithm = defaultCfg.PasswordAlgorithm
 	}
-
 	// 为每个算法配置设置默认值
 	s.Bcrypt.ensureDefaults(defaultCfg.Bcrypt)
 	s.Argon2.ensureDefaults(defaultCfg.Argon2)
