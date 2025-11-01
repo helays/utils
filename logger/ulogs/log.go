@@ -147,6 +147,14 @@ func DieCheckerr(err error, i ...any) {
 	os.Exit(1)
 }
 
+func DieCheckErrf(err error, format string, a ...any) {
+	if err == nil {
+		return
+	}
+	Errorf(format+" 原始错误 %v", append(a, err)...)
+	os.Exit(1)
+}
+
 // ReturnCheckerr 检查错误，有异常就返回false
 func ReturnCheckerr(err error, i ...interface{}) bool {
 	if err == nil {
