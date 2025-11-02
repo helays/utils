@@ -48,19 +48,40 @@ func split(buf []byte, lim int) [][]byte {
 	return chunks
 }
 
-// GenRsaPriPubKey 生成公钥私钥
-func GenRsaPriPubKey(bits int) ([]byte, []byte, error) {
+// GenRsaPrivateKey 生成私钥
+func GenRsaPrivateKey(bits int) (*rsa.PrivateKey, []byte, error) {
 	key, err := rsa.GenerateKey(rand.Reader, bits) //生成一对具有指定字位数的RSA密钥
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := key.Validate(); err != nil {
+	if err = key.Validate(); err != nil {
 		return nil, nil, err
 	}
-	priKey := pem.EncodeToMemory(&pem.Block{
-		Type:  privateBlockType,
-		Bytes: x509.MarshalPKCS1PrivateKey(key),
-	})
+	return key, pem.EncodeToMemory(&pem.Block{Type: privateBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)}), nil
+}
+
+// GenRsaPublicKey 获取公钥
+func GenRsaPublicKey(privateKey []byte) ([]byte, error) {
+	key, err := decodePrivateKey(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	_byte, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+	return pem.EncodeToMemory(&pem.Block{
+		Type:  publicBlockType,
+		Bytes: _byte,
+	}), nil
+}
+
+// GenRsaPriPubKey 生成公钥私钥
+func GenRsaPriPubKey(bits int) ([]byte, []byte, error) {
+	key, prikey, err := GenRsaPrivateKey(bits)
+	if err != nil {
+		return nil, nil, err
+	}
 	_byte, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
 	if err != nil {
 		return nil, nil, err
@@ -69,7 +90,7 @@ func GenRsaPriPubKey(bits int) ([]byte, []byte, error) {
 		Type:  publicBlockType,
 		Bytes: _byte,
 	})
-	return priKey, pubKey, nil
+	return prikey, pubKey, nil
 }
 
 // EncryptWithPublicKey

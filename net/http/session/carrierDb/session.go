@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
+	"net/http"
+	"reflect"
+	"time"
+
 	"github.com/helays/utils/v2/dataType"
 	"github.com/helays/utils/v2/db/userDb"
 	session2 "github.com/helays/utils/v2/net/http/session"
 	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"net/http"
-	"reflect"
-	"time"
 )
 
 type Instance struct {

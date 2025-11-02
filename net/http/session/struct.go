@@ -1,10 +1,11 @@
 package session
 
 import (
-	"github.com/helays/utils/v2/dataType"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/helays/utils/v2/dataType"
 )
 
 //
@@ -60,7 +61,7 @@ type Session struct {
 }
 
 func (this Session) TableName() string {
-	return "vslclub_session"
+	return "vsclub_session"
 }
 
 // Options session 配置

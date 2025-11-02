@@ -52,6 +52,25 @@ func RunAsyncTickerFunc(ctx context.Context, enable bool, d time.Duration, f fun
 	}()
 }
 
+func RunAsyncTickerWithContext(ctx context.Context, enable bool, d time.Duration, f func(ctx context.Context)) {
+	if !enable {
+		return
+	}
+	go func() {
+		f(ctx)
+		tck := time.NewTicker(d)
+		defer tck.Stop()
+		for {
+			select {
+			case <-ctx.Done(): // 退出循环
+				return
+			case <-tck.C:
+				f(ctx)
+			}
+		}
+	}()
+}
+
 // RunAsyncTickerProbabilityFunc 异步运行，并定时执行，概率触发
 func RunAsyncTickerProbabilityFunc(ctx context.Context, enable bool, d time.Duration, probability float64, f func()) {
 	if !enable {
@@ -70,6 +89,29 @@ func RunAsyncTickerProbabilityFunc(ctx context.Context, enable bool, d time.Dura
 			case <-tck.C:
 				if ProbabilityTrigger(probability) {
 					f()
+				}
+			}
+		}
+	}()
+}
+
+func RunAsyncTickerProbabilityWithContext(ctx context.Context, enable bool, d time.Duration, probability float64, f func(ctx context.Context)) {
+	if !enable {
+		return
+	}
+	if f == nil {
+		return
+	}
+	go func() {
+		tck := time.NewTicker(d)
+		defer tck.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-tck.C:
+				if ProbabilityTrigger(probability) {
+					f(ctx)
 				}
 			}
 		}
