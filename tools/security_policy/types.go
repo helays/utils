@@ -13,9 +13,11 @@ import (
 
 // LoginPolicy 登录安全
 type LoginPolicy struct {
-	MaxLoginAttempts int `json:"max_login_attempts"` //最大登录尝试次数
-	LockoutDuration  int `json:"lockout_duration"`   // 锁定时长(分钟)
-	SessionTimeout   int `json:"session_timeout"`    // 会话超时(分钟)
+	MaxLoginAttempts    int  `json:"max_login_attempts"`    //最大登录尝试次数
+	LockoutDuration     int  `json:"lockout_duration"`      // 锁定时长(分钟)
+	SessionTimeout      int  `json:"session_timeout"`       // 会话超时(分钟)
+	AllowMultiLocation  bool `json:"allow_multi_location"`  // 是否允许多地点登录
+	MaxConcurrentLogins int  `json:"max_concurrent_logins"` // 最大并发登录数
 }
 
 // AccessPolicy 访问策略
