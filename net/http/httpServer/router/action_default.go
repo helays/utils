@@ -194,7 +194,7 @@ func toHTTPError(err error) (msg string, httpStatus int) {
 }
 
 // 显示 favicon
-func (ro Router) favicon(w http.ResponseWriter) {
+func (ro *Router) favicon(w http.ResponseWriter) {
 	w.WriteHeader(200)
 	rd := bytes.NewReader(favicon[:])
 	_, _ = io.Copy(w, rd)
@@ -202,7 +202,7 @@ func (ro Router) favicon(w http.ResponseWriter) {
 
 const CaptchaID = "captcha"
 
-func (ro Router) Captcha(w http.ResponseWriter, r *http.Request) {
+func (ro *Router) Captcha(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")

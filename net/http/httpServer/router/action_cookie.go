@@ -1,12 +1,13 @@
 package router
 
 import (
-	"github.com/helays/utils/v2/tools"
 	"net/http"
 	"time"
+
+	"github.com/helays/utils/v2/tools"
 )
 
-func (ro Router) SetCookie(w http.ResponseWriter, k, value, path string) {
+func (ro *Router) SetCookie(w http.ResponseWriter, k, value, path string) {
 	path = tools.Ternary(path == "", "/", path)
 	cookie := http.Cookie{
 		Name:       k,
@@ -25,7 +26,7 @@ func (ro Router) SetCookie(w http.ResponseWriter, k, value, path string) {
 	http.SetCookie(w, &cookie)
 }
 
-func (ro Router) DelCookie(w http.ResponseWriter, k, path string) {
+func (ro *Router) DelCookie(w http.ResponseWriter, k, path string) {
 
 	cookie := http.Cookie{
 		Name:       k,

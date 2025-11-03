@@ -1,10 +1,11 @@
 package router
 
 import (
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"net/http"
 	"time"
+
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/net/http/httpServer/response"
 )
 
 // BeforeAction 所有应用前置操作

@@ -2,13 +2,15 @@ package router
 
 import (
 	"embed"
-	"github.com/helays/utils/v2/net/http/httpServer/http_types"
-	"github.com/helays/utils/v2/net/http/session"
-	"gorm.io/gorm"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/net/http/httpServer/http_types"
+	"github.com/helays/utils/v2/net/http/session"
+	"github.com/helays/utils/v2/net/http/sessionmgr"
+	"gorm.io/gorm"
 )
 
 type LoginInfo struct {
@@ -22,10 +24,10 @@ type LoginInfo struct {
 	RsaPublickKey []byte    // rsa 公钥
 }
 
-func (this LoginInfo) QueryIsManage() func(db *gorm.DB) *gorm.DB {
+func (i LoginInfo) QueryIsManage() func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if !this.IsManage {
-			db.Where("user_id=?", this.UserId)
+		if !i.IsManage {
+			db.Where("user_id=?", i.UserId)
 		}
 		return db
 	}
@@ -64,6 +66,8 @@ type Router struct {
 	DisableLoginPathRegexp []*regexp.Regexp // 登录状态下不能访问的页面正则
 	ManagePage             map[string]bool  // 管理员访问
 	ManagePageRegexp       []*regexp.Regexp
+
+	sessionManager *sessionmgr.Manager
 }
 
 type embedInfo struct {
@@ -87,4 +91,11 @@ func (ro *Router) SetStaticEmbedFs(p string, embedFS *embed.FS, prefix ...string
 		}
 		ro.staticEmbedFS[p].prefix = prefix[0]
 	}
+}
+
+func (ro *Router) SetSessionManager(sessionManager *sessionmgr.Manager) {
+	ro.sessionManager = sessionManager
+}
+func (ro *Router) GetSessionManager() *sessionmgr.Manager {
+	return ro.sessionManager
 }
