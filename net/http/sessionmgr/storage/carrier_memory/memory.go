@@ -3,28 +3,22 @@ package carrier_memory
 import (
 	"context"
 	"strings"
-	"time"
 
-	"github.com/helays/utils/v2/map/syncMapWrapper"
+	"github.com/helays/utils/v2/map/safettl"
 	"github.com/helays/utils/v2/net/http/sessionmgr"
 )
 
 type Instance struct {
-	storage syncMapWrapper.SyncMap[string, *sessionmgr.Session]
+	storage *safettl.PerKeyTTLMap[string, *sessionmgr.Session]
 }
 
 func New() *Instance {
 	i := &Instance{}
+	i.storage = safettl.NewPerKeyTTLMap[string, *sessionmgr.Session]()
 	return i
 }
 
 func (i *Instance) Gc(_ context.Context) error {
-	i.storage.Range(func(key string, value *sessionmgr.Session) bool {
-		if time.Time(value.ExpireTime).Before(time.Now()) {
-			i.storage.Delete(key)
-		}
-		return true
-	})
 	return nil
 }
 
@@ -33,7 +27,7 @@ func (i *Instance) uniqueId(id, name string) string {
 }
 
 func (i *Instance) Save(s *sessionmgr.Session) error {
-	i.storage.Store(i.uniqueId(s.Id, s.Name), s)
+	i.storage.StoreWithTTL(i.uniqueId(s.Id, s.Name), s, s.Duration)
 	return nil
 }
 

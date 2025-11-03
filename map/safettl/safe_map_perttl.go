@@ -4,20 +4,37 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/helays/utils/v2/tools"
 )
 
-// Map 是带有超时功能的泛型安全 Map
-type Map[K comparable, V any] struct {
-	mu        sync.Map
-	ttl       time.Duration
-	closeChan chan struct{}
+// PerKeyTTLMap 是支持每个键单独 TTL 的泛型安全 Map
+type PerKeyTTLMap[K comparable, V any] struct {
+	mu              sync.Map
+	closeChan       chan struct{}
+	cleanupInterval time.Duration // 定义清理间隔
 }
 
-// New 创建一个带有 TTL 的安全 Map
-func New[K comparable, V any](ttl time.Duration) *Map[K, V] {
-	m := &Map[K, V]{
-		ttl:       ttl,
-		closeChan: make(chan struct{}),
+// NewPerKeyTTLMap 创建一个支持单独 TTL 的安全 Map
+func NewPerKeyTTLMap[K comparable, V any]() *PerKeyTTLMap[K, V] {
+	m := &PerKeyTTLMap[K, V]{
+		closeChan:       make(chan struct{}),
+		cleanupInterval: time.Second,
+	}
+
+	// 启动后台清理协程
+	go m.cleanupExpired()
+	return m
+}
+
+// NewPerKeyTTLMapWithInterval 创建一个支持单独 TTL 的安全 Map，可指定清理间隔
+func NewPerKeyTTLMapWithInterval[K comparable, V any](cleanupInterval time.Duration) *PerKeyTTLMap[K, V] {
+	// 确保清理间隔在合理范围内
+	cleanupInterval = tools.AutoTimeDuration(cleanupInterval, time.Second, time.Second) // 绝对最小1秒
+
+	m := &PerKeyTTLMap[K, V]{
+		closeChan:       make(chan struct{}),
+		cleanupInterval: cleanupInterval,
 	}
 
 	// 启动后台清理协程
@@ -26,13 +43,22 @@ func New[K comparable, V any](ttl time.Duration) *Map[K, V] {
 	return m
 }
 
+// isExpired 检查是否过期
+func (item *itemWithExpiry[V]) isExpired() bool {
+	// 如果 expiryTime 是零值，表示永不过期
+	if item.expiryTime.IsZero() {
+		return false
+	}
+	return time.Now().After(item.expiryTime)
+}
+
 // LoadAndDelete 删除键的值，返回之前的值（如果存在且未过期）
-func (m *Map[K, V]) LoadAndDelete(key K) (value V, loaded bool) {
+func (m *PerKeyTTLMap[K, V]) LoadAndDelete(key K) (value V, loaded bool) {
 	if val, ok := m.mu.LoadAndDelete(key); ok {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if item.isExpired() {
 			var zeroV V
 			return zeroV, false
 		}
@@ -44,12 +70,12 @@ func (m *Map[K, V]) LoadAndDelete(key K) (value V, loaded bool) {
 }
 
 // LoadAndDeleteIf 条件性加载并删除
-func (m *Map[K, V]) LoadAndDeleteIf(key K, condition func(value V) bool) (value V, deleted bool) {
+func (m *PerKeyTTLMap[K, V]) LoadAndDeleteIf(key K, condition func(value V) bool) (value V, deleted bool) {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if item.isExpired() {
 			m.mu.Delete(key)
 			var zeroV V
 			return zeroV, false
@@ -72,12 +98,12 @@ func (m *Map[K, V]) LoadAndDeleteIf(key K, condition func(value V) bool) (value 
 }
 
 // LoadAndDeleteExpired 加载并删除已过期的键（用于手动清理）
-func (m *Map[K, V]) LoadAndDeleteExpired(key K) (value V, expired bool) {
+func (m *PerKeyTTLMap[K, V]) LoadAndDeleteExpired(key K) (value V, expired bool) {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if item.isExpired() {
 			if m.mu.CompareAndDelete(key, val) {
 				return item.value, true
 			}
@@ -95,7 +121,7 @@ func (m *Map[K, V]) LoadAndDeleteExpired(key K) (value V, expired bool) {
 }
 
 // DeleteAndGetCount 删除多个键并返回删除的数量
-func (m *Map[K, V]) DeleteAndGetCount(keys ...K) int {
+func (m *PerKeyTTLMap[K, V]) DeleteAndGetCount(keys ...K) int {
 	count := 0
 	for _, key := range keys {
 		if _, loaded := m.LoadAndDelete(key); loaded {
@@ -105,36 +131,39 @@ func (m *Map[K, V]) DeleteAndGetCount(keys ...K) int {
 	return count
 }
 
-// 其他方法保持不变...
-// Store, StoreWithTTL, Load, LoadAndRefresh, Delete, Clear,
-// DeletePrefix, DeleteSuffix, Range, LoadOrStore, GetTTL,
-// Refresh, Close, Size, IsExpired 等方法
-
-// Store 设置键的值，并设置过期时间
-func (m *Map[K, V]) Store(key K, value V) {
+// Store 设置键的值，永不过期
+func (m *PerKeyTTLMap[K, V]) Store(key K, value V) {
 	item := &itemWithExpiry[V]{
 		value:      value,
-		expiryTime: time.Now().Add(m.ttl),
+		expiryTime: time.Time{}, // 零值表示永不过期
+		ttl:        0,
 	}
 	m.mu.Store(key, item)
 }
 
-// StoreWithTTL 使用自定义 TTL 设置键的值
-func (m *Map[K, V]) StoreWithTTL(key K, value V, ttl time.Duration) {
+// StoreWithTTL 使用自定义 TTL 设置键的值，ttl=0 表示永不过期
+func (m *PerKeyTTLMap[K, V]) StoreWithTTL(key K, value V, ttl time.Duration) {
+	var expiryTime time.Time
+	if ttl > 0 {
+		expiryTime = time.Now().Add(ttl)
+	}
+	// 如果 ttl <= 0，expiryTime 保持为零值，表示永不过期
+
 	item := &itemWithExpiry[V]{
 		value:      value,
-		expiryTime: time.Now().Add(ttl),
+		expiryTime: expiryTime,
+		ttl:        ttl,
 	}
 	m.mu.Store(key, item)
 }
 
 // Load 返回存储在 map 中给定键的值（如果未过期）
-func (m *Map[K, V]) Load(key K) (V, bool) {
+func (m *PerKeyTTLMap[K, V]) Load(key K) (V, bool) {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if item.isExpired() {
 			m.mu.Delete(key)
 			var zeroV V
 			return zeroV, false
@@ -146,20 +175,23 @@ func (m *Map[K, V]) Load(key K) (V, bool) {
 	return zeroV, false
 }
 
-// LoadAndRefresh 加载值并刷新过期时间
-func (m *Map[K, V]) LoadAndRefresh(key K) (V, bool) {
+// LoadAndRefresh 加载值并刷新过期时间（只对有 TTL 的键有效）
+func (m *PerKeyTTLMap[K, V]) LoadAndRefresh(key K, ttl time.Duration) (V, bool) {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if item.isExpired() {
 			m.mu.Delete(key)
 			var zeroV V
 			return zeroV, false
 		}
 
-		// 刷新过期时间
-		item.expiryTime = time.Now().Add(m.ttl)
+		// 只有原键有 TTL 时才刷新（expiryTime 不是零值）
+		if !item.expiryTime.IsZero() && ttl > 0 {
+			item.expiryTime = time.Now().Add(ttl)
+		}
+
 		return item.value, true
 	}
 	var zeroV V
@@ -167,12 +199,12 @@ func (m *Map[K, V]) LoadAndRefresh(key K) (V, bool) {
 }
 
 // Delete 移除键的值
-func (m *Map[K, V]) Delete(key K) {
+func (m *PerKeyTTLMap[K, V]) Delete(key K) {
 	m.mu.Delete(key)
 }
 
 // Clear 清空所有键值对
-func (m *Map[K, V]) Clear() {
+func (m *PerKeyTTLMap[K, V]) Clear() {
 	m.mu.Range(func(k, v interface{}) bool {
 		m.mu.Delete(k)
 		return true
@@ -180,7 +212,7 @@ func (m *Map[K, V]) Clear() {
 }
 
 // DeletePrefix 删除具有指定前缀的键
-func (m *Map[K, V]) DeletePrefix(prefix string) {
+func (m *PerKeyTTLMap[K, V]) DeletePrefix(prefix string) {
 	m.mu.Range(func(k, v interface{}) bool {
 		if key, ok := k.(string); ok && strings.HasPrefix(key, prefix) {
 			m.mu.Delete(k)
@@ -190,7 +222,7 @@ func (m *Map[K, V]) DeletePrefix(prefix string) {
 }
 
 // DeleteSuffix 删除具有指定后缀的键
-func (m *Map[K, V]) DeleteSuffix(suffix string) {
+func (m *PerKeyTTLMap[K, V]) DeleteSuffix(suffix string) {
 	m.mu.Range(func(k, v interface{}) bool {
 		if key, ok := k.(string); ok && strings.HasSuffix(key, suffix) {
 			m.mu.Delete(k)
@@ -200,13 +232,12 @@ func (m *Map[K, V]) DeleteSuffix(suffix string) {
 }
 
 // Range 遍历所有未过期的键值对
-func (m *Map[K, V]) Range(f func(key K, value V) bool) {
-	now := time.Now()
+func (m *PerKeyTTLMap[K, V]) Range(f func(key K, value V) bool) {
 	m.mu.Range(func(k, v interface{}) bool {
 		item := v.(*itemWithExpiry[V])
 
 		// 跳过过期的项
-		if now.After(item.expiryTime) {
+		if item.isExpired() {
 			m.mu.Delete(k)
 			return true
 		}
@@ -215,17 +246,27 @@ func (m *Map[K, V]) Range(f func(key K, value V) bool) {
 	})
 }
 
-// LoadOrStore 如果键存在且未过期则返回值，否则存储并返回值
-func (m *Map[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
+// LoadOrStore 如果键存在且未过期则返回值，否则存储并返回值（永不过期）
+func (m *PerKeyTTLMap[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
+	return m.LoadOrStoreWithTTL(key, value, 0)
+}
+
+// LoadOrStoreWithTTL 如果键存在且未过期则返回值，否则存储并返回值（可设置 TTL）
+func (m *PerKeyTTLMap[K, V]) LoadOrStoreWithTTL(key K, value V, ttl time.Duration) (actual V, loaded bool) {
 	// 先尝试加载
 	if v, ok := m.Load(key); ok {
 		return v, true
 	}
 
 	// 不存在或已过期，存储新值
+	var expiryTime time.Time
+	if ttl > 0 {
+		expiryTime = time.Now().Add(ttl)
+	}
+
 	item := &itemWithExpiry[V]{
 		value:      value,
-		expiryTime: time.Now().Add(m.ttl),
+		expiryTime: expiryTime,
 	}
 
 	existing, loaded := m.mu.LoadOrStore(key, item)
@@ -234,7 +275,7 @@ func (m *Map[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
 		existingItem := existing.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(existingItem.expiryTime) {
+		if existingItem.isExpired() {
 			// 已过期，用新值替换
 			m.mu.Store(key, item)
 			return value, false
@@ -246,12 +287,17 @@ func (m *Map[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
 	return value, false
 }
 
-// GetTTL 获取键的剩余存活时间
-func (m *Map[K, V]) GetTTL(key K) (time.Duration, bool) {
+// GetTTL 获取键的剩余存活时间，返回剩余时间和是否存在（永不过期的键返回 0, true）
+func (m *PerKeyTTLMap[K, V]) GetTTL(key K) (time.Duration, bool) {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
-		remaining := time.Until(item.expiryTime)
 
+		// 永不过期的键
+		if item.expiryTime.IsZero() {
+			return 0, true
+		}
+
+		remaining := time.Until(item.expiryTime)
 		if remaining > 0 {
 			return remaining, true
 		}
@@ -262,29 +308,30 @@ func (m *Map[K, V]) GetTTL(key K) (time.Duration, bool) {
 	return 0, false
 }
 
-// Refresh 刷新键的过期时间
-func (m *Map[K, V]) Refresh(key K) bool {
+// Refresh 刷新键的过期时间（只对有 TTL 的键有效）
+func (m *PerKeyTTLMap[K, V]) Refresh(key K, ttl time.Duration) bool {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否已过期
-		if time.Now().After(item.expiryTime) {
+		if item.isExpired() {
 			m.mu.Delete(key)
 			return false
 		}
 
-		// 刷新过期时间
-		item.expiryTime = time.Now().Add(m.ttl)
+		// 只有原键有 TTL 时才刷新，并且新的 ttl 必须 > 0
+		if !item.expiryTime.IsZero() && ttl > 0 {
+			item.expiryTime = time.Now().Add(ttl)
+		}
+
 		return true
 	}
 	return false
 }
 
 // cleanupExpired 定期清理过期的键值对
-func (m *Map[K, V]) cleanupExpired() {
-	// 计算合理的清理间隔
-	cleanupInterval := m.calculateCleanupInterval()
-	ticker := time.NewTicker(cleanupInterval)
+func (m *PerKeyTTLMap[K, V]) cleanupExpired() {
+	ticker := time.NewTicker(time.Minute) // 默认每分钟清理一次
 	defer ticker.Stop()
 
 	for {
@@ -297,38 +344,12 @@ func (m *Map[K, V]) cleanupExpired() {
 	}
 }
 
-func (m *Map[K, V]) calculateCleanupInterval() time.Duration {
-	// 基本原则：清理间隔 = TTL / 4
-	interval := m.ttl / 4
-
-	// 动态边界：确保清理间隔既不太频繁也不太稀疏
-	minInterval := m.ttl / 10 // 最小为 TTL 的 1/10
-	if minInterval < time.Second {
-		minInterval = time.Second // 绝对最小1秒
-	}
-
-	maxInterval := m.ttl / 2 // 最大为 TTL 的 1/2
-	if maxInterval > 10*time.Minute {
-		maxInterval = 10 * time.Minute // 绝对最大10分钟
-	}
-
-	// 确保在合理范围内
-	if interval < minInterval {
-		return minInterval
-	}
-	if interval > maxInterval {
-		return maxInterval
-	}
-	return interval
-}
-
-func (m *Map[K, V]) cleanupBatch(maxClean int) int {
-	now := time.Now()
+func (m *PerKeyTTLMap[K, V]) cleanupBatch(maxClean int) int {
 	count := 0
 
 	m.mu.Range(func(k, v interface{}) bool {
 		item := v.(*itemWithExpiry[V])
-		if now.After(item.expiryTime) {
+		if item.isExpired() {
 			m.mu.Delete(k)
 			count++
 			if count >= maxClean {
@@ -342,18 +363,17 @@ func (m *Map[K, V]) cleanupBatch(maxClean int) int {
 }
 
 // Close 停止后台清理协程，释放资源
-func (m *Map[K, V]) Close() {
+func (m *PerKeyTTLMap[K, V]) Close() {
 	close(m.closeChan)
 }
 
 // Size 返回 map 中未过期项的数量
-func (m *Map[K, V]) Size() int {
+func (m *PerKeyTTLMap[K, V]) Size() int {
 	count := 0
-	now := time.Now()
 
 	m.mu.Range(func(k, v interface{}) bool {
 		item := v.(*itemWithExpiry[V])
-		if now.Before(item.expiryTime) {
+		if !item.isExpired() {
 			count++
 		} else {
 			m.mu.Delete(k)
@@ -365,10 +385,19 @@ func (m *Map[K, V]) Size() int {
 }
 
 // IsExpired 检查键是否已过期
-func (m *Map[K, V]) IsExpired(key K) bool {
+func (m *PerKeyTTLMap[K, V]) IsExpired(key K) bool {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
-		return time.Now().After(item.expiryTime)
+		return item.isExpired()
 	}
 	return true
+}
+
+// HasTTL 检查键是否有 TTL（不是永不过期）
+func (m *PerKeyTTLMap[K, V]) HasTTL(key K) bool {
+	if val, ok := m.mu.Load(key); ok {
+		item := val.(*itemWithExpiry[V])
+		return !item.expiryTime.IsZero()
+	}
+	return false
 }
