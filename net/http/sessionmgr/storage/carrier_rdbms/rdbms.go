@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"time"
 
+	"github.com/helays/utils/v2/db/userDb"
 	"github.com/helays/utils/v2/net/http/sessionmgr"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -14,10 +15,12 @@ type Instance struct {
 	db *gorm.DB
 }
 
+// New 创建一个session存储实例
 func New(db *gorm.DB) *Instance {
 	ins := &Instance{
 		db: db.Session(&gorm.Session{}),
 	}
+	userDb.AutoCreateTableWithStruct(ins.db, sessionmgr.Session{}, "创建session表失败")
 	return ins
 }
 
