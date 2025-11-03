@@ -22,7 +22,7 @@ func New() *Instance {
 // Register 注册结构定义
 // 内存存储不需要注册
 func (i *Instance) Register(_ ...any) {}
-func (i *Instance) Gc(_ context.Context) error {
+func (i *Instance) GC(_ context.Context) error {
 	return nil
 }
 

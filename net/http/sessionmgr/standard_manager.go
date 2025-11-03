@@ -13,6 +13,12 @@ import (
 // 用于校验session id 值是否合规
 var sessionRegexp = regexp.MustCompile("^[0-9a-f]{32}$")
 
+const prefix = "vsclub_"
+
+func (m *Manager) cookieName() string {
+	return prefix + m.options.CookieName
+}
+
 // 获取sessionId
 func (m *Manager) getSessionId(w http.ResponseWriter, r *http.Request) (string, error) {
 	switch m.options.Carrier {
@@ -26,7 +32,7 @@ func (m *Manager) getSessionId(w http.ResponseWriter, r *http.Request) (string, 
 		return cookie.Value, nil
 
 	case CookieCarrierHeader:
-		sid := r.Header.Get(m.options.CookieName)
+		sid := r.Header.Get(m.cookieName())
 		if sid == "" || !sessionRegexp.MatchString(sid) {
 			sid = newSessionId()
 			m.setSessionId(w, sid)
@@ -55,7 +61,7 @@ func (m *Manager) setSessionId(w http.ResponseWriter, sid string) {
 			SameSite: m.options.SameSite, // 控制浏览器是否应该在跨站请求中包含这个cookie。它可以有以下三个值：SameSite.Lax, SameSite.Strict, 或 SameSite.None。这个属性有助于减少跨站请求伪造（CSRF）攻击的风险
 		})
 	case CookieCarrierHeader:
-		w.Header().Set("vsclub_"+m.options.CookieName, sid)
+		w.Header().Set(m.cookieName(), sid)
 
 	}
 }
@@ -74,7 +80,7 @@ func (m *Manager) deleteSessionId(w http.ResponseWriter) {
 			Secure:     m.options.Secure,
 		})
 	case CookieCarrierHeader:
-		w.Header().Del("vsclub_" + m.options.CookieName)
+		w.Header().Del(m.cookieName())
 	}
 }
 
