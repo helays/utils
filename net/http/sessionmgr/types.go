@@ -73,3 +73,16 @@ var (
 	ErrNotFound   = errors.New("session不存在")
 	ErrNotPointer = errors.New("session变量目标必须是指针")
 )
+
+type Engine string
+
+func (e Engine) String() string {
+	return string(e)
+}
+
+const (
+	EngineRedis  Engine = "redis"
+	EngineRdbms  Engine = "rdbms"
+	EngineMemory Engine = "memory"
+	EngineFile   Engine = "file"
+)
