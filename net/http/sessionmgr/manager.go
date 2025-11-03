@@ -17,11 +17,11 @@ const (
 
 // Session session 数据结构
 type Session struct {
-	Id         string              `json:"id" gorm:"primaryKey;autoIncrement:false;type:varchar(64);not null;index;comment:Session ID"`    // session id
+	Id         string              `json:"id" gorm:"primaryKey;autoIncrement:false;type:varchar(64);not null;index;comment:Session ID"`       // session id
 	Name       string              `json:"name" gorm:"primaryKey;autoIncrement:false;type:varchar(128);not null;index;comment:Session的名字"` // session 的名字
-	Values     SessionValue        `json:"values" gorm:"comment:session数据"`                                                                // session 数据
-	CreateTime dataType.CustomTime `json:"create_time" gorm:"comment:session 创建时间"`                                                        // 创建时间 ，没啥用，就看
-	ExpireTime dataType.CustomTime `json:"expire_time" gorm:"not null;index;comment:session 过期时间"`                                         // 过期时间 ，用于自动回收的时候使用
+	Values     SessionValue        `json:"values" gorm:"comment:session数据"`                                                                 // session 数据
+	CreateTime dataType.CustomTime `json:"create_time" gorm:"comment:session 创建时间"`                                                       // 创建时间 ，没啥用，就看
+	ExpireTime dataType.CustomTime `json:"expire_time" gorm:"not null;index;comment:session 过期时间"`                                        // 过期时间 ，用于自动回收的时候使用
 	Duration   time.Duration       `json:"duration" gorm:"comment:session有效期"`                                                             // 有效期，主要是用于更新有效期的时候使用
 }
 type Manager struct {
@@ -40,6 +40,8 @@ type StorageDriver interface {
 	// GC 相关
 	GC(ctx context.Context) error
 	Close() error
+
+	Register(value ...any) // 注册结构定义
 }
 
 func New(ctx context.Context, storage StorageDriver, opt ...*Options) *Manager {
