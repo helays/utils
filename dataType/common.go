@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/tools"
+	"golang.org/x/exp/constraints"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -71,6 +73,20 @@ func DriverScanWithJson[T any](val any, dst *T) error {
 		return fmt.Errorf("failed to unmarshal JSON value: %w", err)
 	}
 	return nil
+}
+
+func DriverScanWithInt[T constraints.Integer](val any, dst *T) error {
+	if val == nil {
+		*dst = *new(T)
+		return nil
+	}
+	v, err := tools.Any2int(val)
+	if err != nil {
+		return err
+	}
+	*dst = T(v)
+	return nil
+
 }
 
 // CheckVersionSupportsJSON 检查版本是否支持JSON

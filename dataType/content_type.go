@@ -5,13 +5,35 @@ import (
 	"mime"
 	"net/http"
 	"strings"
+
+	"github.com/helays/utils/v2/config"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 // ContentType 表示检测到的内容类型
 type ContentType int
 
 func (ct ContentType) Value() (driver.Value, error) {
-	return int(ct), nil
+	return int64(ct), nil
+}
+
+func (ct *ContentType) Scan(val any) error {
+	return DriverScanWithInt(val, ct)
+}
+
+func (ContentType) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	switch db.Dialector.Name() {
+	case config.DbTypeSqlite:
+		return "integer"
+	case config.DbTypeMysql:
+		return "tinyint"
+	case config.DbTypePostgres:
+		return "int2"
+	case config.DbTypeSqlserver:
+		return "tinyint"
+	}
+	return "int"
 }
 
 // String 返回内容类型的字符串表示
