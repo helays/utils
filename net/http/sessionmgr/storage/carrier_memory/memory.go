@@ -3,6 +3,7 @@ package carrier_memory
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/helays/utils/v2/map/safettl"
 	"github.com/helays/utils/v2/net/http/sessionmgr"
@@ -14,7 +15,7 @@ type Instance struct {
 
 func New() *Instance {
 	i := &Instance{}
-	i.storage = safettl.NewPerKeyTTLMap[string, *sessionmgr.Session]()
+	i.storage = safettl.NewPerKeyTTLMapWithInterval[string, *sessionmgr.Session](time.Minute) // session 回收策略不需要太高，1分钟
 	return i
 }
 
