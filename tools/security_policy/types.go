@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"time"
 
 	"github.com/helays/utils/v2/dataType"
 	"gorm.io/gorm"
@@ -48,9 +49,7 @@ type MFAPolicy struct {
 	EmailResendInterval int  `json:"email_resend_interval"` // 邮件重发间隔(秒)
 
 	// 验证码配置
-	CaptchaEnabled bool        `json:"captcha_enabled"` // 启用图形验证码
-	CaptchaType    CaptchaType `json:"captcha_type"`    // 验证码类型
-	CaptchaTrigger int         `json:"captcha_trigger"` // 触发验证码的失败次数
+	Captcha CaptchaConfig `json:"captcha"` // 验证码
 
 	// 生物识别
 	BiometricEnabled bool     `json:"biometric_enabled"` // 启用生物识别
@@ -59,6 +58,19 @@ type MFAPolicy struct {
 	// 风险感知认证
 	RiskBasedEnabled bool     `json:"risk_based_enabled"` // 启用风险感知认证
 	HighRiskActions  []string `json:"high_risk_actions"`  // 高风险操作列表
+}
+
+type CaptchaConfig struct {
+	CaptchaEnabled bool        `json:"captcha_enabled" yaml:"captcha_enabled"` // 启用图形验证码
+	CaptchaType    CaptchaType `json:"captcha_type" yaml:"captcha_type"`       // 验证码类型
+
+	// 会话层配置
+	SessionTrigger      int           `json:"session_trigger" yaml:"session_trigger"`             // 会话层触发验证码的失败次数
+	SessionLockoutCount int           `json:"session_lockout_count" yaml:"session_lockout_count"` // 会话层锁定触发次数
+	SessionLockoutTime  time.Duration `json:"session_lockout_time" yaml:"session_lockout_time"`   // 会话层锁定时长
+
+	// IP层配置
+	IPLockoutTime time.Duration `json:"ip_lockout_time" yaml:"ip_lockout_time"` // IP层锁定时长
 }
 
 // MFAType 多因子认证类型
