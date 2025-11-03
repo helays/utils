@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/gob"
 	"fmt"
-	"github.com/helays/utils/v2/dataType"
-	session2 "github.com/helays/utils/v2/net/http/session"
-	"github.com/redis/go-redis/v9"
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/helays/utils/v2/dataType"
+	session2 "github.com/helays/utils/v2/net/http/session"
+	"github.com/redis/go-redis/v9"
 )
 
 //

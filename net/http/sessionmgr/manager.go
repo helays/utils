@@ -32,13 +32,13 @@ type Manager struct {
 // StorageDriver 存储驱动接口 - 只负责存储，不处理业务逻辑
 type StorageDriver interface {
 	Save(session *Session) error
-	Get(sessionID, name string) (*Session, error)
-	GetAll(sessionID string) ([]*Session, error)
-	Delete(sessionID, name string) error
-	DeleteAll(sessionID string) error
+	Get(sessionId, name string) (*Session, error)
+	GetAll(sessionId string) ([]*Session, error)
+	Delete(sessionId, name string) error
+	DeleteAll(sessionId string) error
 
 	// GC 相关
-	GC() error
+	GC(ctx context.Context) error
 	Close() error
 }
 
@@ -64,6 +64,6 @@ func New(ctx context.Context, storage StorageDriver, opt ...*Options) *Manager {
 
 func (m *Manager) startGC(ctx context.Context) {
 	tools.RunAsyncTickerProbabilityWithContext(ctx, true, m.options.CheckInterval, m.options.GcProbability, func(ctx context.Context) {
-		ulogs.CheckErrf(m.storage.GC(), "session gc 失败")
+		ulogs.CheckErrf(m.storage.GC(ctx), "session gc 失败")
 	})
 }
