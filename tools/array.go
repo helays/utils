@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -213,4 +214,61 @@ func ContainsAnyHashBest[T any, H comparable](elems []T, targets []T, hashFunc f
 		}
 	}
 	return false
+}
+
+// Ordered 约束，表示可排序的类型
+type Ordered interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+		~float32 | ~float64 |
+		~string
+}
+
+type SortType int
+
+const (
+	SortAsc  SortType = iota // 升序
+	SortDesc                 // 降序
+)
+
+// SortSlice 对 Ordered 类型的切片进行排序
+func SortSlice[T Ordered](slice []T, order SortType) {
+	sort.Slice(slice, func(i, j int) bool {
+		if order == SortAsc {
+			return slice[i] < slice[j]
+		}
+		return slice[i] > slice[j]
+	})
+}
+
+func CompareArray[T comparable](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// CompareArraySorted 比较两个数组在排序后是否相同（适用于可排序类型）
+func CompareArraySorted[T Ordered](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	// 创建副本以避免修改原数组
+	aCopy := make([]T, len(a))
+	bCopy := make([]T, len(b))
+	copy(aCopy, a)
+	copy(bCopy, b)
+
+	// 排序
+	SortSlice(aCopy, SortAsc)
+	SortSlice(bCopy, SortAsc)
+
+	// 比较排序后的数组
+	return CompareArray(aCopy, bCopy)
 }

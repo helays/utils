@@ -7,6 +7,7 @@ import (
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/db/dbErrors/errTools"
 	"github.com/helays/utils/v2/logger/ulogs"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
@@ -197,4 +198,15 @@ func Truncate(tx *gorm.DB, tableName string) error {
 		}
 	}
 	return nil
+}
+
+// IsTiDB 判断是否是TiDB数据库
+func IsTiDB(tx *gorm.DB) bool {
+	if tx == nil || tx.Dialector == nil {
+		return false
+	}
+	if driver, ok := tx.Dialector.(*mysql.Dialector); ok {
+		return strings.Contains(strings.ToLower(driver.Config.ServerVersion), "tidb")
+	}
+	return false
 }
