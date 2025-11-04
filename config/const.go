@@ -91,6 +91,7 @@ const (
 	DbTypeMssql      = "mssql"
 	DbTypeOracle     = "oracle"
 	DbTypeSqlserver  = "sqlserver"
+	DbTypeTiDB       = "tidb"
 )
 
 // kv数据库
