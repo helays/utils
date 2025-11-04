@@ -60,14 +60,22 @@ type MFAPolicy struct {
 	HighRiskActions  []string `json:"high_risk_actions"`  // 高风险操作列表
 }
 
+// CaptchaConfig 验证码 安全策略配置
+// 当 SessionTrigger > 0时，将启用连续n次验证码失败，锁定会话 SessionLockoutTime 时长
+// 如果 SessionLockoutCount > 0,那么连续n次锁会话后，将锁定IP IPLockoutTime 时长。
 type CaptchaConfig struct {
-	CaptchaEnabled bool        `json:"captcha_enabled" yaml:"captcha_enabled"` // 启用图形验证码
-	CaptchaType    CaptchaType `json:"captcha_type" yaml:"captcha_type"`       // 验证码类型
+	CaptchaEnabled    bool        `json:"captcha_enabled" yaml:"captcha_enabled"` // 启用图形验证码
+	CaptchaType       CaptchaType `json:"captcha_type" yaml:"captcha_type"`       // 验证码类型
+	CaptchaLockPolicy LockPolicy  `json:"captcha_lock_policy" yaml:"captcha_lock_policy"`
+}
 
+// LockPolicy 锁定时长策略
+type LockPolicy struct {
 	// 会话层配置
 	SessionTrigger      int           `json:"session_trigger" yaml:"session_trigger"`             // 会话层触发验证码的失败次数
 	SessionLockoutCount int           `json:"session_lockout_count" yaml:"session_lockout_count"` // 会话层锁定触发次数
 	SessionLockoutTime  time.Duration `json:"session_lockout_time" yaml:"session_lockout_time"`   // 会话层锁定时长
+	SessionWindowTime   time.Duration `json:"session_window_time" yaml:"session_window_time"`     // 会话层计数窗口，也就是缓存连续错误登录次数的窗口时间
 
 	// IP层配置
 	IPLockoutTime time.Duration `json:"ip_lockout_time" yaml:"ip_lockout_time"` // IP层锁定时长
