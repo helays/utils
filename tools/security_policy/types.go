@@ -69,16 +69,30 @@ type CaptchaConfig struct {
 	CaptchaLockPolicy LockPolicy  `json:"captcha_lock_policy" yaml:"captcha_lock_policy"`
 }
 
-// LockPolicy 锁定时长策略
-type LockPolicy struct {
-	// 会话层配置
-	SessionTrigger      int           `json:"session_trigger" yaml:"session_trigger"`             // 会话层触发验证码的失败次数
-	SessionLockoutCount int           `json:"session_lockout_count" yaml:"session_lockout_count"` // 会话层锁定触发次数
-	SessionLockoutTime  time.Duration `json:"session_lockout_time" yaml:"session_lockout_time"`   // 会话层锁定时长
-	SessionWindowTime   time.Duration `json:"session_window_time" yaml:"session_window_time"`     // 会话层计数窗口，也就是缓存连续错误登录次数的窗口时间
+// LockTarget 锁目标
+type LockTarget string
 
-	// IP层配置
-	IPLockoutTime time.Duration `json:"ip_lockout_time" yaml:"ip_lockout_time"` // IP层锁定时长
+func (t LockTarget) String() string {
+	return string(t)
+}
+
+const (
+	LockTargetSession LockTarget = "session" // 会话层锁定
+	LockTargetIP      LockTarget = "ip"      // IP层锁定
+	LockTargetUser    LockTarget = "user"    // 用户层锁定
+)
+
+// LockPolices 锁定时长策略
+// 可以配置 会话层 连续失败n次，锁定IP
+// IP连续锁定n次后，锁定用户
+type LockPolices []LockTriggerPolicy
+
+type LockTriggerPolicy struct {
+	Target       LockTarget    `json:"target" yaml:"target"`                     // 锁定目标
+	Trigger      int           `json:"ip_trigger" yaml:"ip_trigger"`             // 连续触发失败次数
+	WindowTime   time.Duration `json:"ip_window_time" yaml:"ip_window_time"`     // 连续触发失败的窗口时间，多少时间内触发会累计缓存
+	LockoutTime  time.Duration `json:"ip_lockout_time" yaml:"ip_lockout_time"`   // 连续失败Trigger后，目标的锁定时长
+	LockoutCount int           `json:"ip_lockout_count" yaml:"ip_lockout_count"` //  锁定目标触发次数，用于升级锁定目标
 }
 
 // MFAType 多因子认证类型
