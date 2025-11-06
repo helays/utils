@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
-	"time"
 
 	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/security/lockpolicy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
@@ -64,35 +64,9 @@ type MFAPolicy struct {
 // 当 SessionTrigger > 0时，将启用连续n次验证码失败，锁定会话 SessionLockoutTime 时长
 // 如果 SessionLockoutCount > 0,那么连续n次锁会话后，将锁定IP IPLockoutTime 时长。
 type CaptchaConfig struct {
-	CaptchaEnabled    bool        `json:"captcha_enabled" yaml:"captcha_enabled"` // 启用图形验证码
-	CaptchaType       CaptchaType `json:"captcha_type" yaml:"captcha_type"`       // 验证码类型
-	CaptchaLockPolicy LockPolicy  `json:"captcha_lock_policy" yaml:"captcha_lock_policy"`
-}
-
-// LockTarget 锁目标
-type LockTarget string
-
-func (t LockTarget) String() string {
-	return string(t)
-}
-
-const (
-	LockTargetSession LockTarget = "session" // 会话层锁定
-	LockTargetIP      LockTarget = "ip"      // IP层锁定
-	LockTargetUser    LockTarget = "user"    // 用户层锁定
-)
-
-// LockPolices 锁定时长策略
-// 可以配置 会话层 连续失败n次，锁定IP
-// IP连续锁定n次后，锁定用户
-type LockPolices []LockTriggerPolicy
-
-type LockTriggerPolicy struct {
-	Target       LockTarget    `json:"target" yaml:"target"`                     // 锁定目标
-	Trigger      int           `json:"ip_trigger" yaml:"ip_trigger"`             // 连续触发失败次数
-	WindowTime   time.Duration `json:"ip_window_time" yaml:"ip_window_time"`     // 连续触发失败的窗口时间，多少时间内触发会累计缓存
-	LockoutTime  time.Duration `json:"ip_lockout_time" yaml:"ip_lockout_time"`   // 连续失败Trigger后，目标的锁定时长
-	LockoutCount int           `json:"ip_lockout_count" yaml:"ip_lockout_count"` //  锁定目标触发次数，用于升级锁定目标
+	CaptchaEnabled    bool                `json:"captcha_enabled" yaml:"captcha_enabled"` // 启用图形验证码
+	CaptchaType       CaptchaType         `json:"captcha_type" yaml:"captcha_type"`       // 验证码类型
+	CaptchaLockPolicy lockpolicy.Policies `json:"captcha_lock_policy" yaml:"captcha_lock_policy"`
 }
 
 // MFAType 多因子认证类型
