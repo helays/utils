@@ -194,6 +194,18 @@ func (c CustomTime) ToPtr() *CustomTime {
 	return &c
 }
 
+func (c CustomTime) ToTime() time.Time {
+	return time.Time(c)
+}
+
+func (c CustomTime) IsZero() bool {
+	return c.ToTime().IsZero()
+}
+
+func (c CustomTime) Equal(t time.Time) bool {
+	return c.ToTime().Equal(t)
+}
+
 type DynamicTime struct {
 	time.Time
 	Format string
