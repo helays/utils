@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/map/syncMapWrapper"
+	"github.com/helays/utils/v2/map/safemap"
 	"sync"
 	"testing"
 )
@@ -27,7 +27,7 @@ func BenchmarkSyncMaps(b *testing.B) {
 	})
 
 	b.Run("GenericSyncMapWrapper_StoreLoad", func(b *testing.B) {
-		m := &syncMapWrapper.SyncMap[string, int]{}
+		m := &safemap.SyncMap[string, int]{}
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -63,7 +63,7 @@ func BenchmarkSyncMaps(b *testing.B) {
 	})
 
 	b.Run("GenericSyncMapWrapper_Delete", func(b *testing.B) {
-		m := &syncMapWrapper.SyncMap[string, int]{}
+		m := &safemap.SyncMap[string, int]{}
 		for _, key := range keys {
 			m.Store(key, 0) // Pre-populate the map.
 		}

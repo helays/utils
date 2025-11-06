@@ -1,4 +1,4 @@
-package syncMapWrapper
+package safemap
 
 import (
 	"strings"

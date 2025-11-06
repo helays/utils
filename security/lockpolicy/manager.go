@@ -1,13 +1,13 @@
 package lockpolicy
 
 import (
-	"github.com/helays/utils/v2/map/syncMapWrapper"
+	"github.com/helays/utils/v2/map/safemap"
 	"github.com/helays/utils/v2/tools/mutex"
 )
 
 type Manager struct {
 	policies *mutex.SafeResourceRWMutex[Policies] // 锁定策略配置
-	cache    syncMapWrapper.SyncMap[LockTarget, *targetCache]
+	cache    safemap.SyncMap[LockTarget, *targetCache]
 }
 
 // NewManager 创建策略管理器

@@ -3,11 +3,11 @@ package userDb
 import (
 	"reflect"
 
-	"github.com/helays/utils/v2/map/syncMapWrapper"
+	"github.com/helays/utils/v2/map/safemap"
 	"github.com/helays/utils/v2/tools"
 )
 
-var modelFieldsCache = &syncMapWrapper.SyncMap[string, *modelFieldTypes]{}
+var modelFieldsCache = &safemap.SyncMap[string, *modelFieldTypes]{}
 
 type fieldTypes struct {
 	jsonTagName string
