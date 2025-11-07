@@ -102,6 +102,7 @@ type SecurityPolicyMeta struct {
 func (t SecurityPolicyMeta) Value() (driver.Value, error) {
 	return dataType.DriverValueWithJson(t)
 }
+
 func (t *SecurityPolicyMeta) Scan(val any) (err error) {
 	return dataType.DriverScanWithJson(val, t)
 }

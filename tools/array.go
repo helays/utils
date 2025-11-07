@@ -2,7 +2,8 @@ package tools
 
 import (
 	"sort"
-	"strings"
+
+	"github.com/helays/utils/v2/config"
 )
 
 // ArrayChunk 高性能泛型切片分块函数
@@ -114,24 +115,21 @@ func RemoveDuplicatesWithKeyFunc[T any, K comparable](slice []T, keyFunc func(T)
 	return result
 }
 
-// Searchslice 在切片中判断某个值是否存在
-func Searchslice(s string, o []string) bool {
-	if o == nil {
-		return false
+func ContainsFilterHelper[T any](v T, filters ...func(T) T) T {
+	if len(filters) < 1 {
+		return v
 	}
-	s = strings.TrimSpace(s)
-	for _, i := range o {
-		i = strings.TrimSpace(i)
-		if i == s {
-			return true
-		}
+	for i := range filters {
+		v = filters[i](v)
 	}
-	return false
+	return v
 }
 
 // Contains 检查某个值是否在切片中（泛型实现）
-func Contains[T comparable](slice []T, target T) bool {
+func Contains[T comparable](slice []T, target T, filters ...func(T) T) bool {
+	target = ContainsFilterHelper(target, filters...)
 	for _, v := range slice {
+		v = ContainsFilterHelper(v, filters...)
 		if v == target {
 			return true
 		}
@@ -143,6 +141,16 @@ func Contains[T comparable](slice []T, target T) bool {
 func ContainsFunc[T any](slice []T, target T, equal func(a, b T) bool) bool {
 	for _, v := range slice {
 		if equal(v, target) {
+			return true
+		}
+	}
+	return false
+}
+
+// ContainsByField 可用于[]struct中，检查某个字段的值是否存在
+func ContainsByField[T any, F comparable](slice []T, target F, fieldExtractor func(T) F) bool {
+	for _, item := range slice {
+		if fieldExtractor(item) == target {
 			return true
 		}
 	}
@@ -219,22 +227,15 @@ func ContainsAnyHashBest[T any, H comparable](elems []T, targets []T, hashFunc f
 // Ordered 约束，表示可排序的类型
 type Ordered interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
-		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
-		~float32 | ~float64 |
-		~string
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+	~float32 | ~float64 |
+	~string
 }
 
-type SortType int
-
-const (
-	SortAsc  SortType = iota // 升序
-	SortDesc                 // 降序
-)
-
 // SortSlice 对 Ordered 类型的切片进行排序
-func SortSlice[T Ordered](slice []T, order SortType) {
+func SortSlice[T Ordered](slice []T, order config.SortType) {
 	sort.Slice(slice, func(i, j int) bool {
-		if order == SortAsc {
+		if order == config.SortAsc {
 			return slice[i] < slice[j]
 		}
 		return slice[i] > slice[j]
@@ -266,9 +267,23 @@ func CompareArraySorted[T Ordered](a, b []T) bool {
 	copy(bCopy, b)
 
 	// 排序
-	SortSlice(aCopy, SortAsc)
-	SortSlice(bCopy, SortAsc)
+	SortSlice(aCopy, config.SortAsc)
+	SortSlice(bCopy, config.SortAsc)
 
 	// 比较排序后的数组
 	return CompareArray(aCopy, bCopy)
+}
+
+// CutStrSlice2Slice 获取切片的子切片
+func CutStrSlice2Slice(s []string, key string, direct int) []string {
+	for idx, v := range s {
+		if v == key {
+			if idx+direct < len(s) {
+				return s[idx+direct:]
+			} else {
+				return []string{} // 索引越界时返回空切片
+			}
+		}
+	}
+	return []string{}
 }

@@ -407,65 +407,6 @@ func MapDeepCopy[T any](src T, dst *T) {
 	_ = json.Unmarshal(byt, dst)
 }
 
-// SearchIntSlice 在整数切片中搜索指定的元素，并返回是否找到。
-// 参数:
-//
-//	s - 待搜索的整数。
-//	arr - 整数切片，将被搜索。
-//
-// 返回值:
-//
-//	如果找到 s 在 arr 中，则返回 true；否则返回 false。
-func SearchIntSlice(s int, arr []int) bool {
-	if arr == nil {
-		return false
-	}
-	for _, i := range arr {
-		if i == s {
-			return true
-		}
-	}
-	return false
-}
-
-func SearchInt64Slice(s int64, arr []int64) bool {
-	if arr == nil {
-		return false
-	}
-	for _, i := range arr {
-		if i == s {
-			return true
-		}
-	}
-	return false
-}
-
-func SearchStringSlice(key string, arr []string) bool {
-	if arr == nil {
-		return false
-	}
-	for _, v := range arr {
-		if v == key {
-			return true
-		}
-	}
-	return false
-}
-
-// CutStrSlice2Slice 获取切片的子切片
-func CutStrSlice2Slice(s []string, key string, direct int) []string {
-	for idx, v := range s {
-		if v == key {
-			if idx+direct < len(s) {
-				return s[idx+direct:]
-			} else {
-				return []string{} // 索引越界时返回空切片
-			}
-		}
-	}
-	return []string{}
-}
-
 // Fileabs 生成文件的绝对路径
 func Fileabs(cpath string) string {
 	if filepath.IsAbs(cpath) {
