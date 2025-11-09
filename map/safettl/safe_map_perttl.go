@@ -175,6 +175,24 @@ func (m *PerKeyTTLMap[K, V]) Load(key K) (V, bool) {
 	return zeroV, false
 }
 
+// LoadWithExpiry 返回存储在 map 中给定键的值和过期时间（如果未过期）
+func (m *PerKeyTTLMap[K, V]) LoadWithExpiry(key K) (V, time.Time, bool) {
+	if val, ok := m.mu.Load(key); ok {
+		item := val.(*itemWithExpiry[V])
+
+		// 检查是否过期
+		if item.isExpired() {
+			m.mu.Delete(key)
+			var zeroV V
+			return zeroV, time.Time{}, false
+		}
+
+		return item.value, item.expiryTime, true
+	}
+	var zeroV V
+	return zeroV, time.Time{}, false
+}
+
 // LoadAndRefresh 加载值并刷新过期时间（只对有 TTL 的键有效）
 func (m *PerKeyTTLMap[K, V]) LoadAndRefresh(key K, ttl time.Duration) (V, bool) {
 	if val, ok := m.mu.Load(key); ok {

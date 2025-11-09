@@ -1,6 +1,8 @@
 package lockpolicy
 
 import (
+	"time"
+
 	"github.com/helays/utils/v2/map/safemap"
 	"github.com/helays/utils/v2/tools"
 	"github.com/helays/utils/v2/tools/mutex"
@@ -15,33 +17,30 @@ type Manager struct {
 }
 
 // NewManager 创建策略管理器
-func NewManager(policies Policies) *Manager {
+func NewManager(polices Policies) *Manager {
 	m := &Manager{}
-	m.policies = mutex.NewSafeResourceRWMutex(policies)
+	m.policies = mutex.NewSafeResourceRWMutex(polices)
 	m.independentPolicies = mutex.NewSafeResourceRWMutex(Policies{})
 	m.escalationChains = mutex.NewSafeResourceRWMutex(Policies{})
 	m.buildPolicy()
-	for _, policy := range policies {
-		m.cache.Store(policy.Target, newTargetCache())
-	}
+	m.setTargetCache(polices)
 	return m
 }
 
 // UpdatePolices 更新策略
-func (m *Manager) UpdatePolices(policies Policies) {
-	m.policies.Write(policies)
+func (m *Manager) UpdatePolices(polices Policies) {
+	m.policies.Write(polices)
 	m.buildPolicy()
-	// 判断是否有策略删除
-	m.cache.Range(func(key LockTarget, value *targetCache) bool {
-		if tools.ContainsByField(policies, key, func(policy Policy) LockTarget { return policy.Target }) {
-			m.cache.Delete(key) // 删除缓存
-		}
-		return true
-	})
-	for _, policy := range policies {
-		// 添加缓存
-		if _, ok := m.cache.Load(policy.Target); !ok {
-			m.cache.Store(policy.Target, newTargetCache())
+	m.setTargetCache(polices)
+}
+
+// 为锁定策略添加缓存实现
+func (m *Manager) setTargetCache(polices Policies) {
+	m.cache.DeleteAll()
+	for _, policy := range polices {
+		if policy.Trigger > 0 {
+			// 添加缓存
+			m.cache.Store(policy.Target, newTargetCache(&policy))
 		}
 	}
 }
@@ -127,6 +126,27 @@ func (m *Manager) buildEscalationChain(escalationPolices Policies) {
 	m.escalationChains.Write(chains)
 }
 
+// IsLocked 检查目标是否被锁定
+func (m *Manager) IsLocked(targets Targets) (bool, *LockEvent) {
+	for target, identifier := range targets {
+		if c, ok := m.cache.Load(target); ok {
+			isLocked, expire := c.IsLocked(identifier)
+			if isLocked {
+				event := &LockEvent{
+					Target:     target,
+					Identifier: identifier,
+				}
+				if policy, exist := m.policyMap.Load(target); exist {
+					event.LockoutTime = policy.LockoutTime
+					event.RemainingTime = expire.Sub(time.Now())
+					event.Expire = expire
+				}
+				return true, event
+			}
+		}
+	}
+	return false, nil
+}
 func (m *Manager) RecordFailure(target LockTarget, identifier string, callbacks ...LockCallback) error {
 	return m.RecordFailures(map[LockTarget]string{target: identifier}, callbacks...)
 }

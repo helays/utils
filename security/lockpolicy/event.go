@@ -20,6 +20,7 @@ type LockEvent struct {
 	RemainingTime time.Duration `json:"remaining_time"` // 剩余锁定时间
 	Reason        string        `json:"reason"`         // 锁定原因
 	Timestamp     time.Time     `json:"timestamp"`      // 锁定时间
+	Expire        time.Time     `json:"expire"`         // 过期时间
 }
 
 // LockCallback 锁定回调函数
