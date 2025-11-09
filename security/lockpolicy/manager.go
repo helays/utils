@@ -7,7 +7,7 @@ import (
 )
 
 type Manager struct {
-	policyMap           safemap.SyncMap[LockTarget, *Policy]
+	policyMap           safemap.SyncMap[LockTarget, *Policy] // 构建按 锁定目标 => 策略映射
 	policies            *mutex.SafeResourceRWMutex[Policies] // 锁定策略配置
 	independentPolicies *mutex.SafeResourceRWMutex[Policies] // 独立策略映射
 	escalationChains    *mutex.SafeResourceRWMutex[Policies] // 升级链映射
@@ -49,26 +49,82 @@ func (m *Manager) UpdatePolices(policies Policies) {
 // 构建策略
 func (m *Manager) buildPolicy() {
 	m.policyMap.DeleteAll()
-	m.buildIndependent()
-	m.buildEscalationChain()
-}
 
-// 构建独立策略
-func (m *Manager) buildIndependent() {
-	var polices Policies
-	for _, policy := range m.policies.Read() {
-		m.policyMap.Store(policy.Target, &policy) // 策略映射
+	var (
+		filterPolicies     = make(Policies, 0)
+		independentPolices = make(Policies, 0)
+		escalationPolices  = make(Policies, 0)
+		policies           = m.policies.Read()
+	)
+	for _, policy := range policies {
+		if policy.Trigger < 1 {
+			continue
+		}
 		policy.Valid()
-		if policy.Trigger > 0 && policy.Escalation != nil {
-			polices = append(polices, policy)
+		m.policyMap.Store(policy.Target, &policy) // 策略映射
+		filterPolicies = append(filterPolicies, policy)
+	}
+	for _, policy := range filterPolicies {
+		// 当前策略无升级目标，但还需要检测是否是其他策略的升级目标
+		if policy.Escalation == nil && !tools.ContainsByField(filterPolicies, policy.GetTarget(), func(policy Policy) LockTarget { return policy.GetUpgradeTo() }) {
+			independentPolices = append(independentPolices, policy)
+		} else {
+			escalationPolices = append(escalationPolices, policy)
 		}
 	}
-	m.independentPolicies.Write(polices)
+
+	// 独立升级策略，直接根据优先级排序，降序
+	independentPolices.Sort()
+	m.independentPolicies.Write(independentPolices)
+
+	// 升级策略，需要根据触发的顺序升序
+	m.buildEscalationChain(escalationPolices)
 }
 
 // 构建升级策略链
-func (m *Manager) buildEscalationChain() {
+func (m *Manager) buildEscalationChain(escalationPolices Policies) {
+	// 找到升级链起点
+	var startPolicies = make(Policies, 0)
+	for _, policy := range escalationPolices {
+		if policy.Escalation == nil {
+			continue
+		}
+		// 如果当前策略目标，在其他策略的升级目标中无法查询到，就可以作为升级链起点。
+		if !tools.ContainsByField(escalationPolices, policy.GetTarget(), func(policy Policy) LockTarget { return policy.GetUpgradeTo() }) {
+			startPolicies = append(startPolicies, policy)
+		}
+	}
+	if len(startPolicies) == 0 {
+		m.escalationChains.Write(Policies{})
+		return
+	}
 
+	var (
+		chains        Policies                // 从起点开始构建升级链
+		visited       = map[LockTarget]bool{} // 访问过的策略,避免循环引用
+		currentPolicy = startPolicies[0]      // 取第一个起点开始构建升级链
+	)
+
+	for {
+		// 检查是否已访问过，避免循环引用
+		if visited[currentPolicy.Target] {
+			break
+		}
+		// 添加到链中并标记已访问
+		chains = append(chains, currentPolicy)
+		visited[currentPolicy.Target] = true
+		// 检查是否有升级目标
+		if currentPolicy.Escalation == nil {
+			break
+		}
+		nextTarget := currentPolicy.Escalation.UpgradeTo
+		nextPolicy, ok := m.policyMap.Load(nextTarget)
+		if !ok {
+			break
+		}
+		currentPolicy = *nextPolicy
+	}
+	m.escalationChains.Write(chains)
 }
 
 func (m *Manager) RecordFailure(target LockTarget, identifier string, callbacks ...LockCallback) error {

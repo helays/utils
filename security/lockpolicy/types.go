@@ -1,6 +1,9 @@
 package lockpolicy
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
 // LockTarget 锁目标
 type LockTarget string
@@ -27,6 +30,17 @@ type Policy struct {
 	Escalation *EscalationRule `json:"escalation,omitempty" yaml:"escalation"`
 }
 
+func (p *Policy) GetTarget() LockTarget {
+	return p.Target
+}
+
+func (p *Policy) GetUpgradeTo() LockTarget {
+	if p.Escalation != nil {
+		return p.Escalation.UpgradeTo
+	}
+	return ""
+}
+
 // EscalationRule 升级规则
 type EscalationRule struct {
 	UpgradeTo    LockTarget `json:"upgrade_to" yaml:"upgrade_to"`       // 升级到哪个目标
@@ -35,6 +49,24 @@ type EscalationRule struct {
 
 // Policies 策略集合
 type Policies []Policy
+
+func (p Policies) Len() int {
+	return len(p)
+}
+
+// Less 策略排序 降序
+func (p Policies) Less(i, j int) bool {
+	return p[i].Priority > p[j].Priority
+}
+
+func (p Policies) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+// Sort 对策略进行排序（按优先级降序）- 使用指针接收者
+func (p *Policies) Sort() {
+	sort.Sort(p)
+}
 
 // Targets 锁定记录与检测的传参类型定义
 type Targets map[LockTarget]string
