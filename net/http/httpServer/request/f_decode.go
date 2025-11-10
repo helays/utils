@@ -2,51 +2,30 @@ package request
 
 import (
 	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/go-playground/form/v4"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/tools"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/go-playground/form/v4"
+	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/tools"
+	"github.com/helays/utils/v2/tools/decode/json_decode_tee"
 )
-
-type JsonDecodeError struct {
-	Err error
-	Raw bytes.Buffer
-}
-
-func (e *JsonDecodeError) Error() string {
-	return fmt.Sprintf("%v", e.Err)
-}
 
 // JsonDecode 解析json数据
 // 值类型，适合小结构体，当字段少于10的时候，缺点是返回时会复制整个结构体
 func JsonDecode[T any](r *http.Request) (T, error) {
 	var postData T
-	var buf bytes.Buffer
-	tee := io.TeeReader(r.Body, &buf)
-
-	jd := json.NewDecoder(tee)
-	if err := jd.Decode(&postData); err != nil && !errors.Is(err, io.EOF) {
-		return postData, &JsonDecodeError{
-			Err: err,
-			Raw: buf,
-		}
-	}
-	return postData, nil
+	err := json_decode_tee.JsonDecode(r.Body, &postData)
+	return postData, err
 }
 
 // JsonDecodePtr 解析json数据
 // 处理指针类型（调用方需确保T是指针类型，如 *YourStruct）
 func JsonDecodePtr[T interface{ *E }, E any](r *http.Request, target ...T) (T, error) {
-	var buf bytes.Buffer
-	tee := io.TeeReader(r.Body, &buf)
-
 	// 处理目标指针
 	var postData T
 	if len(target) > 0 {
@@ -54,14 +33,9 @@ func JsonDecodePtr[T interface{ *E }, E any](r *http.Request, target ...T) (T, e
 	} else {
 		postData = new(E)
 	}
-	// 解码
-	if err := json.NewDecoder(tee).Decode(postData); err != nil && !errors.Is(err, io.EOF) {
-		return nil, &JsonDecodeError{
-			Err: err,
-			Raw: buf,
-		}
-	}
-	return postData, nil
+	err := json_decode_tee.JsonDecode(r.Body, &postData)
+
+	return postData, err
 }
 
 func FormDataDecode[T any](r *http.Request, sizes ...int64) (*T, error) {

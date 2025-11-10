@@ -5,12 +5,13 @@ import (
 	"net/http"
 
 	"github.com/helays/utils/v2/net/http/httpServer/request"
+	"github.com/helays/utils/v2/tools/decode/json_decode_tee"
 )
 
 func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	postData, err := request.JsonDecode[T](r)
 	if err != nil {
-		SetReturnErrorDisableLog(w, fmt.Errorf(err.Error()), http.StatusInternalServerError, err.(*request.JsonDecodeError).Raw.String())
+		SetReturnErrorDisableLog(w, fmt.Errorf(err.Error()), http.StatusInternalServerError, err.(*json_decode_tee.JsonDecodeError).Raw.String())
 		return postData, false
 	}
 	return postData, true
@@ -19,7 +20,7 @@ func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {
 func JsonDecodePtrResp[T interface{ *E }, E any](w http.ResponseWriter, r *http.Request) (T, bool) {
 	postData, err := request.JsonDecodePtr[T](r)
 	if err != nil {
-		SetReturnErrorDisableLog(w, fmt.Errorf(err.Error()), http.StatusInternalServerError, err.(*request.JsonDecodeError).Raw.String())
+		SetReturnErrorDisableLog(w, fmt.Errorf(err.Error()), http.StatusInternalServerError, err.(*json_decode_tee.JsonDecodeError).Raw.String())
 		return postData, false
 	}
 	return postData, true
