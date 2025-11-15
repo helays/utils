@@ -1,6 +1,7 @@
 package lockpolicy
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/helays/utils/v2/map/safemap"
@@ -126,6 +127,20 @@ func (m *Manager) buildEscalationChain(escalationPolices Policies) {
 	m.escalationChains.Write(chains)
 }
 
+// RestoreLock 恢复锁定
+// 用于程序重启后，从数据库载入所有锁定信息
+// 仅仅恢复锁定目标，失败次数允许丢失。
+func (m *Manager) RestoreLock(target LockTarget, identifier string, expire time.Time) {
+	// 从当前时间计算剩余的锁定时间
+	remaining := expire.Sub(time.Now())
+	if remaining <= 0 {
+		return
+	}
+	if cache, ok := m.cache.Load(target); ok {
+		cache.SetLockWithExpire(identifier, remaining)
+	}
+}
+
 // Clear 处理成功有，可以将失败缓存进行一个删除操作
 func (m *Manager) Clear(targets Targets) {
 	for target, identifier := range targets {
@@ -191,7 +206,7 @@ func (m *Manager) recordIndependentPolicies(targets Targets, callbacks ...LockCa
 				cache.SetLock(identifier)
 				cache.DeleteTriggerCount(identifier) // 触发锁定后，需要重置连续错误次数
 				isLocked = true
-				event = m.recordEvent(identifier, &policy, callbacks...)
+				event = m.recordEvent(identifier, &policy, LockTypeIndependent, callbacks...)
 				break
 			}
 		}
@@ -200,13 +215,16 @@ func (m *Manager) recordIndependentPolicies(targets Targets, callbacks ...LockCa
 	return isLocked, event
 }
 
-func (m *Manager) recordEvent(identifier string, policy *Policy, callbacks ...LockCallback) *LockEvent {
+func (m *Manager) recordEvent(identifier string, policy *Policy, lockType LockType, callbacks ...LockCallback) *LockEvent {
 	event := &LockEvent{
 		Target:        policy.Target,
 		Identifier:    identifier,
-		LockoutTime:   policy.LockoutTime,
-		RemainingTime: policy.LockoutTime,
-		Expire:        time.Now().Add(policy.LockoutTime),
+		LockType:      lockType,
+		LockoutTime:   policy.LockoutTime, // 锁定时长
+		RemainingTime: policy.LockoutTime, // 剩余锁定时间
+		Reason:        fmt.Sprintf("连续错误次数%d次，触发策略%s", policy.Trigger, policy.Target),
+		Expire:        time.Now().Add(policy.LockoutTime), // 过期时间
+		Timestamp:     time.Now(),                         // 锁定时间
 	}
 	for _, callback := range callbacks {
 		callback(*event)
@@ -258,7 +276,8 @@ func (m *Manager) recordEscalationPolicies(targets Targets, callbacks ...LockCal
 				current.cache.SetLock(current.identifier)
 				cache.DeleteTriggerCount(current.identifier) // 触发锁定后，需要重置连续错误次数
 				isLocked = true
-				event = m.recordEvent(current.identifier, current.cache.policy, callbacks...)
+				lkType := tools.Ternary(len(caches) == 1, LockTypeDirect, LockTypeEscalation)
+				event = m.recordEvent(current.identifier, current.cache.policy, lkType, callbacks...)
 				break
 			}
 		}

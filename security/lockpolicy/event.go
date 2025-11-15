@@ -6,9 +6,9 @@ import "time"
 type LockType string
 
 const (
-	LockTypeDirect     LockType = "direct"     // 直接触发锁定
-	LockTypeEscalation LockType = "escalation" // 升级触发锁定
-	LockTypeMemory     LockType = "memory"     // 记忆效应锁定
+	LockTypeIndependent LockType = "independent" // 独立锁触发锁定
+	LockTypeDirect      LockType = "direct"      // 直接触发锁定
+	LockTypeEscalation  LockType = "escalation"  // 升级触发锁定
 )
 
 // LockEvent 锁定事件

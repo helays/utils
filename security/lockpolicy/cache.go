@@ -71,3 +71,8 @@ func (t *targetCache) SetLock(key string) {
 	lock := mutex.NewSafeResourceRWMutex(true)
 	t.isLocked.StoreWithTTL(key, lock, t.policy.LockoutTime)
 }
+
+func (t *targetCache) SetLockWithExpire(key string, expire time.Duration) {
+	lock := mutex.NewSafeResourceRWMutex(true)
+	t.isLocked.StoreWithTTL(key, lock, expire)
+}
