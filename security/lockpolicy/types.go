@@ -43,8 +43,11 @@ func (p *Policy) GetUpgradeTo() LockTarget {
 
 // EscalationRule 升级规则
 type EscalationRule struct {
-	UpgradeTo    LockTarget `json:"upgrade_to" yaml:"upgrade_to"`       // 升级到哪个目标
-	MemoryEffect bool       `json:"memory_effect" yaml:"memory_effect"` // 是否启用记忆效应
+	UpgradeTo LockTarget `json:"upgrade_to" yaml:"upgrade_to"` // 升级到哪个目标
+	// 是否启用记忆效应
+	// 比如升级链是 会话锁 IP锁，
+	// 当会话锁定次数满足 IP锁的锁定条件后，触发IP锁，当下一次操作错误时，直接IP错误次数累加，而不是重新从会话锁开始升级上来。
+	MemoryEffect bool `json:"memory_effect" yaml:"memory_effect"`
 }
 
 // Policies 策略集合
@@ -70,3 +73,8 @@ func (p *Policies) Sort() {
 
 // Targets 锁定记录与检测的传参类型定义
 type Targets map[LockTarget]string
+
+type cacheSlice struct {
+	cache      *targetCache
+	identifier string
+}

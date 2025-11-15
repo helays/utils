@@ -34,14 +34,16 @@ func (t *targetCache) GetTriggerCount(key string) int {
 }
 
 // SetTriggerCount 设置触发次数
-func (t *targetCache) SetTriggerCount(key string) {
+func (t *targetCache) SetTriggerCount(key string) int {
 	c, ok := t.triggerCount.Load(key)
 	if !ok {
 		c = mutex.NewSafeResourceRWMutex[int](0)
 		t.triggerCount.StoreWithTTL(key, c, t.policy.WindowTime) // 触发次数缓存，需要有窗口时间
 	}
-	c.Write(c.Read() + 1)
+	next := c.Read() + 1
+	c.Write(next)
 	t.triggerCount.Refresh(key, t.policy.WindowTime)
+	return next
 }
 
 // IsLocked 获取是否锁定
@@ -57,6 +59,11 @@ func (t *targetCache) IsLocked(key string) (bool, time.Time) {
 // DeleteLock 删除锁定
 func (t *targetCache) DeleteLock(key string) {
 	t.isLocked.Delete(key)
+}
+
+// DeleteTriggerCount 删除触发次数
+func (t *targetCache) DeleteTriggerCount(key string) {
+	t.triggerCount.Delete(key)
 }
 
 // SetLock 设置锁定

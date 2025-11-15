@@ -126,6 +126,17 @@ func (m *Manager) buildEscalationChain(escalationPolices Policies) {
 	m.escalationChains.Write(chains)
 }
 
+// Clear 处理成功有，可以将失败缓存进行一个删除操作
+func (m *Manager) Clear(targets Targets) {
+	for target, identifier := range targets {
+		if c, ok := m.cache.Load(target); ok {
+			c.DeleteLock(identifier)         // 删除锁，主要是避免gc未触发，清理过期数据
+			c.DeleteTriggerCount(identifier) // 删除触发次数
+		}
+	}
+
+}
+
 // IsLocked 检查目标是否被锁定
 func (m *Manager) IsLocked(targets Targets) (bool, *LockEvent) {
 	for target, identifier := range targets {
@@ -147,10 +158,132 @@ func (m *Manager) IsLocked(targets Targets) (bool, *LockEvent) {
 	}
 	return false, nil
 }
-func (m *Manager) RecordFailure(target LockTarget, identifier string, callbacks ...LockCallback) error {
+func (m *Manager) RecordFailure(target LockTarget, identifier string, callbacks ...LockCallback) (bool, *LockEvent) {
 	return m.RecordFailures(map[LockTarget]string{target: identifier}, callbacks...)
 }
-func (m *Manager) RecordFailures(targets Targets, callbacks ...LockCallback) error {
-	// 待实现
-	panic("implement me")
+func (m *Manager) RecordFailures(targets Targets, callbacks ...LockCallback) (bool, *LockEvent) {
+	locked, event := m.recordIndependentPolicies(targets, callbacks...)
+	if locked {
+		return locked, event
+	}
+
+	return m.recordEscalationPolicies(targets, callbacks...)
+}
+
+// 记录独立策略
+func (m *Manager) recordIndependentPolicies(targets Targets, callbacks ...LockCallback) (bool, *LockEvent) {
+	var (
+		isLocked bool
+		event    *LockEvent
+	)
+	m.independentPolicies.ReadWith(func(policies Policies) {
+		for _, policy := range policies {
+			identifier, ok := targets[policy.Target]
+			if !ok {
+				continue
+			}
+			cache, ok := m.cache.Load(policy.Target)
+			if !ok {
+				continue
+			}
+			count := cache.SetTriggerCount(identifier)
+			if count >= policy.Trigger {
+				cache.SetLock(identifier)
+				cache.DeleteTriggerCount(identifier) // 触发锁定后，需要重置连续错误次数
+				isLocked = true
+				event = m.recordEvent(identifier, &policy, callbacks...)
+				break
+			}
+		}
+	})
+
+	return isLocked, event
+}
+
+func (m *Manager) recordEvent(identifier string, policy *Policy, callbacks ...LockCallback) *LockEvent {
+	event := &LockEvent{
+		Target:        policy.Target,
+		Identifier:    identifier,
+		LockoutTime:   policy.LockoutTime,
+		RemainingTime: policy.LockoutTime,
+		Expire:        time.Now().Add(policy.LockoutTime),
+	}
+	for _, callback := range callbacks {
+		callback(*event)
+	}
+	return event
+}
+
+func (m *Manager) recordEscalationPolicies(targets Targets, callbacks ...LockCallback) (bool, *LockEvent) {
+	var (
+		isLocked bool
+		event    *LockEvent
+	)
+	m.escalationChains.ReadWith(func(policies Policies) {
+		pl := policies.Len()
+		// 对于升级链，需要从后往回开始处理
+		for i := pl - 1; i >= 0; i-- {
+			policy := policies[i]
+			identifier, ok := targets[policy.Target]
+			if !ok {
+				continue
+			}
+			cache, ok := m.cache.Load(policy.Target)
+			if !ok {
+				continue
+			}
+			// 如果当前缓存，触发次数是0 或者没有，也跳过厝里
+			if cache.GetTriggerCount(identifier) <= 0 {
+				continue
+			}
+			// 当前策略 如果有触发次数，还需要判断是否是升级链的第一个或者看上一个，是否启用记忆效应，如果启用了记忆效应，才直接再当前策略进行次数累计。
+			if i > 0 {
+				prevPolicy := policies[i-1]
+				// 未启用记忆效应，则继续向前找
+				if !prevPolicy.Escalation.MemoryEffect {
+					continue
+				}
+			}
+			// 升级链的第一个策略或者启用记忆效应，则进行次数累计
+			count := cache.SetTriggerCount(identifier)
+			// 触发次数达到阈值，则进行锁定。
+			if count >= policy.Trigger {
+				caches := []*cacheSlice{{cache, identifier}}
+				// 判断 当前策略是否是升级链的最后一个、
+				if i < (pl - 1) {
+					caches = append(caches, m.updateLock(i+1, policies, targets)...)
+				}
+				// 直接用caches的最后一个策略进行锁定即可
+				current := caches[len(caches)-1]
+				current.cache.SetLock(current.identifier)
+				cache.DeleteTriggerCount(current.identifier) // 触发锁定后，需要重置连续错误次数
+				isLocked = true
+				event = m.recordEvent(current.identifier, current.cache.policy, callbacks...)
+				break
+			}
+		}
+	})
+	return isLocked, event
+}
+
+func (m *Manager) updateLock(idx int, chains Policies, targets Targets) []*cacheSlice {
+	caches := make([]*cacheSlice, 0)
+	for _, policy := range chains[idx:] {
+		identifier, ok := targets[policy.Target]
+		if !ok {
+			continue
+		}
+		cache, ok := m.cache.Load(policy.Target)
+		if !ok {
+			continue
+		}
+		count := cache.SetTriggerCount(identifier)
+		if count >= policy.Trigger {
+			caches = append(caches, &cacheSlice{
+				cache:      cache,
+				identifier: identifier,
+			})
+		}
+	}
+	return caches
 }
