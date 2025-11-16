@@ -225,6 +225,7 @@ func (m *Manager) recordEvent(identifier string, policy *Policy, lockType LockTy
 		Reason:        fmt.Sprintf("连续错误次数%d次，触发策略%s", policy.Trigger, policy.Target),
 		Expire:        time.Now().Add(policy.LockoutTime), // 过期时间
 		Timestamp:     time.Now(),                         // 锁定时间
+		Policy:        *policy,
 	}
 	for _, callback := range callbacks {
 		callback(*event)

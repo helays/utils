@@ -5,7 +5,6 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.46.3
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
-	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/dchest/captcha v1.1.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.0
@@ -15,6 +14,7 @@ require (
 	github.com/go-stomp/stomp/v3 v3.1.3
 	github.com/go-zookeeper/zk v1.0.4
 	github.com/goccy/go-json v0.10.5
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/gomodule/redigo v1.9.3
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
@@ -29,6 +29,7 @@ require (
 	github.com/redis/go-redis/v9 v9.16.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0
+	github.com/sony/sonyflake/v2 v2.2.0
 	github.com/tjfoc/gmsm v1.4.1
 	github.com/xdg-go/scram v1.1.2
 	github.com/xuri/excelize/v2 v2.10.0
@@ -74,6 +75,7 @@ require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect
 	github.com/bytedance/sonic/loader v0.4.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
@@ -167,7 +169,6 @@ require (
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	google.golang.org/genproto v0.0.0-20251022142026-3a174f9686a8 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251103181224-f26f9409b101 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251103181224-f26f9409b101 // indirect
 	google.golang.org/grpc v1.76.0 // indirect
