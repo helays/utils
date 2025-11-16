@@ -25,3 +25,7 @@ type LockEvent struct {
 
 // LockCallback 锁定回调函数
 type LockCallback func(event LockEvent)
+
+func (e LockEvent) Error() string {
+	return e.Reason
+}

@@ -12,10 +12,39 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// SecurityPolicyMeta 安全策略元数据
+type SecurityPolicyMeta struct {
+	Password     PasswordPolicy `json:"password_policy"` // 密码策略
+	LoginPolicy  LoginPolicy    `json:"login_policy"`    // 登录策略
+	AccessPolicy AccessPolicy   `json:"access_policy"`   // 访问策略
+	MFAPolicy    MFAPolicy      `json:"mfa_policy"`      // MFA策略
+}
+
+func (t SecurityPolicyMeta) Value() (driver.Value, error) {
+	return dataType.DriverValueWithJson(t)
+}
+
+func (t *SecurityPolicyMeta) Scan(val any) (err error) {
+	return dataType.DriverScanWithJson(val, t)
+}
+
+func (t SecurityPolicyMeta) GormDataType() string {
+	return "security_policy_meta"
+}
+
+func (SecurityPolicyMeta) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	return dataType.JsonDbDataType(db, field)
+}
+
+func (t SecurityPolicyMeta) GormValue(_ context.Context, db *gorm.DB) clause.Expr {
+	byt, _ := json.Marshal(t)
+	return dataType.MapGormValue(string(byt), db)
+}
+
 // LoginPolicy 登录安全
 type LoginPolicy struct {
-	MaxLoginAttempts    int  `json:"max_login_attempts"`    //最大登录尝试次数
-	LockoutDuration     int  `json:"lockout_duration"`      // 锁定时长(分钟)
+	LoginLockPolicy lockpolicy.Policies `json:"login_lock_policy" yaml:"login_lock_policy"` // 登录失败锁定策略
+
 	SessionTimeout      int  `json:"session_timeout"`       // 会话超时(分钟)
 	AllowMultiLocation  bool `json:"allow_multi_location"`  // 是否允许多地点登录
 	MaxConcurrentLogins int  `json:"max_concurrent_logins"` // 最大并发登录数
@@ -25,7 +54,6 @@ type LoginPolicy struct {
 type AccessPolicy struct {
 	IPWhitelist       []string `json:"ip_whitelist"`        // IP白名单
 	IPBlacklist       []string `json:"ip_blacklist"`        // IP黑名单
-	AllowedRegions    []string `json:"allowed_regions"`     // 允许访问地区
 	BusinessHoursOnly bool     `json:"business_hours_only"` // 仅限工作时间
 }
 
@@ -64,9 +92,9 @@ type MFAPolicy struct {
 // 当 SessionTrigger > 0时，将启用连续n次验证码失败，锁定会话 SessionLockoutTime 时长
 // 如果 SessionLockoutCount > 0,那么连续n次锁会话后，将锁定IP IPLockoutTime 时长。
 type CaptchaConfig struct {
-	CaptchaEnabled    bool                `json:"captcha_enabled" yaml:"captcha_enabled"` // 启用图形验证码
-	CaptchaType       CaptchaType         `json:"captcha_type" yaml:"captcha_type"`       // 验证码类型
-	CaptchaLockPolicy lockpolicy.Policies `json:"captcha_lock_policy" yaml:"captcha_lock_policy"`
+	CaptchaEnabled    bool                `json:"captcha_enabled" yaml:"captcha_enabled"`         // 启用验证码
+	CaptchaType       CaptchaType         `json:"captcha_type" yaml:"captcha_type"`               // 验证码类型
+	CaptchaLockPolicy lockpolicy.Policies `json:"captcha_lock_policy" yaml:"captcha_lock_policy"` // 验证码验证失败 锁定策略
 }
 
 // MFAType 多因子认证类型
@@ -91,31 +119,3 @@ const (
 	CaptchaTypeClick  CaptchaType = "click"  // 点选验证
 	CaptchaTypeSound  CaptchaType = "sound"  // 语音验证
 )
-
-type SecurityPolicyMeta struct {
-	Password     PasswordPolicy `json:"password_policy"`
-	LoginPolicy  LoginPolicy    `json:"login_policy"`
-	AccessPolicy AccessPolicy   `json:"access_policy"`
-	MFAPolicy    MFAPolicy      `json:"mfa_policy"`
-}
-
-func (t SecurityPolicyMeta) Value() (driver.Value, error) {
-	return dataType.DriverValueWithJson(t)
-}
-
-func (t *SecurityPolicyMeta) Scan(val any) (err error) {
-	return dataType.DriverScanWithJson(val, t)
-}
-
-func (t SecurityPolicyMeta) GormDataType() string {
-	return "security_policy_meta"
-}
-
-func (SecurityPolicyMeta) GormDBDataType(db *gorm.DB, field *schema.Field) string {
-	return dataType.JsonDbDataType(db, field)
-}
-
-func (t SecurityPolicyMeta) GormValue(_ context.Context, db *gorm.DB) clause.Expr {
-	byt, _ := json.Marshal(t)
-	return dataType.MapGormValue(string(byt), db)
-}

@@ -134,16 +134,15 @@ func (h *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bool 
 	if err != nil {
 		ip = addr // 如果无端口，则直接使用原地址
 	}
+	if h.denyIpList != nil && h.denyIpList.Contains(ip) {
+		response.Forbidden(w, "你的IP已被监管")
+		return false
+	}
 	if h.allowIpList != nil {
 		if !h.allowIpList.Contains(ip) {
 			response.Forbidden(w, "你的IP不在系统白名单内")
 			return false
 		}
-		return true
-	}
-	if h.denyIpList != nil && h.denyIpList.Contains(ip) {
-		response.Forbidden(w, "你的IP已被监管")
-		return false
 	}
 	return true
 }
