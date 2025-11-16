@@ -21,7 +21,7 @@ type IDGenerator struct {
 var (
 	idInstance *IDGenerator
 	idOnce     sync.Once
-	cfg        = SonyFlake{
+	cfg        = &SonyFlake{
 		BitsSequence:  12,
 		BitsMachineID: 10,
 		TimeUnit:      time.Millisecond,
@@ -29,7 +29,7 @@ var (
 	}
 )
 
-func Init(c SonyFlake) {
+func Init(c *SonyFlake) {
 	cfg = c
 }
 

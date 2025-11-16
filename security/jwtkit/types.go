@@ -49,6 +49,7 @@ type StandardClaims struct {
 	TenantID  dataType.IntString[int64] `json:"tenant_id"`  // 租户ID
 	Timestamp time.Time                 `json:"timestamp"`  // 登录时间
 	LoginIp   string                    `json:"login_ip"`   // 登录IP
-	ExpiresAt time.Time                 `json:"expires_at"` // 过期时间
+	ExpiresAt *time.Time                `json:"expires_at"` // 过期时间
+	Extras    map[string]any            `json:"extras"`     // 扩展字段
 	jwt.RegisteredClaims
 }
