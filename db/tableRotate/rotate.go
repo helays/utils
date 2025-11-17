@@ -11,6 +11,7 @@ import (
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/db/userDb"
 	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/tools"
 	"github.com/helays/utils/v2/tools/retention"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/robfig/cron/v3"
@@ -42,6 +43,8 @@ type CallbackParams struct {
 type TableRotate struct {
 	Enable                  bool          `json:"enable" yaml:"enable" ini:"enable"` // 是否启用自动轮转
 	Duration                time.Duration `json:"duration" yaml:"duration" ini:"duration"`
+	Retry                   int           `json:"retry" yaml:"retry" ini:"retry"`                                                                // 重试次数
+	WaitTime                time.Duration `json:"wait_time" yaml:"wait_time" ini:"wait_time"`                                                    // 重试等待时间
 	Crontab                 string        `json:"crontab" yaml:"crontab" ini:"crontab"`                                                          // crontab 表达式 ,定时器和crontab二选一
 	SplitTable              bool          `json:"split_table" yaml:"split_table" ini:"split_table"`                                              // 是否开启按天切分日志 ，开启后，自动回收数据 只会看表的保留数量，不开启，就看数据保留时长
 	MaxTableRetention       int           `json:"max_table_retention" yaml:"max_table_retention" ini:"max_table_retention"`                      // 分表后，最大保留表的数量 -1 不限制
@@ -73,6 +76,9 @@ func (r *TableRotate) AddTask(ctx context.Context, tx *gorm.DB, tableName string
 	if r.Duration <= 0 && r.Crontab == "" {
 		return
 	}
+	r.Retry = tools.Ternary(r.Retry < 1, 3, r.Retry)
+	r.WaitTime = tools.AutoTimeDuration(r.WaitTime, time.Second, 10*time.Second)
+
 	ulogs.Log("【表自动轮转配置】", "数据库", tx.Dialector.Name(), tx.Migrator().CurrentDatabase(), tableName)
 	ulogs.Log("【表自动轮转配置】", "周期策略", r.Crontab, r.Duration)
 	if r.SplitTable {
@@ -133,29 +139,42 @@ func (r *TableRotate) run() {
 func (r *TableRotate) runSplitTable() {
 	newTableName := r.tableName + "_" + time.Now().Format(r.TimeFormat)
 	err := r.tx.Transaction(func(tx *gorm.DB) error {
-		err := tx.Migrator().RenameTable(r.tableName, newTableName)
+		err := r.autoRetry(func() error {
+			return tx.Migrator().RenameTable(r.tableName, newTableName)
+		})
 		if err != nil {
 			return fmt.Errorf("修改表名失败 %s to %s :%s", r.tableName, newTableName, err.Error())
 		}
+
 		switch tx.Dialector.Name() {
 		case config.DbTypePostgres: // 创建新表
-			err = tx.Debug().Exec("CREATE TABLE ? (LIKE ? INCLUDING ALL)", clause.Table{Name: r.tableName}, clause.Table{Name: newTableName}).Error
+			err = r.autoRetry(func() error {
+				return tx.Debug().Exec("CREATE TABLE ? (LIKE ? INCLUDING ALL)", clause.Table{Name: r.tableName}, clause.Table{Name: newTableName}).Error
+			})
 			if err != nil {
 				return fmt.Errorf("创建表失败 %s :%s", r.tableName, err.Error())
 			}
 			// 清理新表的序列字段的默认值，不清理在删表的时候会失败
-			if err = userDb.ClearSequenceFieldDefaultValue(tx, newTableName, r.SeqFields); err != nil {
+			err = r.autoRetry(func() error {
+				return userDb.ClearSequenceFieldDefaultValue(tx, newTableName, r.SeqFields)
+			})
+			if err != nil {
 				return err
 			}
 			// 创建表后，需要将改表后的序列清除掉
 		case config.DbTypeMysql:
-			err = tx.Debug().Exec("CREATE TABLE ? LIKE ?", clause.Table{Name: r.tableName}, clause.Table{Name: newTableName}).Error
+			err = r.autoRetry(func() error {
+				return tx.Debug().Exec("CREATE TABLE ? LIKE ?", clause.Table{Name: r.tableName}, clause.Table{Name: newTableName}).Error
+			})
 			if err != nil {
 				return fmt.Errorf("创建表失败 %s :%s", r.tableName, err.Error())
 			}
 		}
 		if r.splitCallback != nil {
-			return r.splitCallback(&CallbackParams{Tx: tx, SrcTable: r.tableName, DstTable: newTableName})
+			err = r.autoRetry(func() error {
+				return r.splitCallback(&CallbackParams{Tx: tx, SrcTable: r.tableName, DstTable: newTableName})
+			})
+			ulogs.CheckErrf(err, "自动轮转表，回调失败旧表 %s 新表 %s", r.tableName, newTableName)
 		}
 		return nil
 	})
@@ -192,6 +211,20 @@ func (r *TableRotate) runSplitTable() {
 	}
 }
 
+func (r *TableRotate) autoRetry(f func() error) error {
+	var err error
+	for i := 0; i < r.Retry; i++ {
+		err = f()
+		if err == nil {
+			return nil
+		}
+		if i < (r.Retry - 1) {
+			time.Sleep(r.WaitTime)
+		}
+	}
+	return fmt.Errorf("自动重试%d次后，还是失败 %v", r.Retry, err)
+}
+
 // 回收表数据
 func (r *TableRotate) runRotateTableData() {
 	if r.DataRetentionPeriod <= 0 {
@@ -224,7 +257,7 @@ func (r *TableRotate) runRotateTableData() {
 		}
 		return nil
 	})
-	
+
 	if err != nil {
 		switch _err := err.(type) {
 		case *pgconn.PgError:
