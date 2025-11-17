@@ -106,6 +106,14 @@ func (m *Manager) getSession(w http.ResponseWriter, r *http.Request, name string
 	return sv, nil
 }
 
+// UpdateSessionId 更新sessionId
+func (m *Manager) UpdateSessionId(w http.ResponseWriter, r *http.Request) (string, error) {
+	if err := m.Destroy(w, r); err != nil {
+		return "", err
+	}
+	return m.getSessionId(w, r)
+}
+
 // Get 获取session
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request, name string, dst any) error {
 	v := reflect.ValueOf(dst)
@@ -198,9 +206,13 @@ func (m *Manager) Set(w http.ResponseWriter, r *http.Request, name string, value
 	if err != nil {
 		return err
 	}
+	return m.setVal(sessionId, name, value, duration...)
+}
+
+func (m *Manager) setVal(sid, name string, value any, duration ...time.Duration) error {
 	now := time.Now()
 	sv := Session{
-		Id:         sessionId,
+		Id:         sid,
 		Name:       name,
 		Values:     NewSessionValue(value),
 		CreateTime: dataType.NewCustomTime(now),
@@ -211,6 +223,14 @@ func (m *Manager) Set(w http.ResponseWriter, r *http.Request, name string, value
 	}
 	sv.ExpireTime = dataType.CustomTime(now.Add(sv.Duration)) // 设置过期时间
 	return m.storage.Save(&sv)
+}
+
+func (m *Manager) SetWithNewSessionId(w http.ResponseWriter, r *http.Request, name string, value any, duration ...time.Duration) error {
+	sid, err := m.UpdateSessionId(w, r)
+	if err != nil {
+		return err
+	}
+	return m.setVal(sid, name, value, duration...)
 }
 
 func (m *Manager) Del(w http.ResponseWriter, r *http.Request, name string) error {
