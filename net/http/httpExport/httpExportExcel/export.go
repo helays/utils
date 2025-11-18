@@ -1,17 +1,13 @@
 package httpExportExcel
 
 import (
-	"database/sql"
-	"encoding/csv"
-	"fmt"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/excelTools"
-	"github.com/helays/utils/v2/logger/ulogs"
+	"net/http"
+
+	"github.com/helays/utils/v2/db/exportkit"
+	"github.com/helays/utils/v2/db/exportkit/gormkit"
 	"github.com/helays/utils/v2/net/http/httpTools"
 	"github.com/helays/utils/v2/tools"
-	"github.com/xuri/excelize/v2"
-	"net/http"
-	"strings"
+	"gorm.io/gorm"
 )
 
 //
@@ -42,90 +38,40 @@ import (
 //
 
 type RowsExport struct {
-	Rows         *sql.Rows
-	FileType     string
+	DB           *gorm.DB
+	FileType     exportkit.ExportType
 	FileName     string
 	ExportHeader map[string]string
 }
 
-func (this *RowsExport) Response(w http.ResponseWriter) error {
-	var (
-		ii           int
-		f            *excelize.File
-		streamWriter *excelize.StreamWriter
-		cw           *csv.Writer
-		sheetName    = "Sheet1"
-	)
-	this.FileType = strings.ToLower(tools.Ternary(this.FileType == "", config.ExportFileTypeExcel, this.FileType))
-	this.FileName = tools.Ternary(this.FileName == "", "export", this.FileName)
-	columnNames, err := this.Rows.Columns()
-	if err != nil {
-		return fmt.Errorf("获取表头字段失败:%w", err)
+func (e *RowsExport) Response(w http.ResponseWriter) error {
+	export := gormkit.New(e.DB, exportkit.ExportConfig{
+		IterationType: exportkit.IterationCursor, // 这里还是适合用游标方式默认导出
+		BatchSize:     1000,
+		SheetName:     "Sheet1",
+	})
+	export.SetHeader(e.ExportHeader)
+	if e.FileType == "" {
+		e.FileType = exportkit.ExportTypeCsv // 默认为csv
 	}
-	for idx, field := range columnNames {
-		// 获取字段名作为表头，并设置到对应的单元格
-		if header, ok := this.ExportHeader[field]; ok {
-			columnNames[idx] = header
-		}
-	}
+	e.FileName = tools.Ternary(e.FileName == "", "export", e.FileName)
 	w.Header().Del("Accept-Ranges")
-	if this.FileType == config.ExportFileTypeExcel {
-		f = excelize.NewFile()
-		defer excelTools.CloseExcel(f)
-		if streamWriter, err = f.NewStreamWriter(sheetName); err != nil {
-			return fmt.Errorf("创建sheet失败：%w", err)
+	// 设置csv的响应头
+	export.OnInitColumn(func(et exportkit.ExportType) error {
+		if et == exportkit.ExportTypeCsv {
+			w.Header().Set("Content-Type", "text/csv")
+			httpTools.SetDisposition(w, e.FileName+".csv")
 		}
-		ulogs.Checkerr(streamWriter.SetRow("A1", tools.StrSlice2AnySlice(columnNames)), "导出excel失败，表头写入失败")
-	} else if this.FileType == config.ExportFileTypeCsv {
-		w.Header().Set("Content-Type", "text/csv")
-		httpTools.SetDisposition(w, this.FileName+".csv")
-		cw = csv.NewWriter(w)
-		defer cw.Flush()
-		// 写入CSV头
-		_, _ = w.Write([]byte("\xef\xbb\xbf"))
-		if err = cw.Write(columnNames); err != nil {
-			return fmt.Errorf("写入csv头失败：%w", err)
+		return nil
+	})
+	// 设置excel的响应头
+	export.BeforeFinalize(func(et exportkit.ExportType) error {
+		if et == exportkit.ExportTypeExcel {
+			w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+			httpTools.SetDisposition(w, e.FileName+".xlsx")
 		}
-	} else {
-		return fmt.Errorf("不支持的导出类型：%s", this.FileType)
-	}
+		return nil
+	})
 
-	var values = make([]sql.RawBytes, len(columnNames))
-	scanArgs := make([]any, len(columnNames))
-	for i := range scanArgs {
-		scanArgs[i] = &values[i]
-	}
-	for this.Rows.Next() {
-		if err = this.Rows.Scan(scanArgs...); err != nil {
-			ulogs.Error(err, "导出数据报错")
-			continue
-		}
-		// 将[]sql.RawBytes转换为[]string
-		ii++
-		if this.FileType == config.ExportFileTypeExcel {
-			row := make([]any, len(values))
-			for i, value := range values {
-				row[i] = string(value)
-			}
-			// 计算单元格位置 (A2, A3, ...)
-			rowId := ii + 1
-			cell, _ := excelize.CoordinatesToCellName(1, rowId)
-			_ = streamWriter.SetRow(cell, row)
-		} else {
-			row := make([]string, len(values))
-			for i, value := range values {
-				row[i] = string(value)
-			}
-			_ = cw.Write(row) // 写入当前行到CSV
-			cw.Flush()        // 手动刷新，确保数据及时发送到客户端
-		}
-	}
-
-	if this.FileType == config.ExportFileTypeExcel {
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-		httpTools.SetDisposition(w, this.FileName+".xlsx")
-		_ = streamWriter.Flush()
-		_ = f.Write(w)
-	}
-	return nil
+	return export.Execute(e.FileType, w)
 }

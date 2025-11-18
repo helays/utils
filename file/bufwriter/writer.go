@@ -46,6 +46,24 @@ func New(path string) (*Writer, error) {
 	return w, nil
 }
 
+func NewWithWriter(writer *os.File) (*Writer, error) {
+	w := &Writer{
+		file:       writer,
+		buf:        bufio.NewWriter(writer),
+		counter:    0,
+		flushPower: defaultFlushPower,
+		syncPower:  defaultSyncPower,
+	}
+
+	// 计算实际的间隔和掩码
+	w.flushInterval = 1 << w.flushPower
+	w.syncInterval = 1 << w.syncPower
+	w.flushMask = w.flushInterval - 1
+	w.syncMask = w.syncInterval - 1
+
+	return w, nil
+}
+
 // SetFlushInterval 设置刷新间隔的指数
 func (w *Writer) SetFlushInterval(power uint) {
 	w.flushPower = power
