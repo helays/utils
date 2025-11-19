@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"reflect"
 	"sort"
 
 	"github.com/helays/utils/v2/config"
@@ -286,4 +287,17 @@ func CutStrSlice2Slice(s []string, key string, direct int) []string {
 		}
 	}
 	return []string{}
+}
+
+// IsArray 检查值是否为数组或切片
+func IsArray(v any) bool {
+	if v == nil {
+		return false
+	}
+
+	val := reflect.ValueOf(v)
+	kind := val.Kind()
+
+	// 检查是否是数组或切片
+	return kind == reflect.Array || kind == reflect.Slice
 }
