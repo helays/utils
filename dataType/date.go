@@ -14,42 +14,42 @@ import (
 
 type CustomDate time.Time
 
-func (this CustomDate) String() string {
-	return time.Time(this).Format(time.DateOnly)
+func (c CustomDate) String() string {
+	return time.Time(c).Format(time.DateOnly)
 }
 
-func (this CustomDate) Format(layout string) string {
-	return time.Time(this).Format(layout)
+func (c CustomDate) Format(layout string) string {
+	return time.Time(c).Format(layout)
 }
 
-func (this CustomDate) After(u time.Time) bool {
-	return time.Time(this).After(u)
+func (c CustomDate) After(u time.Time) bool {
+	return time.Time(c).After(u)
 }
 
-func (this CustomDate) Before(u time.Time) bool {
-	return time.Time(this).Before(u)
+func (c CustomDate) Before(u time.Time) bool {
+	return time.Time(c).Before(u)
 }
 
-func (this CustomDate) Sub(u time.Time) time.Duration {
-	return time.Time(this).Sub(u)
+func (c CustomDate) Sub(u time.Time) time.Duration {
+	return time.Time(c).Sub(u)
 }
 
-func (this CustomDate) Unix() int64 {
-	return time.Time(this).Unix()
+func (c CustomDate) Unix() int64 {
+	return time.Time(c).Unix()
 }
 
-func (this *CustomDate) Scan(value interface{}) (err error) {
+func (c *CustomDate) Scan(value interface{}) (err error) {
 	nullTime := &sql.NullTime{}
 	err = nullTime.Scan(value)
-	*this = CustomDate(nullTime.Time)
+	*c = CustomDate(nullTime.Time)
 	return
 }
 
-func (this CustomDate) Value() (driver.Value, error) {
-	return time.Time(this), nil
+func (c CustomDate) Value() (driver.Value, error) {
+	return time.Time(c), nil
 }
 
-func (this CustomDate) GormDataType() string {
+func (c CustomDate) GormDataType() string {
 	return "time"
 }
 
@@ -66,20 +66,20 @@ func (CustomDate) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	}
 	return ""
 }
-func (this CustomDate) GobEncode() ([]byte, error) {
-	return time.Time(this).GobEncode()
+func (c CustomDate) GobEncode() ([]byte, error) {
+	return time.Time(c).GobEncode()
 }
-func (this *CustomDate) GobDecode(b []byte) error {
-	return (*time.Time)(this).GobDecode(b)
+func (c *CustomDate) GobDecode(b []byte) error {
+	return (*time.Time)(c).GobDecode(b)
 }
-func (this CustomDate) MarshalJSON() ([]byte, error) {
-	t := time.Time(this)
+func (c CustomDate) MarshalJSON() ([]byte, error) {
+	t := time.Time(c)
 	//if t.IsZero() {
 	//	return []byte("null"), nil
 	//}
 	return []byte(`"` + t.Format(time.DateOnly) + `"`), nil
 }
-func (this *CustomDate) UnmarshalJSON(b []byte) (err error) {
+func (c *CustomDate) UnmarshalJSON(b []byte) (err error) {
 	s := strings.Trim(string(b), "\"")
 	if s == "null" || s == "" {
 		//*this = CustomTime{}
@@ -90,7 +90,7 @@ func (this *CustomDate) UnmarshalJSON(b []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	*this = CustomDate(_t)
+	*c = CustomDate(_t)
 	return err
 }
 
