@@ -7,6 +7,7 @@ import (
 
 	"github.com/helays/utils/v2/logger/zaploger"
 	"github.com/helays/utils/v2/net/ipAccess"
+	"github.com/helays/utils/v2/security/cors"
 	"github.com/helays/utils/v2/tools/mutex"
 	"golang.org/x/net/websocket"
 )
@@ -26,6 +27,7 @@ type HttpServer struct {
 	Hotupdate           bool                        `ini:"hotupdate" json:"hotupdate" yaml:"hotupdate"`                               // 是否启动热加载
 	EnableGzip          bool                        `ini:"enable_gzip" json:"enable_gzip" yaml:"enable_gzip"`                         // 是否开启gzip
 	DefaultValidFirst   bool                        `ini:"default_valid_first" json:"default_valid_first" yaml:"default_valid_first"` // 默认验证第一
+	CORS                *cors.Config                `ini:"cors" json:"cors" yaml:"cors"`                                              // 跨域配置
 	Route               map[string]http.HandlerFunc `yaml:"-" json:"-"`
 	RouteHandle         map[string]http.Handler
 	RouteSocket         map[string]func(ws *websocket.Conn)               `yaml:"-" json:"-"`
