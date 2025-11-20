@@ -1,12 +1,12 @@
 package sessionmgr
 
 import (
-	"bytes"
 	"database/sql/driver"
-	"encoding/gob"
 	"errors"
-	"fmt"
 
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/tools"
+	"github.com/vmihailenco/msgpack/v5"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -20,42 +20,36 @@ type SessionValue struct {
 }
 
 // Value return blob value, implement driver.Valuer interface
-func (v SessionValue) Value() (driver.Value, error) {
-	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(v)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+func (s SessionValue) Value() (driver.Value, error) {
+	return msgpack.Marshal(s.val)
 }
 
-func (v *SessionValue) Scan(val any) error {
+func (s *SessionValue) Scan(val any) error {
 	if val == nil {
-		*v = SessionValue{}
+		*s = SessionValue{}
 		return nil
 	}
-	var ba []byte
-	switch v := val.(type) {
-	case []byte:
-		ba = v
-	default:
-		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", val))
+	b, err := tools.Any2bytes(val)
+	if err != nil {
+		return err
 	}
-	return gob.NewDecoder(bytes.NewReader(ba)).Decode(v)
+	// 这里应该使用 msgpack.Unmarshal 而不是 gob
+	return msgpack.Unmarshal(b, &s.val)
 }
 
 // GormDBDataType gorm db data type
 func (SessionValue) GormDBDataType(db *gorm.DB, field *schema.Field) string {
-	switch db.Dialector.Name() {
-	case "sqlite":
-		return "BLOB"
-	case "mysql":
-		return "BLOB"
-	case "postgres":
-		return "BYTEA"
-	}
-	return ""
+	return dataType.BlobDbDataType(db, field)
 }
+
+//  这个需要移除 上级Session 已经实现了二进制序列化
+//func (s SessionValue) GobEncode() ([]byte, error) {
+//	return msgpack.Marshal(s.val)
+//}
+//
+//func (s *SessionValue) GobDecode(data []byte) error {
+//	return msgpack.Unmarshal(data, &s.val)
+//}
 
 type CookieCarrier string
 
