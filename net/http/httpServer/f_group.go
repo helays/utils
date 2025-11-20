@@ -1,10 +1,11 @@
 package httpServer
 
 import (
-	"github.com/helays/utils/v2/net/http/httpServer/httpmethod"
-	"golang.org/x/net/websocket"
 	"net/http"
 	"strings"
+
+	"github.com/helays/utils/v2/net/http/httpServer/httpmethod"
+	"golang.org/x/net/websocket"
 )
 
 type RouterGroup struct {

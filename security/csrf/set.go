@@ -1,6 +1,9 @@
 package csrf
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 func (c *Config) Enable() *Config {
 	c.Enabled = true
@@ -17,16 +20,6 @@ func (c *Config) WithStrategy(strategy Strategy) *Config {
 	return c
 }
 
-func (c *Config) WithTokenSource(tokenSource TokenSource) *Config {
-	c.TokenSource = tokenSource
-	return c
-}
-
-func (c *Config) WithTokenName(tokenName string) *Config {
-	c.TokenName = tokenName
-	return c
-}
-
 func (c *Config) WithTimeout(seconds time.Duration) *Config {
 	c.Timeout = seconds
 	return c
@@ -37,7 +30,7 @@ func (c *Config) WithTokenMode(tokenMode TokenMode) *Config {
 	return c
 }
 
-func (c *Config) WithSameSite(sameSite string) *Config {
+func (c *Config) WithSameSite(sameSite http.SameSite) *Config {
 	c.SameSite = sameSite
 	return c
 }

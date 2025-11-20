@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"net/http"
 	"time"
 
 	"github.com/helays/utils/v2/crypto/xxhashkit"
@@ -22,22 +23,14 @@ func (s Strategy) String() string {
 }
 
 const (
-	StrategyNone      Strategy = "none"       // 不需要CSRF保护
-	StrategyToken     Strategy = "token"      // 使用Token验证
+	StrategyNone  Strategy = "none"  // 不需要CSRF保护
+	StrategyToken Strategy = "token" // 使用Token验证
+	// StrategyDoubleTap 双重提交Cookie（Double Submit Cookie） 是一种CSRF防护技术，它的核心思想是：
+	// 服务端生成一个随机Token,通过Cookie发送给浏览器
+	// 前端在请求中携带这个token，通常放在header或者query中，
+	// 服务端验证请求中的Token和Cookie中的Token是否一致
+	// /api/csrf-token接口在生成token时，需要根据对应path的配置来处理，另外需要设置两个cookie,一个可读，一个用于验证；可读的不设置具体值
 	StrategyDoubleTap Strategy = "double_tap" // 双重提交Cookie
-	StrategyReferer   Strategy = "referer"    // Referer验证
-)
-
-type TokenSource string
-
-func (s TokenSource) String() string {
-	return string(s)
-}
-
-const (
-	TokenSourceHeader TokenSource = "header" // 从Header获取
-	TokenSourceForm   TokenSource = "form"   // 从Form获取
-	TokenSourceQuery  TokenSource = "query"  // 从Query参数获取
 )
 
 // TokenMode 令牌模式
@@ -56,11 +49,9 @@ const (
 type Config struct {
 	Enabled       bool          `json:"enabled,omitempty" yaml:"enabled" ini:"enabled"`                      // 是否启用CSRF保护
 	Strategy      Strategy      `json:"strategy,omitempty" yaml:"strategy" ini:"strategy"`                   // 防护策略
-	TokenSource   TokenSource   `json:"token_source,omitempty" yaml:"token_source" ini:"token_source"`       // Token来源
-	TokenName     string        `json:"token_name,omitempty" yaml:"token_name" ini:"token_name"`             // Token字段名，默认X-CSRF-Token
 	Timeout       time.Duration `json:"timeout,omitempty" yaml:"timeout" ini:"timeout"`                      // Token超时时间(秒)
 	TokenMode     TokenMode     `json:"token_mode,omitempty" yaml:"token_mode" ini:"token_mode"`             // Token模式
-	SameSite      string        `json:"same_site,omitempty" yaml:"same_site" ini:"same_site"`                // SameSite策略: strict/lax/none
+	SameSite      http.SameSite `json:"same_site,omitempty" yaml:"same_site" ini:"same_site"`                // SameSite策略: strict/lax/none
 	Secure        bool          `json:"secure,omitempty" yaml:"secure" ini:"secure"`                         // 是否仅HTTPS
 	ExemptMethods []string      `json:"exempt_methods,omitempty" yaml:"exempt_methods" ini:"exempt_methods"` // 豁免的HTTP方法
 }
@@ -101,11 +92,6 @@ func (c *Config) IsValid() bool {
 	if c.Enabled {
 		if c.Strategy == "" {
 			return false
-		}
-		if c.Strategy == StrategyToken || c.Strategy == StrategyDoubleTap {
-			if c.TokenName == "" {
-				return false
-			}
 		}
 	}
 	return true

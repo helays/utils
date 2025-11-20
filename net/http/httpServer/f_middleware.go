@@ -1,6 +1,10 @@
 package httpServer
 
 import (
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/helays/utils/v2/close/httpClose"
 	"github.com/helays/utils/v2/close/vclose"
 	"github.com/helays/utils/v2/logger/ulogs"
@@ -9,9 +13,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"golang.org/x/net/websocket"
-	"net/http"
-	"strings"
-	"time"
 )
 
 func (h *HttpServer) middleware(u string, f http.Handler, callback ...MiddlewareFunc) {

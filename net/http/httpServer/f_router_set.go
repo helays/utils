@@ -1,9 +1,10 @@
 package httpServer
 
 import (
+	"net/http/pprof"
+
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/net/http/httpServer/router"
-	"net/http/pprof"
 )
 
 // 设置路由

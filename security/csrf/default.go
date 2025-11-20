@@ -7,8 +7,6 @@ func PerRequestConfig() *Config {
 	return &Config{
 		Enabled:       true,
 		Strategy:      StrategyToken,
-		TokenSource:   TokenSourceHeader,
-		TokenName:     "X-CSRF-Token",
 		Timeout:       5 * time.Minute,
 		TokenMode:     TokenModePerRequest,
 		Secure:        true,
@@ -21,8 +19,6 @@ func SessionTokenConfig() *Config {
 	return &Config{
 		Enabled:       true,
 		Strategy:      StrategyToken,
-		TokenSource:   TokenSourceHeader,
-		TokenName:     "X-CSRF-Token",
 		Timeout:       24 * time.Hour,
 		TokenMode:     TokenModeSession,
 		Secure:        true,
@@ -35,8 +31,6 @@ func TimedTokenConfig(timeout time.Duration) *Config {
 	return &Config{
 		Enabled:       true,
 		Strategy:      StrategyToken,
-		TokenSource:   TokenSourceHeader,
-		TokenName:     "X-CSRF-Token",
 		Timeout:       timeout,
 		TokenMode:     TokenModeTimed,
 		Secure:        true,
