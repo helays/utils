@@ -32,7 +32,7 @@ type HttpServer struct {
 	RouteHandle         map[string]http.Handler
 	RouteSocket         map[string]func(ws *websocket.Conn)               `yaml:"-" json:"-"`
 	CommonCallback      func(w http.ResponseWriter, r *http.Request) bool `yaml:"-" json:"-"`
-	serverNameMap       map[string]byte                                   // 绑定的域名kkkko
+	serverNameMap       map[string]byte                                   // 绑定的域名
 	Logger              zaploger.Config                                   `json:"logger" yaml:"logger" ini:"logger" gorm:"comment:日志配置"`
 	logger              *zaploger.Logger
 	enableCheckIpAccess bool // 是否开启ip访问控制
