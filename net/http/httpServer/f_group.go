@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/helays/utils/v2/net/http/httpServer/httpmethod"
 	"golang.org/x/net/websocket"
 )
 
@@ -49,10 +48,11 @@ func (g *RouterGroup) addRoute(method, p string, handler http.Handler) {
 	}
 	var cb []MiddlewareFunc
 	if method != "" {
-		vm := func(next http.Handler) http.Handler {
-			return httpmethod.Method(method, next)
-		}
-		cb = append(cb, vm)
+		// 下面这两句话是在运行时 判断method 是否运行
+		//vm := func(next http.Handler) http.Handler { return httpmethod.Method(method, next) }
+		//cb = append(cb, vm)
+		// go http server 标准库新的支持另一种语法
+		fullPath = method + " " + fullPath
 	}
 	g.service.middleware(fullPath, finalHandler, cb...) // 注册路由
 }

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -13,27 +12,29 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/helays/utils/v2/close/httpClose"
-	"github.com/helays/utils/v2/crypto/md5"
+	"github.com/helays/utils/v2/crypto/xxhashkit"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/logger/zaploger"
-	"github.com/helays/utils/v2/net/http/httpServer/request"
-	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"github.com/helays/utils/v2/net/http/mime"
 	"github.com/helays/utils/v2/net/ipAccess"
 	"github.com/helays/utils/v2/tools"
+	"github.com/helays/utils/v2/tools/mutex"
 )
 
 // HttpServerStart 公功 http server 启动函数
-func (h *HttpServer) HttpServerStart() {
-	h.ctx, h.cancel = context.WithCancel(context.Background())
-	defer h.cancel()
-	defer httpClose.Server(h.server)
+func (h *HttpServer) HttpServerStart(ctx context.Context) {
+	var stop = mutex.NewSafeResourceRWMutex(false)
+	go func() {
+		<-ctx.Done()
+		stop.Write(true)
+		httpClose.Server(h.server)
+		ulogs.Log("http server已关闭")
+	}()
 	for {
-		h.initParams()   // 初始化参数
-		go h.hotUpdate() // 启用热更新检测模块
+		h.initParams()      // 初始化参数
+		go h.hotUpdate(ctx) // 启用热更新检测模块
 		var err error
 		ulogs.Log("启动Http(s) Server", h.ListenAddr)
-		h.isStop.Write(false)
 		if h.Ssl {
 			err = h.server.ListenAndServeTLS(tools.Fileabs(h.Crt), tools.Fileabs(h.Key))
 		} else {
@@ -46,7 +47,7 @@ func (h *HttpServer) HttpServerStart() {
 			}
 		}
 		// 未启用热更新，或者检测到退出信号 就退出
-		if !h.Hotupdate || h.isStop.Read() {
+		if !h.Hotupdate || stop.Read() {
 			break
 		}
 	}
@@ -127,84 +128,33 @@ func (h *HttpServer) iptablesInit() {
 	ulogs.DieCheckerr(err, "http server debug ip白名单初始化失败")
 }
 
-// 检测ip白名单和黑名单
-func (h *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bool {
-	addr := request.Getip(r)
-	ip, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		ip = addr // 如果无端口，则直接使用原地址
-	}
-	if h.denyIpList != nil && h.denyIpList.Contains(ip) {
-		response.Forbidden(w, "你的IP已被监管")
-		return false
-	}
-	if h.allowIpList != nil {
-		if !h.allowIpList.Contains(ip) {
-			response.Forbidden(w, "你的IP不在系统白名单内")
-			return false
-		}
-	}
-	return true
-}
-
-func (h *HttpServer) debugIpAccess(w http.ResponseWriter, r *http.Request) bool {
-	// 判断path是否以debug开头
-	if !strings.HasPrefix(r.URL.Path, "/debug/") {
-		return true
-	}
-	addr := request.Getip(r)
-	ip, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		ip = addr // 如果无端口，则直接使用原地址
-	}
-	if !h.debugAllowIpList.Contains(ip) {
-		response.Forbidden(w, http.StatusText(http.StatusForbidden))
-		return false
-	}
-	return true
-}
-
 // 用于检测参数变更，然后热更新。
-func (h *HttpServer) hotUpdate() {
-	if h.Hotupdate {
-		go func() {
-			hash := h.hash()
-			tck := time.NewTicker(1 * time.Second)
-			defer tck.Stop()
-			for {
-				select {
-				case <-h.ctx.Done():
-					return
-				case <-tck.C:
-					if hash == h.hash() {
-						continue
-					}
-					// 关闭client,重启程序
-					httpClose.Server(h.server)
-					return
-				}
+func (h *HttpServer) hotUpdate(ctx context.Context) {
+	if !h.Hotupdate {
+		return
+	}
+	hash := h.hash()
+	tck := time.NewTicker(1 * time.Second)
+	defer tck.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tck.C:
+			if hash == h.hash() {
+				continue
 			}
-		}()
+			// 关闭client,重启程序
+			httpClose.Server(h.server)
+			return
+		}
 	}
 }
 
 // 计算 httpserver 模块摘要
 func (h *HttpServer) hash() string {
-	strArr := append([]string{
-		h.ListenAddr,
-		h.Auth,
-		tools.Booltostring(h.Ssl),
-		h.Ca,
-		h.Crt,
-		h.Key,
-		h.SocketTimeout.String(),
-	}, append(h.Allowip, h.Denyip...)...)
-	return md5.Md5string(strings.Join(strArr, ""))
-}
-
-func (h *HttpServer) StopServer() {
-	h.cancel()
-	h.isStop.Write(true)
-	ulogs.Log("http server已关闭")
-	httpClose.Server(h.server)
+	strArr := []string{h.ListenAddr, h.Auth, tools.Booltostring(h.Ssl), h.Ca, h.Crt, h.Key, h.SocketTimeout.String()}
+	strArr = append(strArr, h.Allowip...)
+	strArr = append(strArr, h.Denyip...)
+	return xxhashkit.XXHashString(strings.Join(strArr, ""))
 }
