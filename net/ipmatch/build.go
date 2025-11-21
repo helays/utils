@@ -33,16 +33,28 @@ func (m *IPMatcher) LoadRule() error {
 }
 
 func (m *IPMatcher) AddIPv4Rule(ip string) error {
+	if m.config.Dynamic {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+	}
 	// TODO: 添加ipv4 规则
 	panic("TODO：待实现")
 }
 
 func (m *IPMatcher) AddIPv6Rule(ip string) error {
+	if m.config.Dynamic {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+	}
 	// TODO: 添加ipv6 规则
 	panic("TODO：待实现")
 }
 
 func (m *IPMatcher) Build() error {
+	if m.config.Dynamic {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+	}
 	defer m.clearTemp()
 	// TODO: 构建实现
 	panic("TODO：待实现")

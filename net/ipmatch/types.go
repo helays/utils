@@ -2,6 +2,7 @@ package ipmatch
 
 import (
 	"net/netip"
+	"sync"
 )
 
 // IPVersion IP版本类型
@@ -14,6 +15,7 @@ const (
 
 // Config IP匹配器配置
 type Config struct {
+	Dynamic          bool   `json:"dynamic" yaml:"dynamic" ini:"dynamic"`                                  // 是否支持动态添加规则
 	Ipv4MapThreshold uint64 `json:"ipv4_map_threshold" yaml:"ipv4_map_threshold" ini:"ipv4_map_threshold"` // IPv4 Map模式阈值
 	Ipv6MapThreshold uint64 `json:"ipv6_map_threshold" yaml:"ipv6_map_threshold" ini:"ipv6_map_threshold"` // IPv6 Map模式阈值
 
@@ -33,6 +35,7 @@ func DefaultConfig() Config {
 	return Config{
 		Ipv4MapThreshold: DefaultIPv4MapThreshold,
 		Ipv6MapThreshold: DefaultIPv6MapThreshold,
+		Dynamic:          false,
 	}
 }
 
@@ -46,6 +49,8 @@ const (
 type IPMatcher struct {
 	enable bool // 构建完成后，如果有ip，应该改成true。
 	config Config
+
+	mu sync.RWMutex // 读写锁，当启用动态添加规则时，这个应该使用
 
 	// 统计数据
 	ipv4Count BuildStats // IPv4统计
