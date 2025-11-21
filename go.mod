@@ -157,6 +157,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/xuri/efp v0.0.1 // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
+	github.com/yl2chen/cidranger v1.0.2 // indirect
 	go.etcd.io/etcd/api/v3 v3.6.6 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.6.6 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
