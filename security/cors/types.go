@@ -18,9 +18,10 @@ type Config struct {
 	AllowOrigins     []string `json:"allow_origins,omitempty" yaml:"allow_origins" ini:"allow_origins"`             // 允许的源
 	AllowMethods     []string `json:"allow_methods,omitempty" yaml:"allow_methods" ini:"allow_methods"`             // 允许的HTTP方法
 	AllowHeaders     []string `json:"allow_headers,omitempty" yaml:"allow_headers" ini:"allow_headers"`             // 允许的请求头
-	AllowCredentials bool     `json:"allow_credentials,omitempty" yaml:"allow_credentials" ini:"allow_credentials"` // 是否允许凭据
-	ExposeHeaders    []string `json:"expose_headers,omitempty" yaml:"expose_headers" ini:"expose_headers"`          // 暴露的响应头
+	AllowCredentials bool     `json:"allow_credentials,omitempty" yaml:"allow_credentials" ini:"allow_credentials"` // 是否允许发送 Cookie
+	ExposeHeaders    []string `json:"expose_headers,omitempty" yaml:"expose_headers" ini:"expose_headers"`          // 暴露给前端的响应头
 	MaxAge           int      `json:"max_age,omitempty" yaml:"max_age" ini:"max_age"`                               // 预检请求缓存时间(秒)
+	Strict           bool     `json:"strict,omitempty" yaml:"strict" ini:"strict"`                                  // 严格模式 严格模式下，不允许的Origin阻值后不继续后续流程
 }
 
 func (c Config) Value() (driver.Value, error) {
