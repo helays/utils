@@ -3,6 +3,9 @@ package ipmatch
 import (
 	"net/netip"
 	"sync"
+	"time"
+
+	"github.com/helays/utils/v2/map/safettl"
 )
 
 // IPVersion IP版本类型
@@ -16,11 +19,14 @@ const (
 // Config IP匹配器配置
 type Config struct {
 	Dynamic          bool   `json:"dynamic" yaml:"dynamic" ini:"dynamic"`                                  // 是否支持动态添加规则
-	Ipv4MapThreshold uint64 `json:"ipv4_map_threshold" yaml:"ipv4_map_threshold" ini:"ipv4_map_threshold"` // IPv4 Map模式阈值
-	Ipv6MapThreshold uint64 `json:"ipv6_map_threshold" yaml:"ipv6_map_threshold" ini:"ipv6_map_threshold"` // IPv6 Map模式阈值
+	IPv4MapThreshold uint64 `json:"ipv4_map_threshold" yaml:"ipv4_map_threshold" ini:"ipv4_map_threshold"` // IPv4 Map模式阈值
+	IPv6MapThreshold uint64 `json:"ipv6_map_threshold" yaml:"ipv6_map_threshold" ini:"ipv6_map_threshold"` // IPv6 Map模式阈值
 
 	IPv4RuleSet IPRuleSet `json:"ipv4_rule_set" yaml:"ipv4_rule_set" ini:"ipv4_rule_set"`
 	IPv6RuleSet IPRuleSet `json:"ipv6_rule_set" yaml:"ipv6_rule_set" ini:"ipv6_rule_set"`
+
+	IPv4CacheTTL time.Duration `json:"ipv4_cache_ttl" yaml:"ipv4_cache_ttl" ini:"ipv4_cache_ttl"`
+	IPv6CacheTTL time.Duration `json:"ipv6_cache_ttl" yaml:"ipv6_cache_ttl" ini:"ipv6_cache_ttl"`
 }
 
 type IPRuleSet struct {
@@ -41,22 +47,15 @@ type IPMatcher struct {
 
 	mu sync.RWMutex // 读写锁，当启用动态添加规则时，这个应该使用
 
-	// 统计数据
-	ipv4Count BuildStats // IPv4统计
-	ipv6Count BuildStats // IPv6统计
+	// 用于二分查询中的加速
+	ipv4Cache *safettl.Map[uint32, struct{}]   // IPv4缓存
+	ipv6Cache *safettl.Map[[16]byte, struct{}] // IPv6缓存
 
 	// 正式存储
 	storage *ipStorage
 
 	// 临时存储，构建过程用
-	temp *ipStorage
-}
-
-// BuildStats 构建统计信息
-type BuildStats struct {
-	TotalIPs  uint64 // 总IP数量：离散IP+cidr里面的IP数量+连续IP里面包含的数量
-	IPRanges  int    // 连续范围数量：规则中的连续IP范围数量
-	SingleIPs int    // 离散IP数量
+	temp *ipTemp
 }
 
 // ipStorage 存储结构
@@ -64,6 +63,11 @@ type ipStorage struct {
 	ipv4Map map[uint32]struct{}   // IPv4: uint32 -> bool
 	ipv6Map map[[16]byte]struct{} // IPv6: [16]byte -> bool
 
+	ipv4Ranges []ipv4Range // IPv4连续范围
+	ipv6Ranges []ipv6Range // IPv6连续范围
+}
+
+type ipTemp struct {
 	ipv4Ranges []ipv4Range // IPv4连续范围
 	ipv6Ranges []ipv6Range // IPv6连续范围
 }
@@ -87,6 +91,18 @@ func newIPStorage() *ipStorage {
 	}
 }
 
+func newIPTemp() *ipTemp {
+	return &ipTemp{
+		ipv4Ranges: make([]ipv4Range, 0), // 建议也初始化
+		ipv6Ranges: make([]ipv6Range, 0), // 建议也初始化
+	}
+}
+
 func (m *IPMatcher) clearTemp() {
 	m.temp = nil
+}
+
+func (m *IPMatcher) Close() {
+	m.ipv4Cache.Close()
+	m.ipv6Cache.Close()
 }

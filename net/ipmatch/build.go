@@ -3,10 +3,15 @@ package ipmatch
 import (
 	"bufio"
 	"fmt"
+	"net"
+	"net/netip"
 	"os"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/map/safettl"
 	"github.com/helays/utils/v2/net/ipkit"
 	"github.com/helays/utils/v2/tools"
 	"github.com/malfunkt/iprange"
@@ -36,7 +41,11 @@ func NewIPMatcher(config *Config) (*IPMatcher, error) {
 	m := &IPMatcher{
 		config: config,
 	}
-	m.temp = newIPStorage() // 构建时候的缓存先定义
+	ipv4CacheTTL := tools.AutoTimeDuration(m.config.IPv4CacheTTL, time.Second, 30*time.Second)
+	ipv6CacheTTL := tools.AutoTimeDuration(m.config.IPv6CacheTTL, time.Second, 10*time.Second)
+	m.ipv4Cache = safettl.New[uint32, struct{}](ipv4CacheTTL)
+	m.ipv6Cache = safettl.New[[16]byte, struct{}](ipv6CacheTTL)
+	m.temp = newIPTemp() // 构建时候的缓存先定义
 	err := m.LoadRule()
 	if err != nil {
 		return nil, err
@@ -126,12 +135,20 @@ func (m *IPMatcher) AddIPv4Rule(ip string) error {
 	if ip == "" {
 		return nil
 	}
-	r, err := iprange.Parse(ip)
-	if err != nil {
-		return fmt.Errorf("IPV4规则%s解析失败：%v", ip, err)
+	var startIP, endIP net.IP
+	if r, err := iprange.Parse(ip); err == nil {
+		startIP = r.Min.To4()
+		endIP = r.Max.To4()
+	} else {
+		start, end, _err := m.netIPxParse(ip)
+		if _err != nil {
+			return err
+		}
+		// 转成 net.IP
+		startIP = start.AsSlice()
+		endIP = end.AsSlice()
 	}
-	startIP := r.Min.To4()
-	endIP := r.Max.To4()
+
 	if startIP == nil || endIP == nil {
 		return fmt.Errorf("规则 %s 不是有效的IPv4地址", ip)
 	}
@@ -141,14 +158,11 @@ func (m *IPMatcher) AddIPv4Rule(ip string) error {
 	if start > end {
 		return fmt.Errorf("规则 %s 的起始IP大于结束IP", ip)
 	}
-	if start == end {
-		m.temp.ipv4Map[start] = struct{}{}
-	} else {
-		m.temp.ipv4Ranges = append(m.temp.ipv4Ranges, ipv4Range{Start: start, End: end})
-	}
+	m.temp.ipv4Ranges = append(m.temp.ipv4Ranges, ipv4Range{Start: start, End: end})
 	return nil
 }
 
+// AddIPv6Rule 添加ipv6规则
 func (m *IPMatcher) AddIPv6Rule(ip string) error {
 	if m.config.Dynamic {
 		m.mu.Lock()
@@ -158,18 +172,129 @@ func (m *IPMatcher) AddIPv6Rule(ip string) error {
 	if ip == "" {
 		return nil
 	}
-	netipx.ParseIPRange()
-	netipx.ParsePrefixOrAddr()
-	// TODO: 添加ipv6 规则
-	panic("TODO：待实现")
+	start, end, err := m.netIPxParse(ip)
+	if err != nil {
+		return err
+	}
+	// 验证IPv6地址
+	if !start.Is6() || !end.Is6() {
+		return fmt.Errorf("IPv6地址 '%s' 不是有效的IPv6地址", ip)
+	}
+	if start.Compare(end) > 0 {
+		return fmt.Errorf("IPv6地址范围 '%s' 的起始IP大于结束IP", ip)
+	}
+	m.temp.ipv6Ranges = append(m.temp.ipv6Ranges, ipv6Range{start: start, end: end})
+	return nil
 }
 
-func (m *IPMatcher) Build() error {
+// netIPxParse 解析IP规则 采用netipx库解析
+func (m *IPMatcher) netIPxParse(ip string) (netip.Addr, netip.Addr, error) {
+	var start, end netip.Addr
+	// 解析IP规则
+	if strings.Contains(ip, "-") {
+		// IP范围格式: 2001:db8::1-2001:db8::ffff
+		ipRange, err := netipx.ParseIPRange(ip)
+		if err != nil {
+			return start, end, fmt.Errorf("无法解析IP地址范围 '%s' %v", ip, err)
+		}
+		start = ipRange.From()
+		end = ipRange.To()
+	} else if strings.Contains(ip, "/") {
+		// CIDR格式: 2001:db8::/32
+		prefix, err := netip.ParsePrefix(ip)
+		if err != nil {
+			return start, end, fmt.Errorf("未能解析IP CIDR '%s' %v", ip, err)
+		}
+		ipRange := netipx.RangeOfPrefix(prefix)
+		start = ipRange.From()
+		end = ipRange.To()
+	} else {
+		// 单个IP格式: 2001:db8::1
+		addr, err := netip.ParseAddr(ip)
+		if err != nil {
+			return start, end, fmt.Errorf("无法解析地址 '%s': %w", ip, err)
+		}
+		start = addr
+		end = addr
+	}
+	return start, end, nil
+}
+
+// Build 构建
+func (m *IPMatcher) Build() {
 	if m.config.Dynamic {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 	}
+	m.enable = false
 	defer m.clearTemp()
-	// TODO: 构建实现
-	panic("TODO：待实现")
+
+	// 构建正式存储
+	m.storage = newIPStorage()
+
+	// 处理ipv4
+	if len(m.temp.ipv4Ranges) > 0 {
+		sort.Slice(m.temp.ipv4Ranges, func(i, j int) bool {
+			return m.temp.ipv4Ranges[i].Start < m.temp.ipv4Ranges[j].Start
+		})
+		ranges := m.mergeIPv4Ranges()
+		m.optimizeIPv4Storage(ranges)
+	}
+
+	// 处理ipv6
+	if len(m.temp.ipv6Ranges) > 0 {
+		sort.Slice(m.temp.ipv6Ranges, func(i, j int) bool {
+			return m.temp.ipv6Ranges[i].start.Less(m.temp.ipv6Ranges[j].start)
+		})
+		ranges := m.mergeIPv6Ranges()
+		m.optimizeIPv6Storage(ranges)
+	}
+	if len(m.storage.ipv4Map) > 0 || len(m.storage.ipv6Map) > 0 || len(m.storage.ipv4Ranges) > 0 || len(m.storage.ipv6Ranges) > 0 {
+		m.enable = true
+	}
+}
+
+// 合并IPv4范围
+func (m *IPMatcher) mergeIPv4Ranges() []ipv4Range {
+	merged := make([]ipv4Range, 0)
+	l := len(m.temp.ipv4Ranges)
+	current := m.temp.ipv4Ranges[0]
+
+	for i := 1; i < l; i++ {
+		next := m.temp.ipv4Ranges[i]
+		// 检查是否重叠或连续 (current.End + 1 >= next.Start)
+		if current.End+1 >= next.Start {
+			if next.End > current.End {
+				current.End = next.End
+			}
+		} else {
+			merged = append(merged, current)
+			current = next
+		}
+	}
+	merged = append(merged, current)
+
+	return merged
+}
+
+// 合并IPv6范围
+func (m *IPMatcher) mergeIPv6Ranges() []ipv6Range {
+	merged := make([]ipv6Range, 0)
+	l := len(m.temp.ipv6Ranges)
+	current := m.temp.ipv6Ranges[0]
+
+	for i := 1; i < l; i++ {
+		next := m.temp.ipv6Ranges[i]
+		// 检查是否重叠或连续
+		if current.end.Next().Compare(next.start) >= 0 {
+			if next.end.Compare(current.end) > 0 {
+				current.end = next.end
+			}
+		} else {
+			merged = append(merged, current)
+			current = next
+		}
+	}
+	merged = append(merged, current)
+	return merged
 }
