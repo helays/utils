@@ -1,11 +1,12 @@
 package ipAccess
 
 import (
-	"encoding/binary"
 	"fmt"
 	"net"
 	"sort"
 	"strings"
+
+	"github.com/helays/utils/v2/net/ipkit"
 )
 
 type IPList struct {
@@ -105,9 +106,9 @@ func (l *IPList) addIPRange(item string) error {
 }
 
 func (l *IPList) insertRangeV4(start, end net.IP) {
-	startInt := Ip2Int(start)
+	startInt := ipkit.Ip2Int(start)
 	idx := sort.Search(len(l.rangesV4), func(i int) bool {
-		return Ip2Int(l.rangesV4[i].start) >= startInt
+		return ipkit.Ip2Int(l.rangesV4[i].start) >= startInt
 	})
 	l.rangesV4 = append(l.rangesV4, ipRange{})
 	copy(l.rangesV4[idx+1:], l.rangesV4[idx:])
@@ -149,13 +150,13 @@ func (l *IPList) containsIPv4(ip net.IP) bool {
 		}
 	}
 
-	target := Ip2Int(ip)
+	target := ipkit.Ip2Int(ip)
 	idx := sort.Search(len(l.rangesV4), func(i int) bool {
-		return Ip2Int(l.rangesV4[i].start) > target
+		return ipkit.Ip2Int(l.rangesV4[i].start) > target
 	})
 	if idx > 0 {
 		r := l.rangesV4[idx-1]
-		if target <= Ip2Int(r.end) {
+		if target <= ipkit.Ip2Int(r.end) {
 			return true
 		}
 	}
@@ -199,16 +200,4 @@ func compareIPs(ip1, ip2 net.IP) int {
 		}
 	}
 	return 0
-}
-
-// Ip2Int 将IP地址转换为整数
-func Ip2Int(ip net.IP) uint32 {
-	return binary.BigEndian.Uint32(ip.To4())
-}
-
-// Int2IP converts a 32-bit integer back to an IPv4 address.
-func Int2IP(ipInt uint32) net.IP {
-	ip := make(net.IP, 4)
-	binary.BigEndian.PutUint32(ip, ipInt)
-	return ip
 }

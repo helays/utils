@@ -2,12 +2,13 @@ package tools
 
 import (
 	"bufio"
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/close/vclose"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/helays/utils/v2/close/osClose"
+	"github.com/helays/utils/v2/close/vclose"
 )
 
 type ReadRowCallback func(scanner *bufio.Scanner) error

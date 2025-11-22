@@ -24,19 +24,8 @@ type Config struct {
 }
 
 type IPRuleSet struct {
-	Allow     []string `json:"allow" yaml:"allow" ini:"allow"`
-	AllowFile []string `json:"allow_file" yaml:"allow_file" ini:"allow_file"`
-	Deny      []string `json:"deny" yaml:"deny" ini:"deny"`
-	DenyFile  []string `json:"deny_file" yaml:"deny_file" ini:"deny_file"`
-}
-
-// DefaultConfig 返回默认配置
-func DefaultConfig() Config {
-	return Config{
-		Ipv4MapThreshold: DefaultIPv4MapThreshold,
-		Ipv6MapThreshold: DefaultIPv6MapThreshold,
-		Dynamic:          false,
-	}
+	Rule     []string `json:"rule" yaml:"rule" ini:"rule"`                // 规则
+	RuleFile []string `json:"rule_file" yaml:"rule_file" ini:"rule_file"` // 规则文件
 }
 
 // 默认阈值常量
@@ -48,7 +37,7 @@ const (
 // IPMatcher 主匹配器结构
 type IPMatcher struct {
 	enable bool // 构建完成后，如果有ip，应该改成true。
-	config Config
+	config *Config
 
 	mu sync.RWMutex // 读写锁，当启用动态添加规则时，这个应该使用
 
