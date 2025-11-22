@@ -16,7 +16,7 @@ import (
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/logger/zaploger"
 	"github.com/helays/utils/v2/net/http/mime"
-	"github.com/helays/utils/v2/net/ipAccess"
+	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/tools"
 	"github.com/helays/utils/v2/tools/mutex"
 )
@@ -109,23 +109,24 @@ func (h *HttpServer) initMux() {
 
 // ip 黑白名单初始化
 func (h *HttpServer) iptablesInit() {
+	if !h.Security.IPAccess.Enable {
+		return
+	}
 	var err error
-	if len(h.Allowip) > 0 {
-		h.allowIpList, err = ipAccess.NewIPList(h.Allowip...)
+	if h.Security.IPAccess.Allow != nil {
+		h.allowIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Allow)
 		ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
-		h.enableCheckIpAccess = true
 	}
-	if len(h.Denyip) > 0 {
-		h.denyIpList, err = ipAccess.NewIPList(h.Denyip...)
+
+	if h.Security.IPAccess.Deny != nil {
+		h.denyIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Deny)
 		ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
-		h.enableCheckIpAccess = true
 	}
-	debugAllowIps := []string{"127.0.0.1"}
-	if len(h.DebugAllowIp) > 0 {
-		debugAllowIps = append(debugAllowIps, h.DebugAllowIp...)
+	if h.Security.IPAccess.Debug != nil {
+		h.debugIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Debug)
+		ulogs.DieCheckerr(err, "http server ip调试名单初始化失败")
 	}
-	h.debugAllowIpList, err = ipAccess.NewIPList(debugAllowIps...)
-	ulogs.DieCheckerr(err, "http server debug ip白名单初始化失败")
+
 }
 
 // 用于检测参数变更，然后热更新。
@@ -153,8 +154,6 @@ func (h *HttpServer) hotUpdate(ctx context.Context) {
 
 // 计算 httpserver 模块摘要
 func (h *HttpServer) hash() string {
-	strArr := []string{h.ListenAddr, h.Auth, tools.Booltostring(h.Ssl), h.Ca, h.Crt, h.Key, h.SocketTimeout.String()}
-	strArr = append(strArr, h.Allowip...)
-	strArr = append(strArr, h.Denyip...)
+	strArr := []string{h.ListenAddr, tools.Booltostring(h.Ssl), h.Ca, h.Crt, h.Key, h.SocketTimeout.String()}
 	return xxhashkit.XXHashString(strings.Join(strArr, ""))
 }

@@ -2,10 +2,11 @@ package request
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/tools"
 	"net"
 	"net/http"
 	"net/url"
+
+	"github.com/helays/utils/v2/tools"
 )
 
 // Getip 获取客户端IP
@@ -20,6 +21,7 @@ func Getip(r *http.Request) string {
 	} else {
 		remoteAddr, _, _ = net.SplitHostPort(remoteAddr)
 	}
+	
 	if remoteAddr == "::1" {
 		remoteAddr = "127.0.0.1"
 	}

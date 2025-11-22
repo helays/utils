@@ -43,15 +43,6 @@ func NewPerKeyTTLMapWithInterval[K comparable, V any](cleanupInterval time.Durat
 	return m
 }
 
-// isExpired 检查是否过期
-func (item *itemWithExpiry[V]) isExpired() bool {
-	// 如果 expiryTime 是零值，表示永不过期
-	if item.expiryTime.IsZero() {
-		return false
-	}
-	return time.Now().After(item.expiryTime)
-}
-
 // LoadAndDelete 删除键的值，返回之前的值（如果存在且未过期）
 func (m *PerKeyTTLMap[K, V]) LoadAndDelete(key K) (value V, loaded bool) {
 	if val, ok := m.mu.LoadAndDelete(key); ok {
@@ -187,7 +178,7 @@ func (m *PerKeyTTLMap[K, V]) LoadWithExpiry(key K) (V, time.Time, bool) {
 			return zeroV, time.Time{}, false
 		}
 
-		return item.value, item.expiryTime, true
+		return item.value, item.getExpiry(), true
 	}
 	var zeroV V
 	return zeroV, time.Time{}, false
@@ -206,8 +197,8 @@ func (m *PerKeyTTLMap[K, V]) LoadAndRefresh(key K, ttl time.Duration) (V, bool) 
 		}
 
 		// 只有原键有 TTL 时才刷新（expiryTime 不是零值）
-		if !item.expiryTime.IsZero() && ttl > 0 {
-			item.expiryTime = time.Now().Add(ttl)
+		if !item.getExpiry().IsZero() && ttl > 0 {
+			item.setExpiry(ttl)
 		}
 
 		return item.value, true
@@ -311,11 +302,11 @@ func (m *PerKeyTTLMap[K, V]) GetTTL(key K) (time.Duration, bool) {
 		item := val.(*itemWithExpiry[V])
 
 		// 永不过期的键
-		if item.expiryTime.IsZero() {
+		if item.getExpiry().IsZero() {
 			return 0, true
 		}
 
-		remaining := time.Until(item.expiryTime)
+		remaining := time.Until(item.getExpiry())
 		if remaining > 0 {
 			return remaining, true
 		}
@@ -338,8 +329,8 @@ func (m *PerKeyTTLMap[K, V]) Refresh(key K, ttl time.Duration) bool {
 		}
 
 		// 只有原键有 TTL 时才刷新，并且新的 ttl 必须 > 0
-		if !item.expiryTime.IsZero() && ttl > 0 {
-			item.expiryTime = time.Now().Add(ttl)
+		if !item.getExpiry().IsZero() && ttl > 0 {
+			item.setExpiry(ttl)
 		}
 
 		return true
@@ -415,7 +406,7 @@ func (m *PerKeyTTLMap[K, V]) IsExpired(key K) bool {
 func (m *PerKeyTTLMap[K, V]) HasTTL(key K) bool {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
-		return !item.expiryTime.IsZero()
+		return !item.getExpiry().IsZero()
 	}
 	return false
 }

@@ -32,7 +32,7 @@ func (m *Map[K, V]) LoadAndDelete(key K) (value V, loaded bool) {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if time.Now().After(item.getExpiry()) {
 			var zeroV V
 			return zeroV, false
 		}
@@ -49,7 +49,7 @@ func (m *Map[K, V]) LoadAndDeleteIf(key K, condition func(value V) bool) (value 
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if time.Now().After(item.getExpiry()) {
 			m.mu.Delete(key)
 			var zeroV V
 			return zeroV, false
@@ -77,7 +77,7 @@ func (m *Map[K, V]) LoadAndDeleteExpired(key K) (value V, expired bool) {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if time.Now().After(item.getExpiry()) {
 			if m.mu.CompareAndDelete(key, val) {
 				return item.value, true
 			}
@@ -134,7 +134,7 @@ func (m *Map[K, V]) Load(key K) (V, bool) {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if time.Now().After(item.getExpiry()) {
 			m.mu.Delete(key)
 			var zeroV V
 			return zeroV, false
@@ -152,14 +152,14 @@ func (m *Map[K, V]) LoadAndRefresh(key K) (V, bool) {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(item.expiryTime) {
+		if time.Now().After(item.getExpiry()) {
 			m.mu.Delete(key)
 			var zeroV V
 			return zeroV, false
 		}
 
 		// 刷新过期时间
-		item.expiryTime = time.Now().Add(m.ttl)
+		item.setExpiry(m.ttl)
 		return item.value, true
 	}
 	var zeroV V
@@ -206,7 +206,7 @@ func (m *Map[K, V]) Range(f func(key K, value V) bool) {
 		item := v.(*itemWithExpiry[V])
 
 		// 跳过过期的项
-		if now.After(item.expiryTime) {
+		if now.After(item.getExpiry()) {
 			m.mu.Delete(k)
 			return true
 		}
@@ -234,7 +234,7 @@ func (m *Map[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
 		existingItem := existing.(*itemWithExpiry[V])
 
 		// 检查是否过期
-		if time.Now().After(existingItem.expiryTime) {
+		if time.Now().After(existingItem.getExpiry()) {
 			// 已过期，用新值替换
 			m.mu.Store(key, item)
 			return value, false
@@ -250,7 +250,7 @@ func (m *Map[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
 func (m *Map[K, V]) GetTTL(key K) (time.Duration, bool) {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
-		remaining := time.Until(item.expiryTime)
+		remaining := time.Until(item.getExpiry())
 
 		if remaining > 0 {
 			return remaining, true
@@ -268,13 +268,13 @@ func (m *Map[K, V]) Refresh(key K) bool {
 		item := val.(*itemWithExpiry[V])
 
 		// 检查是否已过期
-		if time.Now().After(item.expiryTime) {
+		if time.Now().After(item.getExpiry()) {
 			m.mu.Delete(key)
 			return false
 		}
 
 		// 刷新过期时间
-		item.expiryTime = time.Now().Add(m.ttl)
+		item.setExpiry(m.ttl)
 		return true
 	}
 	return false
@@ -328,7 +328,7 @@ func (m *Map[K, V]) cleanupBatch(maxClean int) int {
 
 	m.mu.Range(func(k, v interface{}) bool {
 		item := v.(*itemWithExpiry[V])
-		if now.After(item.expiryTime) {
+		if now.After(item.getExpiry()) {
 			m.mu.Delete(k)
 			count++
 			if count >= maxClean {
@@ -353,7 +353,7 @@ func (m *Map[K, V]) Size() int {
 
 	m.mu.Range(func(k, v interface{}) bool {
 		item := v.(*itemWithExpiry[V])
-		if now.Before(item.expiryTime) {
+		if now.Before(item.getExpiry()) {
 			count++
 		} else {
 			m.mu.Delete(k)
@@ -368,7 +368,7 @@ func (m *Map[K, V]) Size() int {
 func (m *Map[K, V]) IsExpired(key K) bool {
 	if val, ok := m.mu.Load(key); ok {
 		item := val.(*itemWithExpiry[V])
-		return time.Now().After(item.expiryTime)
+		return time.Now().After(item.getExpiry())
 	}
 	return true
 }

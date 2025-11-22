@@ -1,6 +1,7 @@
 package httpServer
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -25,21 +26,24 @@ func Chain(middlewares ...MiddlewareFunc) MiddlewareFunc {
 
 func (h *HttpServer) middleware(u string, f http.Handler, callback ...MiddlewareFunc) {
 	h.initMux()
-	var handler = f
+	var handler http.Handler
 
-	if h.DefaultValidLast {
-		if len(callback) > 0 {
-			handler = Chain(callback...)(handler)
-		}
-		handler = h.defaultValid(handler)
-	} else {
-		handler = h.defaultValid(handler)
-		if len(callback) > 0 {
-			handler = Chain(callback...)(handler)
-		}
+	mid := []MiddlewareFunc{
+		h.denyIPAccess,
+		//h.allowIPAccess,
+		//h.debugIPAccess,
+		h.cors,
 	}
-	// 最后应用 CORS 中间件（这样它会最先执行）
-	handler = h.cors(handler)
+	fmt.Println("register middleware", u, h.Security.DefaultValidLast)
+	if h.Security.DefaultValidLast {
+		mid = append(mid, callback...)
+		mid = append(mid, h.defaultValid)
+		handler = Chain(mid...)(f)
+	} else {
+		mid = append(mid, h.defaultValid)
+		mid = append(mid, callback...)
+		handler = Chain(mid...)(f)
+	}
 	// 最终的处理函数
 	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer httpClose.CloseReq(r)
@@ -65,7 +69,10 @@ func (h *HttpServer) socketMiddleware(u string, f websocket.Handler) {
 		start := time.Now()
 		defer h.socketLogger(ws, start)
 		// 白名单验证
-		if h.enableCheckIpAccess && !h.checkIpAccess(nil, ws.Request()) {
+		if h.denyIPMatch != nil && h.checkDenyIpAccess(nil, ws.Request()) {
+			vclose.Close(ws)
+			return
+		} else if h.allowIPMatch != nil && !h.checkAllowIPAccess(nil, ws.Request()) {
 			vclose.Close(ws)
 			return
 		}
