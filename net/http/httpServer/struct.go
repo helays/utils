@@ -26,12 +26,14 @@ type HttpServer struct {
 	Logger        zaploger.Config `json:"logger" yaml:"logger" ini:"logger" gorm:"comment:日志配置"`
 
 	// 可访问属性
-	Route          map[string]http.HandlerFunc `yaml:"-" json:"-"`
-	RouteHandle    map[string]http.Handler
-	RouteSocket    map[string]func(ws *websocket.Conn)               `yaml:"-" json:"-"`
-	CommonCallback func(w http.ResponseWriter, r *http.Request) bool `yaml:"-" json:"-"`
 
-	serverNameMap map[string]byte // 绑定的域名
+	Route          map[string]http.HandlerFunc                       `yaml:"-" json:"-"` // Deprecated: 请使用 addRoute
+	RouteHandle    map[string]http.Handler                           `yaml:"-" json:"-"` // Deprecated: 请使用 addRoute
+	RouteSocket    map[string]func(ws *websocket.Conn)               `yaml:"-" json:"-"` // Deprecated: 请使用 addRoute
+	CommonCallback func(w http.ResponseWriter, r *http.Request) bool `yaml:"-" json:"-"` // Deprecated: 请使用 addRoute
+
+	route         map[string]*routerRule // 路由
+	serverNameMap map[string]byte        // 绑定的域名
 	logger        *zaploger.Logger
 
 	allowIPMatch *ipmatch.IPMatcher
@@ -55,4 +57,19 @@ type IPAccessConfig struct {
 	Allow  *ipmatch.Config `ini:"allow" json:"allow" yaml:"allow"` // 允许的IP
 	Deny   *ipmatch.Config `ini:"deny" json:"deny" yaml:"deny"`    // 屏蔽的IP
 	Debug  *ipmatch.Config `ini:"debug" json:"debug" yaml:"debug"` // 调试允许的IP
+}
+
+type RouteType int
+
+const (
+	RouteTypeHTTP RouteType = iota
+	RouteTypeWebSocket
+)
+
+type routerRule struct {
+	routeType RouteType // 新增：路由类型
+	path      string    // 路由
+	handle    http.Handler
+	wsHandle  websocket.Handler
+	cb        []MiddlewareFunc // 中间件
 }

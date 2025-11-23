@@ -1,7 +1,6 @@
 package httpServer
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -14,7 +13,6 @@ import (
 // 默认验证中间件
 func (h *HttpServer) defaultValid(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("defaultValid", "55555555555555555")
 		recorder := responsewriter.New(w) // 创建包装器
 		if len(h.serverNameMap) > 0 {
 			// 提取并转换为小写的host（忽略端口部分）
@@ -43,7 +41,6 @@ func (h *HttpServer) cors(next http.Handler) http.Handler {
 		return next
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("CORS", "444444444444444")
 		if r.Method == http.MethodOptions {
 			h.Security.CORS.HandlePreflight(w, r.Header.Get("Origin"))
 			return
@@ -59,9 +56,7 @@ func (h *HttpServer) denyIPAccess(next http.Handler) http.Handler {
 	if h.denyIPMatch == nil {
 		return next
 	}
-	fmt.Println("register denyIPAccess")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("denyIPAccess", "111111111111111")
 		if h.checkDenyIpAccess(w, r) {
 			return
 		}
@@ -73,7 +68,6 @@ func (h *HttpServer) allowIPAccess(next http.Handler) http.Handler {
 		return next
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("allowIPAccess", "2222222222222")
 		if !h.checkAllowIPAccess(w, r) {
 			return
 		}

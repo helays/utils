@@ -1,7 +1,6 @@
 package httpServer
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -25,25 +24,22 @@ func Chain(middlewares ...MiddlewareFunc) MiddlewareFunc {
 }
 
 func (h *HttpServer) middleware(u string, f http.Handler, callback ...MiddlewareFunc) {
-	h.initMux()
 	var handler http.Handler
-
 	mid := []MiddlewareFunc{
 		h.denyIPAccess,
-		//h.allowIPAccess,
-		//h.debugIPAccess,
+		h.allowIPAccess,
+		h.debugIPAccess,
 		h.cors,
 	}
-	fmt.Println("register middleware", u, h.Security.DefaultValidLast)
+
 	if h.Security.DefaultValidLast {
 		mid = append(mid, callback...)
 		mid = append(mid, h.defaultValid)
-		handler = Chain(mid...)(f)
 	} else {
 		mid = append(mid, h.defaultValid)
 		mid = append(mid, callback...)
-		handler = Chain(mid...)(f)
 	}
+	handler = Chain(mid...)(f)
 	// 最终的处理函数
 	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer httpClose.CloseReq(r)
@@ -52,7 +48,7 @@ func (h *HttpServer) middleware(u string, f http.Handler, callback ...Middleware
 	h.mux.Handle(u, finalHandler)
 }
 
-// socketMiddleware Socket 公共中间件
+// Socket 公共中间件
 func (h *HttpServer) socketMiddleware(u string, f websocket.Handler) {
 	handler := websocket.Handler(func(ws *websocket.Conn) {
 		defer vclose.Close(ws)

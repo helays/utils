@@ -19,6 +19,7 @@ import (
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/tools"
 	"github.com/helays/utils/v2/tools/mutex"
+	"golang.org/x/net/websocket"
 )
 
 // HttpServerStart 公功 http server 启动函数
@@ -27,8 +28,7 @@ func (h *HttpServer) HttpServerStart(ctx context.Context) {
 	go func() {
 		<-ctx.Done()
 		stop.Write(true)
-		httpClose.Server(h.server)
-		ulogs.Log("http server已关闭")
+		h.close()
 	}()
 	for {
 		h.initParams()      // 初始化参数
@@ -54,6 +54,20 @@ func (h *HttpServer) HttpServerStart(ctx context.Context) {
 
 }
 
+func (h *HttpServer) close() {
+	if h.denyIPMatch != nil {
+		h.denyIPMatch.Close()
+	}
+	if h.debugIPMatch != nil {
+		h.debugIPMatch.Close()
+	}
+	if h.allowIPMatch != nil {
+		h.allowIPMatch.Close()
+	}
+	httpClose.Server(h.server)
+	ulogs.Log("http server已关闭")
+}
+
 func (h *HttpServer) initParams() {
 	mime.InitMimeTypes()
 	h.serverNameMap = make(map[string]byte)
@@ -66,7 +80,6 @@ func (h *HttpServer) initParams() {
 		ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
 	}
 	h.iptablesInit()
-	h.initMux()
 	h.initRouter()
 	h.server = &http.Server{Addr: h.ListenAddr}
 	if h.EnableGzip {
@@ -101,14 +114,11 @@ func (h *HttpServer) initParams() {
 	}
 }
 
-func (h *HttpServer) initMux() {
-	if h.mux == nil {
-		h.mux = http.NewServeMux()
-	}
-}
-
 // ip 黑白名单初始化
 func (h *HttpServer) iptablesInit() {
+	now := time.Now()
+	ulogs.Infof("开始初始化http server IP防火墙")
+	defer ulogs.Infof("http server IP防火墙初始化完成，耗时：%v", time.Since(now))
 	if !h.Security.IPAccess.Enable {
 		return
 	}
@@ -116,15 +126,18 @@ func (h *HttpServer) iptablesInit() {
 	if h.Security.IPAccess.Allow != nil {
 		h.allowIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Allow)
 		ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
+		h.allowIPMatch.Build()
 	}
 
 	if h.Security.IPAccess.Deny != nil {
 		h.denyIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Deny)
 		ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
+		h.denyIPMatch.Build()
 	}
 	if h.Security.IPAccess.Debug != nil {
 		h.debugIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Debug)
 		ulogs.DieCheckerr(err, "http server ip调试名单初始化失败")
+		h.debugIPMatch.Build()
 	}
 
 }
@@ -156,4 +169,27 @@ func (h *HttpServer) hotUpdate(ctx context.Context) {
 func (h *HttpServer) hash() string {
 	strArr := []string{h.ListenAddr, tools.Booltostring(h.Ssl), h.Ca, h.Crt, h.Key, h.SocketTimeout.String()}
 	return xxhashkit.XXHashString(strings.Join(strArr, ""))
+}
+
+func (h *HttpServer) addRoute(path string, handle http.Handler, cb ...MiddlewareFunc) {
+	if h.route == nil {
+		h.route = make(map[string]*routerRule)
+	}
+	h.route[path] = &routerRule{
+		routeType: RouteTypeHTTP,
+		cb:        cb,
+		handle:    handle,
+		path:      path,
+	}
+}
+
+func (h *HttpServer) addWSRoute(path string, handle websocket.Handler) {
+	if h.route == nil {
+		h.route = make(map[string]*routerRule)
+	}
+	h.route[path] = &routerRule{
+		routeType: RouteTypeWebSocket,
+		wsHandle:  handle,
+		path:      path,
+	}
 }
