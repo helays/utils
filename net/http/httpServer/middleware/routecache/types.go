@@ -41,8 +41,8 @@ func (r *RouteCache[T]) Match(method, path string) (T, bool) {
 	ctx := chi.NewRouteContext()
 	if r.router.Match(ctx, method, path) {
 		pattern := ctx.RoutePattern()
-		fmt.Println("pattern:", pattern)
 		h, ok := r.routeMap[method+pattern]
+		fmt.Println("pattern:", pattern, h)
 		return h, ok
 	}
 	var zero T
