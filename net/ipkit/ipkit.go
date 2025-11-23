@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"net"
 	"net/netip"
+	"strings"
 )
 
 // Ip2Int 将IP地址转换为整数
@@ -24,4 +25,24 @@ func IPAddr2Int(addr netip.Addr) uint32 {
 	}
 	bytes := addr.As4()
 	return uint32(bytes[0])<<24 | uint32(bytes[1])<<16 | uint32(bytes[2])<<8 | uint32(bytes[3])
+}
+
+func ISIPv4OrIPv6(ipStr string) string {
+	ipStr = strings.TrimSpace(ipStr)
+
+	if ipStr == "" {
+		return "unknown"
+	}
+
+	// 有点号就是IPv4
+	if strings.Contains(ipStr, ".") {
+		return "ipv4"
+	}
+
+	// 有冒号就是IPv6
+	if strings.Contains(ipStr, ":") {
+		return "ipv6"
+	}
+
+	return "unknown"
 }
