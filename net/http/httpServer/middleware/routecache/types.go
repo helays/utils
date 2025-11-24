@@ -1,50 +1,21 @@
 package routecache
 
 import (
-	"fmt"
+	"sync"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/helays/utils/v2/net/http/httpServer/router"
+	"github.com/helays/utils/v2/net/http/httpServer/middleware/routecache/tree"
 )
 
-type RouteCache[T any] struct {
+type RouteCache[T comparable] struct {
 	staticRoute map[string]T // 静态路由缓存
-	routeMap    map[string]T // 路由和配置的对应关系
-	router      *chi.Mux     // 动态路由匹配器
+	radixTree   map[string]*tree.RadixTreeNode[T]
+	mu          sync.RWMutex
 }
 
-func New[T any]() *RouteCache[T] {
+func New[T comparable]() *RouteCache[T] {
 	r := &RouteCache[T]{
 		staticRoute: make(map[string]T),
-		routeMap:    make(map[string]T),
-		router:      chi.NewRouter(),
+		radixTree:   make(map[string]*tree.RadixTreeNode[T]),
 	}
 	return r
-}
-
-// AddRoute 添加路由
-func (r *RouteCache[T]) AddRoute(t router.RouteType, method string, pattern string, handle T) {
-	path := method + pattern
-	if t == router.RouteTypeStatic {
-		r.staticRoute[path] = handle
-		return
-	}
-
-	r.routeMap[path] = handle
-	r.router.MethodFunc(method, pattern, nil)
-}
-
-func (r *RouteCache[T]) Match(method, path string) (T, bool) {
-	if h, ok := r.staticRoute[method+path]; ok {
-		return h, true
-	}
-	ctx := chi.NewRouteContext()
-	if r.router.Match(ctx, method, path) {
-		pattern := ctx.RoutePattern()
-		h, ok := r.routeMap[method+pattern]
-		fmt.Println("pattern:", pattern, h)
-		return h, ok
-	}
-	var zero T
-	return zero, false
 }

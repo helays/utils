@@ -545,3 +545,9 @@ func GetLevel2MapValue[K any](inp map[string]map[string]K, key1, key2 string) (K
 	var zeroValue K
 	return zeroValue, false
 }
+
+// IsZero isZero 检查值是否为类型的零值
+func IsZero[T comparable](v T) bool {
+	var zero T
+	return v == zero
+}

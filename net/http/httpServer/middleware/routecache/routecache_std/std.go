@@ -7,12 +7,12 @@ import (
 	"github.com/helays/utils/v2/net/http/httpServer/middleware/routecache"
 )
 
-type STD[T any] struct {
+type STD[T comparable] struct {
 	ctxField string // 往上下文中写入数据的字段
 	cache    *routecache.RouteCache[T]
 }
 
-func New[T any](ctxField string) *STD[T] {
+func New[T comparable](ctxField string) *STD[T] {
 	return &STD[T]{
 		ctxField: ctxField,
 		cache:    routecache.New[T](),
