@@ -37,3 +37,12 @@ func (r *RouteCache[T]) Match(method, path string) (T, bool) {
 	}
 	return h, true
 }
+
+// Clear 清空缓存
+func (r *RouteCache[T]) Clear() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.staticRoute = make(map[string]T)
+	r.radixTree = make(map[string]*tree.RadixTreeNode[T])
+}
