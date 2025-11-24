@@ -35,8 +35,8 @@ func (s *StdCORS) WrapHandler(handler http.HandlerFunc) http.HandlerFunc {
 		var path string
 		if s.routeCodeCtxField == "" {
 			path = r.URL.Path
-		} else {
-			path = r.Context().Value(s.routeCodeCtxField).(string)
+		} else if val := r.Context().Value(s.routeCodeCtxField); val != nil {
+			path = val.(string)
 		}
 		if config, exists := s.GetConfig(path); exists {
 			if r.Method == http.MethodOptions {
