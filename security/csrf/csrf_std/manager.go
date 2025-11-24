@@ -11,13 +11,15 @@ import (
 )
 
 type Std struct {
-	configs        safemap.SyncMap[string, *csrf.Config]
-	sessionManager *sessionmgr.Manager
+	configs           safemap.SyncMap[string, *csrf.Config]
+	sessionManager    *sessionmgr.Manager
+	routeCodeCtxField string // 路由code字段
 }
 
-func NewStd(sm *sessionmgr.Manager) *Std {
+func NewStd(sm *sessionmgr.Manager, routeCodeCtxField string) *Std {
 	s := &Std{
-		sessionManager: sm,
+		sessionManager:    sm,
+		routeCodeCtxField: routeCodeCtxField,
 	}
 
 	return s
@@ -47,7 +49,12 @@ func (s *Std) Middleware() func(http.Handler) http.Handler {
 // csrf配置信息，一般时固定好了后不会再改变。
 func (s *Std) WrapHandler(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
+		var path string
+		if s.routeCodeCtxField == "" {
+			path = r.URL.Path
+		} else {
+			path = r.Context().Value(s.routeCodeCtxField).(string)
+		}
 		if config, exists := s.GetConfig(path); exists && config.ShouldValidate(r.Method) {
 			clientToken, ok := s.validateDoubleTapStrategy(r)
 			if !ok {
@@ -68,7 +75,7 @@ func (s *Std) WrapHandler(handler http.HandlerFunc) http.HandlerFunc {
 // TokenHandler 设置csrf token
 // 前端调用的时候，切记不能每个接口都访问前都访问这个接口，否则会重复设置cookie，导致csrf验证失败。
 // 根据接口的安全程度来设置调用频率即可。
-func (s *Std) TokenHandler(w http.ResponseWriter, r *http.Request, path string, config *csrf.Config) (string, error) {
+func (s *Std) TokenHandler(w http.ResponseWriter, r *http.Request, method, path string, config *csrf.Config) (string, error) {
 	if config == nil || !config.ShouldValidate(r.Method) {
 		return "", nil
 	}

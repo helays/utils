@@ -8,11 +8,12 @@ import (
 )
 
 type StdCORS struct {
-	configs safemap.SyncMap[string, *cors.Config]
+	configs           safemap.SyncMap[string, *cors.Config]
+	routeCodeCtxField string // 路由code字段
 }
 
-func New() *StdCORS {
-	return &StdCORS{}
+func New(routeCodeCtxField string) *StdCORS {
+	return &StdCORS{routeCodeCtxField: routeCodeCtxField}
 }
 
 func (s *StdCORS) SetConfig(pattern string, config *cors.Config) {
@@ -31,7 +32,12 @@ func (s *StdCORS) Middleware() func(http.Handler) http.Handler {
 
 func (s *StdCORS) WrapHandler(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
+		var path string
+		if s.routeCodeCtxField == "" {
+			path = r.URL.Path
+		} else {
+			path = r.Context().Value(s.routeCodeCtxField).(string)
+		}
 		if config, exists := s.GetConfig(path); exists {
 			if r.Method == http.MethodOptions {
 				config.HandlePreflight(w, r.Header.Get("Origin"))
