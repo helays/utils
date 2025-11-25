@@ -1,10 +1,10 @@
 package httpServer
 
 import (
-	"github.com/helays/utils/v2/net/http/httpServer/httpmethod"
-	"golang.org/x/net/websocket"
 	"net/http"
 	"strings"
+
+	"golang.org/x/net/websocket"
 )
 
 type RouterGroup struct {
@@ -42,24 +42,16 @@ func (g *RouterGroup) calculatePrefix(p string) string {
 
 func (g *RouterGroup) addRoute(method, p string, handler http.Handler) {
 	fullPath := g.calculatePrefix(strings.TrimSpace(p))
-	var finalHandler = handler
-	if len(g.middlewares) > 0 {
-		finalHandler = Chain(g.middlewares...)(finalHandler)
-	}
-	var cb []MiddlewareFunc
 	if method != "" {
-		vm := func(next http.Handler) http.Handler {
-			return httpmethod.Method(method, next)
-		}
-		cb = append(cb, vm)
+		fullPath = method + " " + fullPath
 	}
-	g.service.middleware(fullPath, finalHandler, cb...) // 注册路由
+	g.service.addRoute(fullPath, handler, g.middlewares...)
 }
 
 // Ws 添加 WebSocket 支持
 func (g *RouterGroup) Ws(p string, handler func(ws *websocket.Conn)) {
 	fullPath := g.calculatePrefix(p)
-	g.service.socketMiddleware(fullPath, handler)
+	g.service.addWSRoute(fullPath, handler)
 }
 
 // Use 支持链式调用

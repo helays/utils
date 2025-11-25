@@ -5,13 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/dataType/customWriter"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/httpServer/request"
-	"github.com/helays/utils/v2/net/http/httpTools"
-	mime2 "github.com/helays/utils/v2/net/http/mime"
-	"github.com/helays/utils/v2/tools"
 	"io"
 	"log"
 	"net/http"
@@ -22,6 +15,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/close/osClose"
+	"github.com/helays/utils/v2/dataType/customWriter"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/net/http/httpServer/request"
+	"github.com/helays/utils/v2/net/http/httpTools"
+	mime2 "github.com/helays/utils/v2/net/http/mime"
+	"github.com/helays/utils/v2/tools"
 )
 
 // Play 公共函数文件
@@ -158,6 +159,7 @@ func SetReturnCheckErrWithoutError(w http.ResponseWriter, r *http.Request, err e
 }
 
 // SetReturn 设置 返回函数Play
+// Deprecated:
 func SetReturn(w http.ResponseWriter, code int, msg ...any) {
 	RespJson(w)
 	if len(msg) < 1 {
@@ -167,14 +169,13 @@ func SetReturn(w http.ResponseWriter, code int, msg ...any) {
 			msg = []any{"失败"}
 		}
 	}
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"code": code,
-		"msg":  msg[0],
-	})
+
+	_ = json.NewEncoder(w).Encode(resp{Code: code, Msg: msg[0]})
 }
 
 // SetReturnCode 设置返回函数
 // code值异常，会记录日志
+// Deprecated: 弃用
 func SetReturnCode(w http.ResponseWriter, r *http.Request, code int, msg any, data ...any) {
 	if code != 0 && code != 200 && code != 404 {
 		ReqError(r, code, msg)
@@ -260,15 +261,10 @@ func SetReturnError(w http.ResponseWriter, r *http.Request, err error, code int,
 		msg = append(msg, err.Error())
 	}
 	RespJson(w)
-	if code == 0 || code == 200 {
-		w.WriteHeader(200)
-	} else {
+	if code != 0 && code != 200 {
 		w.WriteHeader(code)
 	}
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"code": code,
-		"msg":  tools.AnySlice2Str(msg),
-	})
+	_ = json.NewEncoder(w).Encode(resp{Code: code, Msg: tools.AnySlice2Str(msg)})
 }
 
 // SetReturnWithoutError ，错误信息会记录下来，但是只会反馈msg
@@ -280,33 +276,28 @@ func SetReturnWithoutError(w http.ResponseWriter, r *http.Request, err error, co
 		msg = []any{"数据处理失败"}
 	}
 	RespJson(w)
-	if code == 0 || code == 200 {
-		w.WriteHeader(200)
-	} else {
+
+	if code != 0 && code != 200 {
 		w.WriteHeader(code)
 	}
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"code": code,
-		"msg":  tools.AnySlice2Str(msg),
-	})
+	_ = json.NewEncoder(w).Encode(resp{Code: code, Msg: tools.AnySlice2Str(msg)})
 }
 
 // SetReturnErrorDisableLog 不记录日志,err 变量忽略不处理
 func SetReturnErrorDisableLog(w http.ResponseWriter, err error, code int, msg ...any) {
 	RespJson(w)
-	if code == 0 || code == 200 {
-		w.WriteHeader(200)
-	} else {
+	if code != 0 && code != 200 {
 		w.WriteHeader(code)
 	}
-	rsp := map[string]any{
-		"code": code,
-		"msg":  err.Error(),
+	rsp := resp{
+		Code: code,
+		Msg:  err.Error(),
 	}
-	if len(msg) == 1 {
-		rsp["data"] = msg[0]
-	} else if len(msg) > 1 {
-		rsp["data"] = msg
+	ml := len(msg)
+	if ml == 1 {
+		rsp.Msg = msg[0]
+	} else if ml > 1 {
+		rsp.Msg = msg
 	}
 	_ = json.NewEncoder(w).Encode(rsp)
 }
@@ -340,7 +331,7 @@ func Copy(dst io.Writer, src io.Reader) (written int64, err error) {
 	// 使用 Flusher 确保数据及时发送
 	flusher, ok := dst.(http.Flusher)
 	if !ok {
-		return 0, errors.New("Streaming unsupported!")
+		return 0, errors.New("streaming unsupported")
 	}
 	return io.Copy(&flushingWriter{w: dst, flusher: flusher}, src)
 }
@@ -350,7 +341,7 @@ func CopyBuffer(dst io.Writer, src io.Reader, buf []byte) (written int64, err er
 	// 使用 Flusher 确保数据及时发送
 	flusher, ok := dst.(http.Flusher)
 	if !ok {
-		return 0, errors.New("Streaming unsupported!")
+		return 0, errors.New("streaming unsupported")
 	}
 	return io.CopyBuffer(&flushingWriter{w: dst, flusher: flusher}, src, buf)
 }

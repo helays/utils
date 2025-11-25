@@ -160,6 +160,11 @@ func Any2string(v any) string {
 	}
 }
 
+func MustAny2int(_v any) int64 {
+	v, _ := Any2int(_v)
+	return v
+}
+
 // Any2int 尝试将任意类型转换为 int
 func Any2int(_v any) (int64, error) {
 	switch v := _v.(type) {
@@ -257,6 +262,11 @@ func String2Int64(v string) (int64, error) {
 		return strconv.ParseInt(parts[0], 10, 64)
 	}
 	return strconv.ParseInt(v, 10, 64)
+}
+
+func MustAny2float64(_v any) float64 {
+	v, _ := Any2float64(_v)
+	return v
 }
 
 // Any2float64 尝试将任意类型转换为 float64
@@ -657,7 +667,7 @@ var (
 func CheckIsObject(v any) bool {
 	// 先尝试类型断言（最快路径）
 	switch v.(type) {
-	case map[string]any, []any, // 最常见
+	case map[string]any, []any,     // 最常见
 		map[any]any,                // 任意 key 的 map
 		[]map[string]any,           // map 数组
 		[]int, []float64, []string, // 基本类型 slice

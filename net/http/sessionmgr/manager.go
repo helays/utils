@@ -7,6 +7,7 @@ import (
 	"github.com/helays/utils/v2/dataType"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/tools"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 const (
@@ -24,6 +25,15 @@ type Session struct {
 	ExpireTime dataType.CustomTime `json:"expire_time" gorm:"not null;index;comment:session 过期时间"`
 	Duration   time.Duration       `json:"duration" gorm:"comment:session有效期"`
 }
+
+func (s Session) GobEncode() ([]byte, error) {
+	return msgpack.Marshal(s)
+}
+
+func (s *Session) GobDecode(data []byte) error {
+	return msgpack.Unmarshal(data, s)
+}
+
 type Manager struct {
 	options *Options
 	storage StorageDriver

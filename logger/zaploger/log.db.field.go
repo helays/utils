@@ -8,14 +8,14 @@ import (
 	"fmt"
 )
 
-func (this Config) Value() (driver.Value, error) {
-	byt, err := json.Marshal(this)
+func (c Config) Value() (driver.Value, error) {
+	byt, err := json.Marshal(c)
 	return string(byt), err
 }
 
-func (this *Config) Scan(val any) error {
+func (c *Config) Scan(val any) error {
 	if val == nil {
-		*this = Config{}
+		*c = Config{}
 		return nil
 	}
 	var ba []byte
@@ -30,5 +30,5 @@ func (this *Config) Scan(val any) error {
 	rd := bytes.NewReader(ba)
 	decoder := json.NewDecoder(rd)
 	decoder.UseNumber()
-	return decoder.Decode(this)
+	return decoder.Decode(c)
 }

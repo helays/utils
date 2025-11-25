@@ -2,8 +2,9 @@
 package httpmethod
 
 import (
-	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"net/http"
+
+	"github.com/helays/utils/v2/net/http/httpServer/response"
 )
 
 // Method 验证HTTP方法是否匹配

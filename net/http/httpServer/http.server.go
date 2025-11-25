@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -13,27 +12,29 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/helays/utils/v2/close/httpClose"
-	"github.com/helays/utils/v2/crypto/md5"
+	"github.com/helays/utils/v2/crypto/xxhashkit"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/logger/zaploger"
-	"github.com/helays/utils/v2/net/http/httpServer/request"
-	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"github.com/helays/utils/v2/net/http/mime"
-	"github.com/helays/utils/v2/net/ipAccess"
+	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/tools"
+	"github.com/helays/utils/v2/tools/mutex"
+	"golang.org/x/net/websocket"
 )
 
 // HttpServerStart 公功 http server 启动函数
-func (h *HttpServer) HttpServerStart() {
-	h.ctx, h.cancel = context.WithCancel(context.Background())
-	defer h.cancel()
-	defer httpClose.Server(h.server)
+func (h *HttpServer) HttpServerStart(ctx context.Context) {
+	var stop = mutex.NewSafeResourceRWMutex(false)
+	go func() {
+		<-ctx.Done()
+		stop.Write(true)
+		h.close()
+	}()
 	for {
-		h.initParams()   // 初始化参数
-		go h.hotUpdate() // 启用热更新检测模块
+		h.initParams()      // 初始化参数
+		go h.hotUpdate(ctx) // 启用热更新检测模块
 		var err error
 		ulogs.Log("启动Http(s) Server", h.ListenAddr)
-		h.isStop.Write(false)
 		if h.Ssl {
 			err = h.server.ListenAndServeTLS(tools.Fileabs(h.Crt), tools.Fileabs(h.Key))
 		} else {
@@ -46,11 +47,25 @@ func (h *HttpServer) HttpServerStart() {
 			}
 		}
 		// 未启用热更新，或者检测到退出信号 就退出
-		if !h.Hotupdate || h.isStop.Read() {
+		if !h.Hotupdate || stop.Read() {
 			break
 		}
 	}
 
+}
+
+func (h *HttpServer) close() {
+	if h.denyIPMatch != nil {
+		h.denyIPMatch.Close()
+	}
+	if h.debugIPMatch != nil {
+		h.debugIPMatch.Close()
+	}
+	if h.allowIPMatch != nil {
+		h.allowIPMatch.Close()
+	}
+	httpClose.Server(h.server)
+	ulogs.Log("http server已关闭")
 }
 
 func (h *HttpServer) initParams() {
@@ -65,7 +80,6 @@ func (h *HttpServer) initParams() {
 		ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
 	}
 	h.iptablesInit()
-	h.initMux()
 	h.initRouter()
 	h.server = &http.Server{Addr: h.ListenAddr}
 	if h.EnableGzip {
@@ -100,111 +114,82 @@ func (h *HttpServer) initParams() {
 	}
 }
 
-func (h *HttpServer) initMux() {
-	if h.mux == nil {
-		h.mux = http.NewServeMux()
-	}
-}
-
 // ip 黑白名单初始化
 func (h *HttpServer) iptablesInit() {
+	now := time.Now()
+	ulogs.Infof("开始初始化http server IP防火墙")
+	defer ulogs.Infof("http server IP防火墙初始化完成，耗时：%v", time.Since(now))
+	if !h.Security.IPAccess.Enable {
+		return
+	}
 	var err error
-	if len(h.Allowip) > 0 {
-		h.allowIpList, err = ipAccess.NewIPList(h.Allowip...)
+	if h.Security.IPAccess.Allow != nil {
+		h.allowIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Allow)
 		ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
-		h.enableCheckIpAccess = true
+		h.allowIPMatch.Build()
 	}
-	if len(h.Denyip) > 0 {
-		h.denyIpList, err = ipAccess.NewIPList(h.Denyip...)
+
+	if h.Security.IPAccess.Deny != nil {
+		h.denyIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Deny)
 		ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
-		h.enableCheckIpAccess = true
+		h.denyIPMatch.Build()
 	}
-	debugAllowIps := []string{"127.0.0.1"}
-	if len(h.DebugAllowIp) > 0 {
-		debugAllowIps = append(debugAllowIps, h.DebugAllowIp...)
+	if h.Security.IPAccess.Debug != nil {
+		h.debugIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Debug)
+		ulogs.DieCheckerr(err, "http server ip调试名单初始化失败")
+		h.debugIPMatch.Build()
 	}
-	h.debugAllowIpList, err = ipAccess.NewIPList(debugAllowIps...)
-	ulogs.DieCheckerr(err, "http server debug ip白名单初始化失败")
-}
 
-// 检测ip白名单和黑名单
-func (h *HttpServer) checkIpAccess(w http.ResponseWriter, r *http.Request) bool {
-	addr := request.Getip(r)
-	ip, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		ip = addr // 如果无端口，则直接使用原地址
-	}
-	if h.denyIpList != nil && h.denyIpList.Contains(ip) {
-		response.Forbidden(w, "你的IP已被监管")
-		return false
-	}
-	if h.allowIpList != nil {
-		if !h.allowIpList.Contains(ip) {
-			response.Forbidden(w, "你的IP不在系统白名单内")
-			return false
-		}
-	}
-	return true
-}
-
-func (h *HttpServer) debugIpAccess(w http.ResponseWriter, r *http.Request) bool {
-	// 判断path是否以debug开头
-	if !strings.HasPrefix(r.URL.Path, "/debug/") {
-		return true
-	}
-	addr := request.Getip(r)
-	ip, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		ip = addr // 如果无端口，则直接使用原地址
-	}
-	if !h.debugAllowIpList.Contains(ip) {
-		response.Forbidden(w, http.StatusText(http.StatusForbidden))
-		return false
-	}
-	return true
 }
 
 // 用于检测参数变更，然后热更新。
-func (h *HttpServer) hotUpdate() {
-	if h.Hotupdate {
-		go func() {
-			hash := h.hash()
-			tck := time.NewTicker(1 * time.Second)
-			defer tck.Stop()
-			for {
-				select {
-				case <-h.ctx.Done():
-					return
-				case <-tck.C:
-					if hash == h.hash() {
-						continue
-					}
-					// 关闭client,重启程序
-					httpClose.Server(h.server)
-					return
-				}
+func (h *HttpServer) hotUpdate(ctx context.Context) {
+	if !h.Hotupdate {
+		return
+	}
+	hash := h.hash()
+	tck := time.NewTicker(1 * time.Second)
+	defer tck.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tck.C:
+			if hash == h.hash() {
+				continue
 			}
-		}()
+			// 关闭client,重启程序
+			httpClose.Server(h.server)
+			return
+		}
 	}
 }
 
 // 计算 httpserver 模块摘要
 func (h *HttpServer) hash() string {
-	strArr := append([]string{
-		h.ListenAddr,
-		h.Auth,
-		tools.Booltostring(h.Ssl),
-		h.Ca,
-		h.Crt,
-		h.Key,
-		h.SocketTimeout.String(),
-	}, append(h.Allowip, h.Denyip...)...)
-	return md5.Md5string(strings.Join(strArr, ""))
+	strArr := []string{h.ListenAddr, tools.Booltostring(h.Ssl), h.Ca, h.Crt, h.Key, h.SocketTimeout.String()}
+	return xxhashkit.XXHashString(strings.Join(strArr, ""))
 }
 
-func (h *HttpServer) StopServer() {
-	h.cancel()
-	h.isStop.Write(true)
-	ulogs.Log("http server已关闭")
-	httpClose.Server(h.server)
+func (h *HttpServer) addRoute(path string, handle http.Handler, cb ...MiddlewareFunc) {
+	if h.route == nil {
+		h.route = make(map[string]*routerRule)
+	}
+	h.route[path] = &routerRule{
+		routeType: RouteTypeHTTP,
+		cb:        cb,
+		handle:    handle,
+		path:      path,
+	}
+}
+
+func (h *HttpServer) addWSRoute(path string, handle websocket.Handler) {
+	if h.route == nil {
+		h.route = make(map[string]*routerRule)
+	}
+	h.route[path] = &routerRule{
+		routeType: RouteTypeWebSocket,
+		wsHandle:  handle,
+		path:      path,
+	}
 }
