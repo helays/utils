@@ -3,11 +3,12 @@ package fileinclude
 import (
 	"bufio"
 	"fmt"
-	"github.com/helays/utils/v2/close/vclose"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/helays/utils/v2/close/vclose"
 )
 
 // Processor 文件包含处理器
