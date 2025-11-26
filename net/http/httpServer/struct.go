@@ -24,6 +24,8 @@ type HttpServer struct {
 	EnableGzip    bool            `ini:"enable_gzip" json:"enable_gzip" yaml:"enable_gzip"`          // 是否开启gzip
 	Security      SecurityConfig  `ini:"security" json:"security" yaml:"security"`                   // 安全配置
 	Logger        zaploger.Config `json:"logger" yaml:"logger" ini:"logger" gorm:"comment:日志配置"`
+	Allowip       []string        `ini:"allowip,omitempty" json:"allowip" yaml:"allowip"` // Deprecated: 请使用 addRoute
+	Denyip        []string        `ini:"denyip,omitempty" json:"denyip" yaml:"denyip"`    // Deprecated: 请使用 addRoute
 
 	// 可访问属性
 

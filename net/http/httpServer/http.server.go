@@ -16,6 +16,7 @@ import (
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/logger/zaploger"
 	"github.com/helays/utils/v2/net/http/mime"
+	"github.com/helays/utils/v2/net/ipkit"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/tools"
 	"github.com/helays/utils/v2/tools/mutex"
@@ -123,15 +124,31 @@ func (h *HttpServer) iptablesInit() {
 		return
 	}
 	var err error
-	if h.Security.IPAccess.Allow != nil {
+	if h.Security.IPAccess.Allow != nil || len(h.Allowip) > 0 {
 		h.allowIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Allow)
 		ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
+		for _, ip := range h.Allowip {
+			if ipkit.ISIPv4OrIPv6(ip) == "ipv4" {
+				err = h.allowIPMatch.AddIPv4Rule(ip)
+			} else {
+				err = h.allowIPMatch.AddIPv6Rule(ip)
+			}
+			ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
+		}
 		h.allowIPMatch.Build()
 	}
 
-	if h.Security.IPAccess.Deny != nil {
+	if h.Security.IPAccess.Deny != nil || len(h.Denyip) > 0 {
 		h.denyIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Deny)
 		ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
+		for _, ip := range h.Denyip {
+			if ipkit.ISIPv4OrIPv6(ip) == "ipv4" {
+				err = h.denyIPMatch.AddIPv4Rule(ip)
+			} else {
+				err = h.denyIPMatch.AddIPv6Rule(ip)
+			}
+			ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
+		}
 		h.denyIPMatch.Build()
 	}
 	if h.Security.IPAccess.Debug != nil {
