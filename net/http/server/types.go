@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/helays/utils/v2/logger/zaploger"
 	"github.com/helays/utils/v2/net/ipmatch"
@@ -11,8 +12,14 @@ import (
 )
 
 type Config struct {
-	ListenAddr string   `json:"listen_addr" yaml:"listen_addr"` // 监听地址
-	ServerName []string `json:"server_name" yaml:"server_name"` // 绑定域名
+	Addr                         string        `json:"addr" yaml:"addr"`                                                       // 监听地址
+	DisableGeneralOptionsHandler bool          `json:"disable_general_options_handler" yaml:"disable_general_options_handler"` // 如果为 true，将 "OPTIONS *" 请求传递给 Handler；否则自动响应 200 O
+	ReadTimeout                  time.Duration `json:"read_timeout" yaml:"read_timeout"`                                       // 读取超时，零或负值表示无超时
+	ReadHeaderTimeout            time.Duration `json:"read_header_timeout" yaml:"read_header_timeout"`                         // 读取请求头超时，零或负值表示无超时
+	WriteTimeout                 time.Duration `json:"write_timeout" yaml:"write_timeout"`                                     // 写入超时，零或负值表示无超时
+	IdleTimeout                  time.Duration `json:"idle_timeout" yaml:"idle_timeout"`                                       // 在 keep-alive 启用时等待下一个请求的最大时间，如果为零，使用 ReadTimeout 的值
+	MaxHeaderBytes               int           `json:"max_header_bytes" yaml:"max_header_bytes"`                               // 服务器解析请求头时读取的最大字节数（包括请求行），如果为零，使用 DefaultMaxHeaderBytes（1MB）
+	ServerName                   []string      `json:"server_name" yaml:"server_name"`                                         // 绑定域名
 
 	TLS         TLSConfig         `json:"tls" yaml:"tls"`                          // TLS 配置
 	Security    SecurityConfig    `ini:"security" json:"security" yaml:"security"` // 安全配置
@@ -24,6 +31,7 @@ type SecurityConfig struct {
 	DefaultValidLast bool           `ini:"default_valid_last" json:"default_valid_last" yaml:"default_valid_last"` // 默认验证器是否放最后
 	CORS             cors.Config    `ini:"cors" json:"cors" yaml:"cors"`                                           // 跨域配置
 	IPAccess         IPAccessConfig `ini:"ip_access" json:"ip_access" yaml:"ip_access"`                            // IP访问控制
+	DebugPath        string         `ini:"debug_path" json:"debug_path" yaml:"debug_path"`                         // 调试路径,默认debug
 }
 
 type IPAccessConfig struct {
@@ -70,13 +78,14 @@ type Server[T any] struct {
 }
 
 type routerRule[T any] struct {
-	routeType   RouteType // 新增：路由类型
-	method      string    // 请求方法
-	path        string    // 路由
-	handle      http.Handler
-	wsHandle    websocket.Handler
-	middlewares []Middleware   // 中间件
-	description Description[T] // 描述
+	routeType     RouteType // 新增：路由类型
+	method        string    // 请求方法
+	path          string    // 路由
+	handle        http.Handler
+	wsHandle      websocket.Handler
+	middlewares   []Middleware   // 中间件
+	wsMiddlewares []WSMiddleware // WebSocket 中间件
+	description   Description[T] // 描述
 }
 
 type RouteType int
@@ -88,6 +97,8 @@ const (
 
 // Middleware 修改为支持 http.Handler
 type Middleware func(next http.Handler) http.Handler
+
+type WSMiddleware func(next websocket.Handler) websocket.Handler
 
 type Description[T any] struct {
 	Name     string // 路由名称

@@ -11,6 +11,7 @@ import (
 	"github.com/helays/utils/v2/logger/zaploger"
 	"github.com/helays/utils/v2/net/http/mime"
 	"github.com/helays/utils/v2/net/ipmatch"
+	"github.com/helays/utils/v2/tools"
 )
 
 func New(cfg *Config) (*Server[any], error) {
@@ -27,10 +28,20 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 	if err := s.ipAccessInit(); err != nil {
 		return nil, err
 	}
-	s.server = &http.Server{Addr: s.opt.ListenAddr}
+	s.server = &http.Server{
+		Addr:                         s.opt.Addr,
+		DisableGeneralOptionsHandler: s.opt.DisableGeneralOptionsHandler,
+		ReadTimeout:                  tools.AutoTimeDuration(s.opt.ReadTimeout, time.Second),
+		ReadHeaderTimeout:            tools.AutoTimeDuration(s.opt.ReadHeaderTimeout, time.Second),
+		WriteTimeout:                 tools.AutoTimeDuration(s.opt.WriteTimeout, time.Second),
+		IdleTimeout:                  tools.AutoTimeDuration(s.opt.IdleTimeout, time.Second),
+		MaxHeaderBytes:               s.opt.MaxHeaderBytes,
+	}
 	if err := s.tls(); err != nil {
 		return nil, err
 	}
+	s.routes = make(map[string]*routerRule[T])
+
 	mime.InitMimeTypes()
 	return s, nil
 }
@@ -100,15 +111,6 @@ func (s *Server[T]) tls() error {
 	return nil
 }
 
-func (s *Server[T]) Run() error {
-	s.compression()
-	return nil
-}
-
-func (s *Server[T]) compression() {
-
-}
-
 func (s *Server[T]) Close() {
 	if s.denyIPMatch != nil {
 		s.denyIPMatch.Close()
@@ -121,4 +123,22 @@ func (s *Server[T]) Close() {
 	}
 	httpClose.Server(s.server)
 	ulogs.Log("http server已关闭")
+}
+
+// Run 启动服务
+func (s *Server[T]) Run() error {
+	s.mux = http.NewServeMux()
+	s.setRoutes()
+	s.compression() // 判读是否启用自动压缩
+	if s.opt.TLS.Enable {
+		return s.server.ListenAndServeTLS("", "")
+	}
+	return s.server.ListenAndServe()
+}
+
+func (s *Server[T]) compression() {
+	if !s.opt.Compression.Enabled {
+		s.server.Handler = s.mux
+		return
+	}
 }
