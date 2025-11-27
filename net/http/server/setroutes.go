@@ -1,20 +1,22 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"net/http/pprof"
 	"time"
 
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/tools"
 	"golang.org/x/net/websocket"
 )
 
 func (s *Server[T]) setRoutes() {
 	now := time.Now()
-	ulogs.Infof("开始初始化 http router")
-	defer ulogs.Infof("完成初始化 http router,耗时:%v", time.Since(now))
+	ulogs.Infof("开始http router初始化 ")
+	defer ulogs.Infof("完成http router初始化，耗时:%v", time.Since(now))
 	s.setDebugRoutes()
 	for _, route := range s.routes {
 		switch route.routeType {
@@ -32,6 +34,12 @@ func (s *Server[T]) setDebugRoutes() {
 	}
 	groupName := tools.Ternary(s.opt.Security.DebugPath == "", "debug", s.opt.Security.DebugPath)
 	group := s.Group(groupName)
+	group.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), middleware.DebugCtxKey, true)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
 	group.Get("/pprof/", pprof.Index)
 	group.Get("/pprof/cmdline", pprof.Cmdline)
 	group.Get("/pprof/profile", pprof.Profile)

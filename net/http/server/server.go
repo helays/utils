@@ -121,9 +121,12 @@ func (s *Server[T]) Run() error {
 	s.mux = http.NewServeMux()
 	s.setRoutes()
 	s.compression() // 判读是否启用自动压缩
+
 	if s.opt.TLS.Enable {
+		ulogs.Log("启动https server", s.opt.Addr)
 		return s.server.ListenAndServeTLS("", "")
 	}
+	ulogs.Log("启动http server", s.opt.Addr)
 	return s.server.ListenAndServe()
 }
 

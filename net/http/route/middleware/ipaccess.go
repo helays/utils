@@ -80,12 +80,15 @@ func (i *IPAccessMiddleware) DebugIPAccess(next http.Handler) http.Handler {
 		return next
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !i.debugIPMatch.Contains(filterIPAndPort(r)) {
-			if w != nil {
-				w.WriteHeader(http.StatusForbidden)
+		if debug, ok := r.Context().Value(DebugCtxKey).(bool); ok && debug {
+			if !i.debugIPMatch.Contains(filterIPAndPort(r)) {
+				if w != nil {
+					w.WriteHeader(http.StatusForbidden)
+				}
+				return
 			}
-			return
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }

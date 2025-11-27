@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-const ServerVersion = "vs/2.1"
+const Version = "vs/2.1"
 
 type Config struct {
 	Addr                         string        `json:"addr" yaml:"addr"`                                                       // 监听地址
@@ -43,23 +43,12 @@ type IPAccessConfig struct {
 }
 
 type CompressionConfig struct {
-	// 是否启用压缩
-	Enabled bool `json:"enabled" yaml:"enabled" ini:"enabled"`
-
-	// 压缩算法：gzip, deflate, br 等
-	Algorithm string `json:"algorithm" yaml:"algorithm" ini:"algorithm"`
-
-	// 压缩级别
-	Level int `json:"level" yaml:"level" ini:"level"`
-
-	// 最小压缩大小（字节），小于此值不压缩
-	MinSize int `json:"min_size" yaml:"min_size" ini:"min_size"`
-
-	// 需要压缩的 MIME 类型
-	ContentTypes []string `json:"content_types" yaml:"content_types" ini:"content_types"`
-
-	// 排除的路径
-	ExcludePaths []string `json:"exclude_paths" yaml:"exclude_paths" ini:"exclude_paths"`
+	Enabled      bool     `json:"enabled" yaml:"enabled" ini:"enabled"`                   // 是否启用压缩
+	Algorithm    string   `json:"algorithm" yaml:"algorithm" ini:"algorithm"`             // 压缩算法：gzip, deflate, br 等
+	Level        int      `json:"level" yaml:"level" ini:"level"`                         // 压缩级别
+	MinSize      int      `json:"min_size" yaml:"min_size" ini:"min_size"`                // 最小压缩大小（字节），小于此值不压缩
+	ContentTypes []string `json:"content_types" yaml:"content_types" ini:"content_types"` // 需要压缩的 MIME 类型
+	ExcludePaths []string `json:"exclude_paths" yaml:"exclude_paths" ini:"exclude_paths"` // 排除的路径
 }
 
 type Server[T any] struct {

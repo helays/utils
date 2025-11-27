@@ -45,7 +45,7 @@ func (s *Server[T]) middleware(route *routerRule[T]) {
 			ctx := context.WithValue(r.Context(), codeKey, codeValue)
 			r = r.WithContext(ctx)
 		}
-		w.Header().Set("server", ServerVersion)
+		w.Header().Set("server", Version)
 		handler.ServeHTTP(w, r)
 	})
 	path := route.path
@@ -74,7 +74,7 @@ func (s *Server[T]) wsMiddleware(route *routerRule[T]) {
 	// 最终的处理函数
 	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer httpClose.CloseReq(r)
-		w.Header().Set("server", ServerVersion)
+		w.Header().Set("server", Version)
 		handler.ServeHTTP(w, r)
 	})
 	s.mux.Handle(route.path, finalHandler)
