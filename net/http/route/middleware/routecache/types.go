@@ -3,7 +3,7 @@ package routecache
 import (
 	"sync"
 
-	"github.com/helays/utils/v2/net/http/httpServer/middleware/routecache/tree"
+	"github.com/helays/utils/v2/net/http/route/middleware/routecache/tree"
 )
 
 type RouteCache[T comparable] struct {

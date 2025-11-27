@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/helays/utils/v2/net/http/httpServer/middleware/routecache"
+	"github.com/helays/utils/v2/net/http/route/middleware/routecache"
 )
 
 type STD[T comparable] struct {

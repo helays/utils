@@ -1,8 +1,8 @@
 package routecache
 
 import (
-	"github.com/helays/utils/v2/net/http/httpServer/middleware/routecache/tree"
 	"github.com/helays/utils/v2/net/http/httpServer/router"
+	"github.com/helays/utils/v2/net/http/route/middleware/routecache/tree"
 )
 
 // AddRoute 添加路由

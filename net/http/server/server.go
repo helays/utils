@@ -8,8 +8,8 @@ import (
 
 	"github.com/helays/utils/v2/close/httpClose"
 	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/logger/zaploger"
 	"github.com/helays/utils/v2/net/http/mime"
+	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/tools"
 )
@@ -20,7 +20,8 @@ func New(cfg *Config) (*Server[any], error) {
 
 func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 	s := &Server[T]{
-		opt: cfg,
+		opt:      cfg,
+		ipAccess: middleware.NewIPAccessMiddleware(),
 	}
 	if err := s.validParam(); err != nil {
 		return nil, err
@@ -52,12 +53,10 @@ func (s *Server[T]) validParam() error {
 	for _, name := range s.opt.ServerName {
 		s.serverNames[strings.ToLower(name)] = struct{}{}
 	}
-	if len(s.opt.Logger.LogLevelConfigs) > 0 {
-		var err error
-		s.logger, err = zaploger.New(&s.opt.Logger)
-		if err != nil {
-			return fmt.Errorf("HTTP 服务日志初始化失败 %v", err)
-		}
+	var err error
+	s.logger, err = middleware.NewLoggerMiddleware(s.opt.Logger)
+	if err != nil {
+		return fmt.Errorf("HTTP 服务日志初始化失败 %v", err)
 	}
 	return nil
 }
@@ -70,27 +69,27 @@ func (s *Server[T]) ipAccessInit() error {
 	}
 	now := time.Now()
 	ulogs.Infof("开始初始化IP访问控制")
-	var err error
+
 	if access.Allow != nil {
-		s.allowIPMatch, err = ipmatch.NewIPMatcher(access.Allow)
-		if err != nil {
+		if allow, err := ipmatch.NewIPMatcher(access.Allow); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [白名单] 初始化失败 %v", err)
+		} else {
+			s.ipAccess.SetAllow(allow)
 		}
-		s.allowIPMatch.Build()
 	}
 	if access.Deny != nil {
-		s.denyIPMatch, err = ipmatch.NewIPMatcher(access.Deny)
-		if err != nil {
+		if deny, err := ipmatch.NewIPMatcher(access.Deny); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [黑名单] 初始化失败 %v", err)
+		} else {
+			s.ipAccess.SetDeny(deny)
 		}
-		s.denyIPMatch.Build()
 	}
 	if access.Debug != nil {
-		s.debugIPMatch, err = ipmatch.NewIPMatcher(access.Debug)
-		if err != nil {
+		if dbg, err := ipmatch.NewIPMatcher(access.Debug); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [调试] 模块初始化失败 %v", err)
+		} else {
+			s.ipAccess.SetDebug(dbg)
 		}
-		s.debugIPMatch.Build()
 	}
 	ulogs.Infof("初始化IP访问控制完成，耗时：%v", time.Since(now))
 	return nil
@@ -112,15 +111,7 @@ func (s *Server[T]) tls() error {
 }
 
 func (s *Server[T]) Close() {
-	if s.denyIPMatch != nil {
-		s.denyIPMatch.Close()
-	}
-	if s.debugIPMatch != nil {
-		s.debugIPMatch.Close()
-	}
-	if s.allowIPMatch != nil {
-		s.allowIPMatch.Close()
-	}
+	s.ipAccess.Close()
 	httpClose.Server(s.server)
 	ulogs.Log("http server已关闭")
 }
@@ -141,4 +132,12 @@ func (s *Server[T]) compression() {
 		s.server.Handler = s.mux
 		return
 	}
+}
+
+func (s *Server[T]) GetRouteDescriptions() []Description[T] {
+	var routes = make([]Description[T], 0, len(s.routes))
+	for _, route := range s.routes {
+		routes = append(routes, route.description)
+	}
+	return routes
 }

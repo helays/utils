@@ -5,11 +5,13 @@ import (
 	"time"
 
 	"github.com/helays/utils/v2/logger/zaploger"
+	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/security/cors"
-	"github.com/helays/utils/v2/security/cors/cors_std"
 	"golang.org/x/net/websocket"
 )
+
+const ServerVersion = "vs/2.1"
 
 type Config struct {
 	Addr                         string        `json:"addr" yaml:"addr"`                                                       // 监听地址
@@ -28,10 +30,9 @@ type Config struct {
 }
 
 type SecurityConfig struct {
-	DefaultValidLast bool           `ini:"default_valid_last" json:"default_valid_last" yaml:"default_valid_last"` // 默认验证器是否放最后
-	CORS             cors.Config    `ini:"cors" json:"cors" yaml:"cors"`                                           // 跨域配置
-	IPAccess         IPAccessConfig `ini:"ip_access" json:"ip_access" yaml:"ip_access"`                            // IP访问控制
-	DebugPath        string         `ini:"debug_path" json:"debug_path" yaml:"debug_path"`                         // 调试路径,默认debug
+	CORS      cors.Config    `ini:"cors" json:"cors" yaml:"cors"`                   // 跨域配置
+	IPAccess  IPAccessConfig `ini:"ip_access" json:"ip_access" yaml:"ip_access"`    // IP访问控制
+	DebugPath string         `ini:"debug_path" json:"debug_path" yaml:"debug_path"` // 调试路径,默认debug
 }
 
 type IPAccessConfig struct {
@@ -65,27 +66,22 @@ type Server[T any] struct {
 	opt         *Config
 	serverNames map[string]struct{}       // 绑定的域名
 	routes      map[string]*routerRule[T] // 路由集合
-	logger      *zaploger.Logger
 
-	allowIPMatch *ipmatch.IPMatcher
-	denyIPMatch  *ipmatch.IPMatcher
-	debugIPMatch *ipmatch.IPMatcher
-
-	corsManager *cors_std.StdCORS
+	logger   *middleware.LoggerMiddleware   // 日志中间件
+	ipAccess *middleware.IPAccessMiddleware // IP访问控制中间件
 
 	mux    *http.ServeMux
 	server *http.Server
 }
 
 type routerRule[T any] struct {
-	routeType     RouteType // 新增：路由类型
-	method        string    // 请求方法
-	path          string    // 路由
-	handle        http.Handler
-	wsHandle      websocket.Handler
-	middlewares   []Middleware   // 中间件
-	wsMiddlewares []WSMiddleware // WebSocket 中间件
-	description   Description[T] // 描述
+	routeType   RouteType // 新增：路由类型
+	method      string    // 请求方法
+	path        string    // 路由
+	handle      http.Handler
+	wsHandle    websocket.Handler
+	middlewares []Middleware   // 中间件
+	description Description[T] // 描述
 }
 
 type RouteType int
@@ -98,10 +94,20 @@ const (
 // Middleware 修改为支持 http.Handler
 type Middleware func(next http.Handler) http.Handler
 
-type WSMiddleware func(next websocket.Handler) websocket.Handler
+type RouteCode string
+
+func (c RouteCode) String() string {
+	return string(c)
+}
+
+func NewRouteCode(code string) RouteCode {
+	return RouteCode(code)
+}
 
 type Description[T any] struct {
-	Name     string // 路由名称
-	Version  string // 路由版本
-	Metadata T      // 自定义描述结构
+	Name     string    // 路由名称
+	Version  string    // 路由版本
+	CodeKey  string    // 路由编码字段
+	Code     RouteCode // 路由编码
+	Metadata T         // 自定义描述结构
 }

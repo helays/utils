@@ -60,21 +60,19 @@ func (s *Server[T]) AddRouteWithDescription(method, path string, handle http.Han
 	}
 }
 
-func (s *Server[T]) AddWebsocketRoute(path string, handle websocket.Handler, cb ...WSMiddleware) {
+func (s *Server[T]) AddWebsocketRoute(path string, handle websocket.Handler) {
 	s.routes[path] = &routerRule[T]{
-		routeType:     RouteTypeWebSocket,
-		path:          path,
-		wsHandle:      handle,
-		wsMiddlewares: cb,
+		routeType: RouteTypeWebSocket,
+		path:      path,
+		wsHandle:  handle,
 	}
 }
 
-func (s *Server[T]) AddWebsocketRouteWithDescription(path string, handle websocket.Handler, description Description[T], cb ...WSMiddleware) {
+func (s *Server[T]) AddWebsocketRouteWithDescription(path string, handle websocket.Handler, description Description[T]) {
 	s.routes[path] = &routerRule[T]{
-		routeType:     RouteTypeWebSocket,
-		path:          path,
-		wsHandle:      handle,
-		wsMiddlewares: cb,
-		description:   description,
+		routeType:   RouteTypeWebSocket,
+		path:        path,
+		wsHandle:    handle,
+		description: description,
 	}
 }

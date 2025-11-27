@@ -8,11 +8,10 @@ import (
 )
 
 type Group[T any] struct {
-	serv         *Server[T]
-	prefix       string
-	middlewares  []Middleware
-	wsMiddleware []WSMiddleware
-	parent       *Group[T] // 父级分组
+	serv        *Server[T]
+	prefix      string
+	middlewares []Middleware
+	parent      *Group[T] // 父级分组
 }
 
 func (s *Server[T]) Group(groupName string) *Group[T] {
@@ -140,17 +139,12 @@ func (g *Group[T]) AnyWithHandler(p string, handler http.Handler, descriptions .
 	g.addRoute("", p, handler, descriptions...)
 }
 
-func (g *Group[T]) UseWS(middleware ...WSMiddleware) *Group[T] {
-	g.wsMiddleware = append(g.wsMiddleware, middleware...)
-	return g
-}
-
 func (g *Group[T]) WS(p string, handler func(ws *websocket.Conn)) {
 	fullPath := g.calculatePrefix(strings.TrimSpace(p))
-	g.serv.AddWebsocketRoute(fullPath, handler, g.wsMiddleware...)
+	g.serv.AddWebsocketRoute(fullPath, handler)
 }
 
 func (g *Group[T]) WSWithDescription(p string, handler func(ws *websocket.Conn), description Description[T]) {
 	fullPath := g.calculatePrefix(strings.TrimSpace(p))
-	g.serv.AddWebsocketRouteWithDescription(fullPath, handler, description, g.wsMiddleware...)
+	g.serv.AddWebsocketRouteWithDescription(fullPath, handler, description)
 }
