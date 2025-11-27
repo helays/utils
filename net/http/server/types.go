@@ -100,3 +100,11 @@ type Description[T any] struct {
 	Code     RouteCode // 路由编码
 	Metadata T         // 自定义描述结构
 }
+
+func NewDesc[T any](key, code string, meta T) Description[T] {
+	return Description[T]{
+		Code:     NewRouteCode(code),
+		CodeKey:  key,
+		Metadata: meta,
+	}
+}
