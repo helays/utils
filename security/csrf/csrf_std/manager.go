@@ -6,17 +6,17 @@ import (
 
 	"github.com/helays/utils/v2/map/safemap"
 	"github.com/helays/utils/v2/net/http/httpServer/response"
-	"github.com/helays/utils/v2/net/http/sessionmgr"
+	"github.com/helays/utils/v2/net/http/session"
 	"github.com/helays/utils/v2/security/csrf"
 )
 
 type Std struct {
 	configs           safemap.SyncMap[string, *csrf.Config]
-	sessionManager    *sessionmgr.Manager
+	sessionManager    *session.Manager
 	routeCodeCtxField string // 路由code字段
 }
 
-func NewStd(sm *sessionmgr.Manager, routeCodeCtxField string) *Std {
+func NewStd(sm *session.Manager, routeCodeCtxField string) *Std {
 	s := &Std{
 		sessionManager:    sm,
 		routeCodeCtxField: routeCodeCtxField,

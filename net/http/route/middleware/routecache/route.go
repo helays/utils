@@ -1,15 +1,15 @@
 package routecache
 
 import (
-	"github.com/helays/utils/v2/net/http/httpServer/router"
+	"github.com/helays/utils/v2/net/http/route"
 	"github.com/helays/utils/v2/net/http/route/middleware/routecache/tree"
 )
 
 // AddRoute 添加路由
-func (r *RouteCache[T]) AddRoute(t router.RouteType, method string, pattern string, handle T) error {
+func (r *RouteCache[T]) AddRoute(t route.RouteType, method string, pattern string, handle T) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if t == router.RouteTypeStatic {
+	if t == route.Static {
 		path := method + pattern
 		r.staticRoute[path] = handle
 		return nil

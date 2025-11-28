@@ -9,11 +9,13 @@ import (
 	"github.com/helays/utils/v2/close/httpClose"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/net/http/mime"
+	"github.com/helays/utils/v2/net/http/route"
 	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/tools"
 )
 
+// noinspection all
 func New(cfg *Config) (*Server[any], error) {
 	return NewGeneric[any](cfg)
 }
@@ -49,6 +51,7 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 		return nil, err
 	}
 	s.routes = make(map[string]*routerRule[T])
+	s.route = route.New(s.opt.Route) // 系统 通用路由
 
 	mime.InitMimeTypes()
 	return s, nil
@@ -135,8 +138,12 @@ func (s *Server[T]) Run() error {
 
 func (s *Server[T]) GetRouteDescriptions() []Description[T] {
 	var routes = make([]Description[T], 0, len(s.routes))
-	for _, route := range s.routes {
-		routes = append(routes, route.description)
+	for _, r := range s.routes {
+		routes = append(routes, r.description)
 	}
 	return routes
+}
+
+func (s *Server[T]) GetRoute() *route.Route {
+	return s.route
 }

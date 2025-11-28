@@ -7,7 +7,7 @@ import (
 
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/net/http/httpServer/request"
-	"github.com/helays/utils/v2/net/http/responsewriter"
+	"github.com/helays/utils/v2/net/http/httpServer/responsewriter"
 	"go.uber.org/zap"
 	"golang.org/x/net/websocket"
 )

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/helays/utils/v2/logger/zaploger"
+	"github.com/helays/utils/v2/net/http/route"
 	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/security/cors"
@@ -27,6 +28,8 @@ type Config struct {
 	Security    SecurityConfig               `ini:"security" json:"security" yaml:"security"` // 安全配置
 	Compression middleware.CompressionConfig `json:"compression" yaml:"compression"`          // 压缩配置
 	Logger      zaploger.Config              `json:"logger" yaml:"logger"`                    // 日志配置
+
+	Route *route.Config `json:"route" yaml:"route"` // 路由配置
 }
 
 type SecurityConfig struct {
@@ -46,7 +49,8 @@ type Server[T any] struct {
 	opt         *Config
 	serverNames map[string]struct{}       // 绑定的域名
 	routes      map[string]*routerRule[T] // 路由集合
-
+	route       *route.Route              // 系统默认路由
+	
 	enhancedWriter *middleware.ResponseProcessor  // 通用响应处理中间件
 	ipAccess       *middleware.IPAccessMiddleware // IP访问控制中间件
 

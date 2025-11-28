@@ -1,18 +1,23 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
 )
+
+var once sync.Once
 
 func init() {
 	var err error
-	config.Appath, err = filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		ulogs.Error("当前路径获取失败...", err.Error())
-		os.Exit(1)
-	}
+	once.Do(func() {
+		config.Appath, err = filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			panic(fmt.Errorf("获取系统运行目录失败 %v", err))
+		}
+	})
+
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/helays/utils/v2/net/http/httpServer/http_types"
 	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"github.com/helays/utils/v2/net/http/mime"
+	"github.com/helays/utils/v2/net/http/route"
 	"github.com/helays/utils/v2/tools"
 )
 
@@ -196,7 +197,7 @@ func toHTTPError(err error) (msg string, httpStatus int) {
 // 显示 favicon
 func (ro *Router) favicon(w http.ResponseWriter) {
 	w.WriteHeader(200)
-	rd := bytes.NewReader(favicon[:])
+	rd := bytes.NewReader(route.Favicon[:])
 	_, _ = io.Copy(w, rd)
 }
 
@@ -210,7 +211,7 @@ func (ro *Router) Captcha(w http.ResponseWriter, r *http.Request) {
 
 	// 验证码存储在session中
 	captchaId := captcha.NewLen(4)
-	if err := ro.Store.Set(w, r, CaptchaID, captchaId, 4*time.Minute); err != nil {
+	if err := ro.session.Set(w, r, CaptchaID, captchaId, 4*time.Minute); err != nil {
 		response.InternalServerError(w)
 		return
 	}

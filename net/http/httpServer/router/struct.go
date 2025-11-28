@@ -9,7 +9,6 @@ import (
 
 	"github.com/helays/utils/v2/net/http/httpServer/http_types"
 	"github.com/helays/utils/v2/net/http/session"
-	"github.com/helays/utils/v2/net/http/sessionmgr"
 	"gorm.io/gorm"
 )
 
@@ -54,7 +53,6 @@ type Router struct {
 	dev           bool                  // 开发模式
 	staticEmbedFS map[string]*embedInfo // 静态文件
 
-	Store                  *session.Store   // session 系统
 	IsLogin                bool             // 是否登录
 	LoginPath              string           // 登录页面
 	HomePage               string           //首页
@@ -67,7 +65,7 @@ type Router struct {
 	ManagePage             map[string]bool  // 管理员访问
 	ManagePageRegexp       []*regexp.Regexp
 
-	sessionManager *sessionmgr.Manager
+	session *session.Manager
 }
 
 type embedInfo struct {
@@ -93,9 +91,9 @@ func (ro *Router) SetStaticEmbedFs(p string, embedFS *embed.FS, prefix ...string
 	}
 }
 
-func (ro *Router) SetSessionManager(sessionManager *sessionmgr.Manager) {
-	ro.sessionManager = sessionManager
+func (ro *Router) SetSession(sessionManager *session.Manager) {
+	ro.session = sessionManager
 }
-func (ro *Router) GetSessionManager() *sessionmgr.Manager {
-	return ro.sessionManager
+func (ro *Router) GetSession() *session.Manager {
+	return ro.session
 }
