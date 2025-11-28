@@ -27,7 +27,7 @@ func (s *Server[T]) middleware(route *routerRule[T]) {
 		s.ipAccess.AllowIpAccess,             // 设置白名单防火墙
 		s.ipAccess.DebugIPAccess,             // debug 模式ip限制
 		middleware.Cors(s.opt.Security.CORS), // 跨域
-		s.logger.Logger,                      // 日志中间件
+		s.enhancedWriter.Handler,             // 多功能响应处理器
 	}
 	mid = append(mid, route.middlewares...)
 
@@ -65,7 +65,7 @@ func (s *Server[T]) wsMiddleware(route *routerRule[T]) {
 		s.ipAccess.DenyIpAccess,              // 设置黑名单防火墙
 		s.ipAccess.AllowIpAccess,             // 设置白名单防火墙
 		middleware.Cors(s.opt.Security.CORS), // 跨域
-		s.logger.Logger,                      // 日志中间件
+		s.enhancedWriter.Handler,             // 多功能响应处理器
 	}
 	mid = append(mid, route.middlewares...)
 

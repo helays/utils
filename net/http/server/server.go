@@ -26,6 +26,13 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 	if err := s.validParam(); err != nil {
 		return nil, err
 	}
+
+	s.enhancedWriter = middleware.NewCompression()
+	s.enhancedWriter.SetCompressionConfig(s.opt.Compression)
+	if err := s.enhancedWriter.SetLoggerConfig(s.opt.Logger); err != nil {
+		return nil, fmt.Errorf("日志模块初始化失败 %v", err)
+	}
+
 	if err := s.ipAccessInit(); err != nil {
 		return nil, err
 	}
@@ -53,11 +60,7 @@ func (s *Server[T]) validParam() error {
 	for _, name := range s.opt.ServerName {
 		s.serverNames[strings.ToLower(name)] = struct{}{}
 	}
-	var err error
-	s.logger, err = middleware.NewLoggerMiddleware(s.opt.Logger)
-	if err != nil {
-		return fmt.Errorf("HTTP 服务日志初始化失败 %v", err)
-	}
+
 	return nil
 }
 
@@ -120,7 +123,7 @@ func (s *Server[T]) Close() {
 func (s *Server[T]) Run() error {
 	s.mux = http.NewServeMux()
 	s.setRoutes()
-	s.compression() // 判读是否启用自动压缩
+	s.server.Handler = s.mux
 
 	if s.opt.TLS.Enable {
 		ulogs.Log("启动https server", s.opt.Addr)
@@ -128,13 +131,6 @@ func (s *Server[T]) Run() error {
 	}
 	ulogs.Log("启动http server", s.opt.Addr)
 	return s.server.ListenAndServe()
-}
-
-func (s *Server[T]) compression() {
-	if !s.opt.Compression.Enabled {
-		s.server.Handler = s.mux
-		return
-	}
 }
 
 func (s *Server[T]) GetRouteDescriptions() []Description[T] {

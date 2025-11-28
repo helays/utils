@@ -23,10 +23,10 @@ type Config struct {
 	MaxHeaderBytes               int           `json:"max_header_bytes" yaml:"max_header_bytes"`                               // 服务器解析请求头时读取的最大字节数（包括请求行），如果为零，使用 DefaultMaxHeaderBytes（1MB）
 	ServerName                   []string      `json:"server_name" yaml:"server_name"`                                         // 绑定域名
 
-	TLS         TLSConfig         `json:"tls" yaml:"tls"`                          // TLS 配置
-	Security    SecurityConfig    `ini:"security" json:"security" yaml:"security"` // 安全配置
-	Compression CompressionConfig `json:"compression" yaml:"compression"`          // 压缩配置
-	Logger      zaploger.Config   `json:"logger" yaml:"logger"`                    // 日志配置
+	TLS         TLSConfig                    `json:"tls" yaml:"tls"`                          // TLS 配置
+	Security    SecurityConfig               `ini:"security" json:"security" yaml:"security"` // 安全配置
+	Compression middleware.CompressionConfig `json:"compression" yaml:"compression"`          // 压缩配置
+	Logger      zaploger.Config              `json:"logger" yaml:"logger"`                    // 日志配置
 }
 
 type SecurityConfig struct {
@@ -42,22 +42,13 @@ type IPAccessConfig struct {
 	Debug  *ipmatch.Config `ini:"debug" json:"debug" yaml:"debug"` // 调试允许的IP
 }
 
-type CompressionConfig struct {
-	Enabled      bool     `json:"enabled" yaml:"enabled" ini:"enabled"`                   // 是否启用压缩
-	Algorithm    string   `json:"algorithm" yaml:"algorithm" ini:"algorithm"`             // 压缩算法：gzip, deflate, br 等
-	Level        int      `json:"level" yaml:"level" ini:"level"`                         // 压缩级别
-	MinSize      int      `json:"min_size" yaml:"min_size" ini:"min_size"`                // 最小压缩大小（字节），小于此值不压缩
-	ContentTypes []string `json:"content_types" yaml:"content_types" ini:"content_types"` // 需要压缩的 MIME 类型
-	ExcludePaths []string `json:"exclude_paths" yaml:"exclude_paths" ini:"exclude_paths"` // 排除的路径
-}
-
 type Server[T any] struct {
 	opt         *Config
 	serverNames map[string]struct{}       // 绑定的域名
 	routes      map[string]*routerRule[T] // 路由集合
 
-	logger   *middleware.LoggerMiddleware   // 日志中间件
-	ipAccess *middleware.IPAccessMiddleware // IP访问控制中间件
+	enhancedWriter *middleware.ResponseProcessor  // 通用响应处理中间件
+	ipAccess       *middleware.IPAccessMiddleware // IP访问控制中间件
 
 	mux    *http.ServeMux
 	server *http.Server
