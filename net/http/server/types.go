@@ -50,7 +50,7 @@ type Server[T any] struct {
 	serverNames map[string]struct{}       // 绑定的域名
 	routes      map[string]*routerRule[T] // 路由集合
 	route       *route.Route              // 系统默认路由
-	
+
 	enhancedWriter *middleware.ResponseProcessor  // 通用响应处理中间件
 	ipAccess       *middleware.IPAccessMiddleware // IP访问控制中间件
 
@@ -89,9 +89,11 @@ func NewRouteCode(code string) RouteCode {
 }
 
 type Description[T any] struct {
-	Name     string    // 路由名称
-	Version  string    // 路由版本
-	CodeKey  string    // 路由编码字段
+	Name     string // 路由名称
+	Version  string // 路由版本
+	CodeKey  string // 路由编码字段
+	Method   string
+	Path     string
 	Code     RouteCode // 路由编码
 	Metadata T         // 自定义描述结构
 }

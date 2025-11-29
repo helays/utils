@@ -139,6 +139,8 @@ func (s *Server[T]) Run() error {
 func (s *Server[T]) GetRouteDescriptions() []Description[T] {
 	var routes = make([]Description[T], 0, len(s.routes))
 	for _, r := range s.routes {
+		r.description.Path = r.path
+		r.description.Method = r.method
 		routes = append(routes, r.description)
 	}
 	return routes
