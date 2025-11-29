@@ -6,6 +6,7 @@ import (
 
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/net/http/response"
+	"github.com/helays/utils/v2/net/http/session"
 )
 
 // BeforeAction 所有应用前置操作
@@ -25,7 +26,8 @@ func (ro *Router) BeforeAction(w http.ResponseWriter, r *http.Request) bool {
 	var loginInfo LoginInfo
 
 	// 如果session 存在，那么当session 剩余24小时的时候，更新session。
-	err := ro.Store.GetUpByTimeLeft(w, r, ro.SessionLoginName, &loginInfo, time.Hour*24)
+
+	err := session.GetSession().GetUpByRemainTime(w, r, ro.SessionLoginName, &loginInfo, time.Hour*24)
 	if err != nil || !loginInfo.IsLogin {
 		ulogs.Checkerr(err, "session 获取失败")
 		// 未登录的，终止请求，响应401 或者302

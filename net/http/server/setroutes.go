@@ -47,6 +47,10 @@ func (s *Server[T]) setDebugRoutes() {
 	group.Get("/pprof/trace", pprof.Trace)
 }
 
+func (s *Server[T]) AddRouteFunc(method, path string, handle http.HandlerFunc, cb ...Middleware) {
+	s.AddRoute(method, path, handle, cb...)
+}
+
 func (s *Server[T]) AddRoute(method, path string, handle http.Handler, cb ...Middleware) {
 	s.routes[path] = &routerRule[T]{
 		routeType:   RouteTypeHTTP,
@@ -55,6 +59,10 @@ func (s *Server[T]) AddRoute(method, path string, handle http.Handler, cb ...Mid
 		handle:      handle,
 		middlewares: cb,
 	}
+}
+
+func (s *Server[T]) AddRouteFuncWithDescription(method, path string, handle http.HandlerFunc, description Description[T], cb ...Middleware) {
+	s.AddRouteWithDescription(method, path, handle, description, cb...)
 }
 
 func (s *Server[T]) AddRouteWithDescription(method, path string, handle http.Handler, description Description[T], cb ...Middleware) {

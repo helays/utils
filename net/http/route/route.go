@@ -10,6 +10,9 @@ type Route struct {
 }
 
 func New(opt *Config) *Route {
+	if opt == nil {
+		panic("route.New 参数不能为空")
+	}
 	r := &Route{
 		opt:   opt,
 		embed: make([]*EmbedInfo, 0),
@@ -18,7 +21,7 @@ func New(opt *Config) *Route {
 	if r.opt.Index == "" {
 		r.opt.Index = "index.html"
 	}
-	
+
 	return r
 }
 

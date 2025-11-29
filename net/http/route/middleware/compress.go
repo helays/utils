@@ -102,6 +102,7 @@ func (c *writer) WriteHeader(status int) {
 	if c.compressor != nil {
 		c.Header().Del("Content-Length")
 	}
+
 	c.w.WriteHeader(status)
 }
 
