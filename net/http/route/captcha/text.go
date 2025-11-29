@@ -7,7 +7,7 @@ import (
 
 	"github.com/dchest/captcha"
 	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/httpServer/response"
+	"github.com/helays/utils/v2/net/http/response"
 	"github.com/helays/utils/v2/net/http/session"
 )
 

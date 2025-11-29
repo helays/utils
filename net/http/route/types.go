@@ -2,6 +2,7 @@ package route
 
 import (
 	"database/sql/driver"
+	"embed"
 
 	"github.com/helays/utils/v2/dataType"
 	"gorm.io/gorm"
@@ -36,11 +37,28 @@ const (
 )
 
 type Config struct {
-	Root  string   `json:"root" yaml:"root"`   // 文件根目录
-	Index []string `json:"index" yaml:"index"` // 默认首页
+	Root  string `json:"root" yaml:"root"`   // 文件根目录
+	Index string `json:"index" yaml:"index"` // 默认首页
+
+	// 静态文件的请求地址加了一个前缀，比如/html的时候，
+	// 就可以通过这个参数来去掉请求 path部分中的前面这部分内容。
+	// 用最后部分去匹配文件系统。
+	URLPrefix string `json:"url_prefix" yaml:"url_prefix"` // 路由前缀
 }
 
-type FileRoute struct {
-	Name       string // 文件名
-	Downloader bool   // 是否允许下载
+type ErrorResp struct {
+	Code  int
+	Msg   string
+	Error error
+}
+
+type EmbedInfo struct {
+	Search string // 用search 去匹配请求path的前面部分，看是否包含 string.HasPrefix(path,search)
+
+	// 这是缓存系统的前缀
+	// 当缓存系统设置的路径是 html/static/xxx的时候
+	// 实际请求路径是 static/xxx
+	// 这个情况下实际路径不包含html,如果直接用search匹配，就会失败，可以通过这个prefix前缀补充，再去匹配。
+	Prefix string
+	FS     *embed.FS // 内置embed fs 系统
 }

@@ -29,7 +29,7 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 		return nil, err
 	}
 
-	s.enhancedWriter = middleware.NewCompression()
+	s.enhancedWriter = middleware.NewResponseProcessor()
 	s.enhancedWriter.SetCompressionConfig(s.opt.Compression)
 	if err := s.enhancedWriter.SetLoggerConfig(s.opt.Logger); err != nil {
 		return nil, fmt.Errorf("日志模块初始化失败 %v", err)

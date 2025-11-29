@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/helays/utils/v2/logger/zaploger"
+	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/security/cors"
 	"github.com/helays/utils/v2/security/cors/cors_std"
@@ -36,7 +37,7 @@ type HttpServer struct {
 
 	route         map[string]*routerRule // 路由
 	serverNameMap map[string]byte        // 绑定的域名
-	logger        *zaploger.Logger
+	logger        *middleware.ResponseProcessor
 
 	allowIPMatch *ipmatch.IPMatcher
 	denyIPMatch  *ipmatch.IPMatcher

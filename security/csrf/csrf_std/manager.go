@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/helays/utils/v2/map/safemap"
-	"github.com/helays/utils/v2/net/http/httpServer/response"
+	"github.com/helays/utils/v2/net/http/response"
 	"github.com/helays/utils/v2/net/http/session"
 	"github.com/helays/utils/v2/security/csrf"
 )

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/net/http/httpServer/http_types"
+	"github.com/helays/utils/v2/net/http/route"
 	"github.com/helays/utils/v2/net/http/session"
 	"gorm.io/gorm"
 )
@@ -32,7 +32,7 @@ func (i LoginInfo) QueryIsManage() func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-type ErrPageFunc func(w http.ResponseWriter, resp http_types.ErrorResp)
+type ErrPageFunc func(w http.ResponseWriter, resp *route.ErrorResp)
 type Router struct {
 	Default                string `ini:"default" json:"default" yaml:"default"`
 	Root                   string `ini:"root" json:"root" yaml:"root"`

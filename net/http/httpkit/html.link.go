@@ -1,4 +1,4 @@
-package httpTools
+package httpkit
 
 import "strings"
 

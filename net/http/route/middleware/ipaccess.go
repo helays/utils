@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/helays/utils/v2/net/http/httpServer/request"
+	"github.com/helays/utils/v2/net/http/request"
 	"github.com/helays/utils/v2/net/ipmatch"
 )
 

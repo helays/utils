@@ -2,10 +2,8 @@ package router
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -17,9 +15,8 @@ import (
 	"github.com/helays/utils/v2/close/vclose"
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/httpServer/http_types"
-	"github.com/helays/utils/v2/net/http/httpServer/response"
 	"github.com/helays/utils/v2/net/http/mime"
+	"github.com/helays/utils/v2/net/http/response"
 	"github.com/helays/utils/v2/net/http/route"
 	"github.com/helays/utils/v2/tools"
 )
@@ -62,6 +59,7 @@ const defaultIndexPage = "index.html"
 //	}
 //
 // 上面的后续待定
+// Deprecated: 请使用route.Index
 func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost || r.Method == http.MethodPut {
 		response.MethodNotAllow(w)
@@ -69,8 +67,7 @@ func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 	}
 	_path := r.URL.Path
 	if _path == "/favicon.ico" {
-		w.Header().Set("Content-Type", mime.MimeMap["ico"])
-		ro.favicon(w)
+		route.Favicon(w)
 		return
 	}
 	defaultFile := tools.Ternary(ro.Default == "", defaultIndexPage, ro.Default)
@@ -89,7 +86,7 @@ func (ro *Router) Index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	embedFs := http.Dir(ro.Root)
 	for _, v := range fl {
-		f, _, errResp := ro.openEmbedFsFile(embedFs, path.Join(pathCache[0], v))
+		f, _, errResp := route.HttpFS(embedFs, filepath.Join(pathCache[0], v))
 		if errResp != nil {
 			vclose.Close(f)
 			continue
@@ -113,7 +110,7 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 		_path = _path + defaultFile
 	}
 	if tools.ContainsDotDot(_path) {
-		ro.error(w, http_types.ErrorResp{
+		route.RenderErrorText(w, &route.ErrorResp{
 			Code: http.StatusBadRequest,
 			Msg:  "invalid URL path",
 		})
@@ -140,10 +137,10 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 		embedFs = http.Dir(ro.Root)
 	}
 
-	f, d, errResp := ro.openEmbedFsFile(embedFs, _path)
+	f, d, errResp := route.HttpFS(embedFs, _path)
 	defer vclose.Close(f)
 	if errResp != nil {
-		ro.error(w, *errResp)
+		route.RenderErrorText(w, errResp)
 		return
 	}
 	modTime := d.ModTime()
@@ -157,52 +154,9 @@ func (ro *Router) singleFile(w http.ResponseWriter, r *http.Request, _path, defa
 	http.ServeContent(w, r, d.Name(), modTime, f)
 }
 
-func (ro *Router) openEmbedFsFile(embedFs http.FileSystem, _path string) (http.File, fs.FileInfo, *http_types.ErrorResp) {
-	f, err := embedFs.Open(_path)
-	if err != nil {
-		msg, code := toHTTPError(err)
-		return nil, nil, &http_types.ErrorResp{
-			Code: code,
-			Msg:  msg,
-		}
-	}
-	d, _err := f.Stat()
-	if _err != nil {
-		msg, code := toHTTPError(err)
-		return nil, nil, &http_types.ErrorResp{
-			Code: code,
-			Msg:  msg,
-		}
-	}
-	if d.IsDir() {
-		return nil, nil, &http_types.ErrorResp{
-			Code: http.StatusForbidden,
-			Msg:  http.StatusText(http.StatusForbidden),
-		}
-	}
-	return f, d, nil
-}
-
-func toHTTPError(err error) (msg string, httpStatus int) {
-	if errors.Is(err, fs.ErrNotExist) {
-		return "404 page not found", http.StatusNotFound
-	}
-	if errors.Is(err, fs.ErrPermission) {
-		return "403 Forbidden", http.StatusForbidden
-	}
-	// Default:
-	return "500 Internal Server Error", http.StatusInternalServerError
-}
-
-// 显示 favicon
-func (ro *Router) favicon(w http.ResponseWriter) {
-	w.WriteHeader(200)
-	rd := bytes.NewReader(route.Favicon[:])
-	_, _ = io.Copy(w, rd)
-}
-
 const CaptchaID = "captcha"
 
+// Deprecated: 请使用captcha.Text
 func (ro *Router) Captcha(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")

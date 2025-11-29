@@ -5,7 +5,7 @@ import (
 
 	"github.com/helays/utils/v2/db/exportkit"
 	"github.com/helays/utils/v2/db/exportkit/gormkit"
-	"github.com/helays/utils/v2/net/http/httpTools"
+	"github.com/helays/utils/v2/net/http/httpkit"
 	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 )
@@ -60,7 +60,7 @@ func (e *RowsExport) Response(w http.ResponseWriter) error {
 	export.OnInitColumn(func(et exportkit.ExportType) error {
 		if et == exportkit.ExportTypeCsv {
 			w.Header().Set("Content-Type", "text/csv")
-			httpTools.SetDisposition(w, e.FileName+".csv")
+			httpkit.SetDisposition(w, e.FileName+".csv")
 		}
 		return nil
 	})
@@ -68,7 +68,7 @@ func (e *RowsExport) Response(w http.ResponseWriter) error {
 	export.BeforeFinalize(func(et exportkit.ExportType) error {
 		if et == exportkit.ExportTypeExcel {
 			w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-			httpTools.SetDisposition(w, e.FileName+".xlsx")
+			httpkit.SetDisposition(w, e.FileName+".xlsx")
 		}
 		return nil
 	})

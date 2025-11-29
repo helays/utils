@@ -14,8 +14,8 @@ import (
 	"github.com/helays/utils/v2/close/httpClose"
 	"github.com/helays/utils/v2/crypto/xxhashkit"
 	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/logger/zaploger"
 	"github.com/helays/utils/v2/net/http/mime"
+	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipkit"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/tools"
@@ -76,8 +76,8 @@ func (h *HttpServer) initParams() {
 		h.serverNameMap[strings.ToLower(dom)] = 0
 	}
 	if h.Logger.LogLevelConfigs != nil {
-		var err error
-		h.logger, err = zaploger.New(&h.Logger)
+		h.logger = middleware.NewResponseProcessor()
+		err := h.logger.SetLoggerConfig(h.Logger)
 		ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
 	}
 	h.iptablesInit()

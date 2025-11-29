@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/helays/utils/v2/net/http/httpServer/request"
+	"github.com/helays/utils/v2/net/http/request"
 	"github.com/helays/utils/v2/tools/decode/json_decode_tee"
 )
 

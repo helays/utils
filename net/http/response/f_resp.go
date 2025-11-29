@@ -19,9 +19,9 @@ import (
 	"github.com/helays/utils/v2/close/osClose"
 	"github.com/helays/utils/v2/dataType/customWriter"
 	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/httpServer/request"
-	"github.com/helays/utils/v2/net/http/httpTools"
+	"github.com/helays/utils/v2/net/http/httpkit"
 	mime2 "github.com/helays/utils/v2/net/http/mime"
+	"github.com/helays/utils/v2/net/http/request"
 	"github.com/helays/utils/v2/tools"
 )
 
@@ -100,7 +100,7 @@ func Play(path string, w http.ResponseWriter, r *http.Request, args ...any) {
 	if len(args) > 0 {
 		if args[0] == "downloader" {
 			w.Header().Del("Accept-Ranges")
-			httpTools.SetDisposition(w, filepath.Base(path))
+			httpkit.SetDisposition(w, filepath.Base(path))
 		}
 	}
 	if rangeSwap != "" {
@@ -224,7 +224,7 @@ func SetReturnFile(w http.ResponseWriter, r *http.Request, file string) {
 	w.Header().Set("Content-Type", mimeType)
 	// 对文件名进行URL转义，以支持中文等非ASCII字符
 	fileName := filepath.Base(file)
-	httpTools.SetDisposition(w, fileName)
+	httpkit.SetDisposition(w, fileName)
 	_, _ = io.Copy(w, f)
 
 }
@@ -244,7 +244,7 @@ func SetDownloadBytes(w http.ResponseWriter, r *http.Request, b *[]byte, fileNam
 	}
 
 	w.Header().Set("Content-Type", _m)
-	httpTools.SetDisposition(w, fileName)
+	httpkit.SetDisposition(w, fileName)
 	w.Header().Set("Content-Length", strconv.Itoa(len(*b)))
 	_, _ = w.Write(*b)
 
@@ -356,7 +356,7 @@ func PostQueryFieldWithValidRegexp(w http.ResponseWriter, r *http.Request, field
 
 // QueryFieldWithValidRegexp 检查查询参数是否符合指定的正则表达式规则，并返回匹配结果。
 func QueryFieldWithValidRegexp(w http.ResponseWriter, r *http.Request, field string, rule *regexp.Regexp) (string, bool) {
-	id, err := httpTools.QueryValid(r.URL.Query(), field, rule)
+	id, err := httpkit.QueryValid(r.URL.Query(), field, rule)
 	if err != nil {
 		SetReturnErrorDisableLog(w, err, http.StatusBadRequest)
 		return "", false

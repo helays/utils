@@ -27,7 +27,7 @@ type ResponseProcessor struct {
 	logger      *zaploger.Logger
 }
 
-func NewCompression() *ResponseProcessor {
+func NewResponseProcessor() *ResponseProcessor {
 	c := &ResponseProcessor{}
 	return c
 }

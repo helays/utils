@@ -8,7 +8,7 @@ import (
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/db/userDb"
 	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/httpServer/response"
+	"github.com/helays/utils/v2/net/http/response"
 	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 )

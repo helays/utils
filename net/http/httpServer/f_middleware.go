@@ -3,10 +3,10 @@ package httpServer
 import (
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/helays/utils/v2/close/httpClose"
 	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/net/http/server"
 	"golang.org/x/net/websocket"
 )
 
@@ -30,6 +30,7 @@ func (h *HttpServer) middleware(u string, f http.Handler, callback ...Middleware
 		h.allowIPAccess,
 		h.debugIPAccess,
 		h.cors,
+		h.logger.Handler,
 	}
 
 	if h.Security.DefaultValidLast {
@@ -50,7 +51,7 @@ func (h *HttpServer) middleware(u string, f http.Handler, callback ...Middleware
 
 // Socket 公共中间件
 func (h *HttpServer) socketMiddleware(u string, f websocket.Handler) {
-	handler := websocket.Handler(func(ws *websocket.Conn) {
+	wsHandler := websocket.Handler(func(ws *websocket.Conn) {
 		defer vclose.Close(ws)
 		if len(h.serverNameMap) > 0 {
 			// 提取并转换为小写的host（忽略端口部分）
@@ -61,9 +62,6 @@ func (h *HttpServer) socketMiddleware(u string, f websocket.Handler) {
 				return
 			}
 		}
-
-		start := time.Now()
-		defer h.socketLogger(ws, start)
 		// 白名单验证
 		if h.denyIPMatch != nil && h.checkDenyIpAccess(nil, ws.Request()) {
 			vclose.Close(ws)
@@ -79,5 +77,21 @@ func (h *HttpServer) socketMiddleware(u string, f websocket.Handler) {
 		}
 		f(ws)
 	})
-	h.mux.Handle(u, handler)
+
+	mid := []MiddlewareFunc{
+		h.denyIPAccess,
+		h.allowIPAccess,
+		h.debugIPAccess,
+		h.cors,
+		h.logger.Handler,
+	}
+	handler := Chain(mid...)(wsHandler)
+
+	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer httpClose.CloseReq(r)
+		w.Header().Set("server", server.Version)
+		handler.ServeHTTP(w, r)
+	})
+
+	h.mux.Handle(u, finalHandler)
 }
