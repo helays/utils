@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/net/http/route/captcha"
 	"github.com/helays/utils/v2/security/lockpolicy"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -92,8 +93,8 @@ type MFAPolicy struct {
 // 当 SessionTrigger > 0时，将启用连续n次验证码失败，锁定会话 SessionLockoutTime 时长
 // 如果 SessionLockoutCount > 0,那么连续n次锁会话后，将锁定IP IPLockoutTime 时长。
 type CaptchaConfig struct {
-	CaptchaEnabled    bool                `json:"captcha_enabled" yaml:"captcha_enabled"`         // 启用验证码
-	CaptchaType       CaptchaType         `json:"captcha_type" yaml:"captcha_type"`               // 验证码类型
+	CaptchaEnabled    bool                `json:"captcha_enabled" yaml:"captcha_enabled"` // 启用验证码
+	Captcha           captcha.Config      `json:"captcha" yaml:"captcha"`
 	CaptchaLockPolicy lockpolicy.Policies `json:"captcha_lock_policy" yaml:"captcha_lock_policy"` // 验证码验证失败 锁定策略
 }
 
@@ -108,14 +109,4 @@ const (
 	MFATypeBio      MFAType = "bio"      // 生物识别
 	MFATypePush     MFAType = "push"     // 推送通知
 	MFATypeWebAuthn MFAType = "webauthn" // Web认证
-)
-
-// CaptchaType 验证码类型
-type CaptchaType string
-
-const (
-	CaptchaTypeImage  CaptchaType = "image"  // 图形验证码
-	CaptchaTypeSlider CaptchaType = "slider" // 滑块验证
-	CaptchaTypeClick  CaptchaType = "click"  // 点选验证
-	CaptchaTypeSound  CaptchaType = "sound"  // 语音验证
 )

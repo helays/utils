@@ -3,13 +3,14 @@ package encodinghelper
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
+	"unicode/utf16"
+
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
-	"strings"
-	"unicode/utf16"
 )
 
 func ToUTF8(src []byte, srcCode string) ([]byte, error) {

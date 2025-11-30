@@ -4,34 +4,29 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/helays/utils/v2/net/http/httpServer/request"
-	"github.com/helays/utils/v2/net/http/httpServer/responsewriter"
+	"github.com/helays/utils/v2/net/http/request"
 )
 
 // 默认验证中间件
 func (h *HttpServer) defaultValid(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		recorder := responsewriter.New(w) // 创建包装器
 		if len(h.serverNameMap) > 0 {
 			// 提取并转换为小写的host（忽略端口部分）
 			host := strings.ToLower(strings.SplitN(r.Host, ":", 2)[0])
 			if _, ok := h.serverNameMap[host]; !ok {
-				recorder.WriteHeader(http.StatusBadGateway)
+				w.WriteHeader(http.StatusBadGateway)
 				return
 			}
 		}
-		start := time.Now()
-		defer h.httpLogger(recorder, r, start)
 		// add header
-		recorder.Header().Set("server", "vs/1.0")
-		recorder.Header().Set("connection", "keep-alive")
+		w.Header().Set("server", "vs/1.0")
+		w.Header().Set("connection", "keep-alive")
 
-		if h.CommonCallback != nil && !h.CommonCallback(recorder, r) {
+		if h.CommonCallback != nil && !h.CommonCallback(w, r) {
 			return
 		}
-		next.ServeHTTP(recorder, r)
+		next.ServeHTTP(w, r)
 	})
 }
 

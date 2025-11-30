@@ -341,7 +341,7 @@ func BytesToUint16(b []byte) uint16 {
 	bytesBuffer := bytes.NewBuffer(b)
 	var tmp uint16
 	_ = binary.Read(bytesBuffer, binary.BigEndian, &tmp)
-	return uint16(tmp)
+	return tmp
 }
 
 // EmptyString2 空字符串转为 -
@@ -408,6 +408,7 @@ func MapDeepCopy[T any](src T, dst *T) {
 }
 
 // Fileabs 生成文件的绝对路径
+// noinspection SpellCheckingInspection
 func Fileabs(cpath string) string {
 	if filepath.IsAbs(cpath) {
 		return cpath

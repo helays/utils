@@ -1,9 +1,10 @@
 package httpfile
 
 import (
-	"github.com/helays/utils/v2/close/vclose"
 	"net/http"
 	"os"
+
+	"github.com/helays/utils/v2/close/vclose"
 )
 
 // NoSymlinkFileSystem 禁用符号链接的文件系统包装器

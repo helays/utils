@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/helays/utils/v2/config"
+	"golang.org/x/exp/constraints"
 )
 
 // ArrayChunk 高性能泛型切片分块函数
@@ -228,9 +229,9 @@ func ContainsAnyHashBest[T any, H comparable](elems []T, targets []T, hashFunc f
 // Ordered 约束，表示可排序的类型
 type Ordered interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
-		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
-		~float32 | ~float64 |
-		~string
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+	~float32 | ~float64 |
+	~string
 }
 
 // SortSlice 对 Ordered 类型的切片进行排序
@@ -300,4 +301,31 @@ func IsArray(v any) bool {
 
 	// 检查是否是数组或切片
 	return kind == reflect.Array || kind == reflect.Slice
+}
+
+func SumSlice[T Ordered](slice []T) T {
+	var sum T
+	for _, v := range slice {
+		sum += v
+	}
+	return sum
+}
+
+// Number 使用 constraints 包简化类型约束
+type Number interface {
+	constraints.Integer | constraints.Float
+}
+
+// AvgSlice 返回原类型的平均数（浮点结果）
+func AvgSlice[T Number](slice []T) T {
+	if len(slice) == 0 {
+		return 0
+	}
+
+	var sum T
+	for _, v := range slice {
+		sum += v
+	}
+
+	return sum / T(len(slice))
 }
