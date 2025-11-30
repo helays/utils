@@ -99,7 +99,12 @@ type writer struct {
 
 func (c *writer) WriteHeader(status int) {
 	c.status = status
+
+	h := c.w.Header()
 	if c.compressor != nil {
+		if !shouldCompress(h.Get("Content-Type")) {
+			c.closeCompressor()
+		}
 		c.Header().Del("Content-Length")
 	}
 
@@ -111,18 +116,13 @@ func (c *writer) Header() http.Header {
 }
 
 func (c *writer) Write(b []byte) (n int, err error) {
-	if c.compressor != nil {
-		h := c.w.Header()
-		if shouldCompress(h.Get("Content-Type")) {
-			h.Del("Content-Length")
-			n, err = c.compressor.Write(b)
-
-		} else {
-			h.Del("Content-Encoding")
-			n, err = c.w.Write(b)
-		}
-	} else {
+	h := c.w.Header()
+	if c.compressor == nil || !shouldCompress(h.Get("Content-Type")) {
+		c.closeCompressor()
 		n, err = c.w.Write(b)
+	} else {
+		h.Del("Content-Length")
+		n, err = c.compressor.Write(b)
 	}
 	c.bytesWritten += int64(n)
 	return n, err
@@ -140,6 +140,7 @@ func (c *writer) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 			vclose.Close(closer)
 		}
 		c.compressor = nil
+		c.closeCompressor()
 	}
 
 	// 移除压缩相关的头部，避免客户端误解
@@ -150,9 +151,12 @@ func (c *writer) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 func (c *writer) ReadFrom(r io.Reader) (n int64, err error) {
-	if c.compressor == nil {
+	h := c.w.Header()
+	if c.compressor == nil || !shouldCompress(h.Get("Content-Type")) {
+		c.closeCompressor()
 		return io.Copy(c.w, r)
 	}
+	h.Del("Content-Length")
 	return io.Copy(c.compressor, r)
 }
 
@@ -169,4 +173,8 @@ func (c *writer) Flush() {
 	if f, ok := c.w.(http.Flusher); ok {
 		f.Flush()
 	}
+}
+
+func (c *writer) closeCompressor() {
+	c.w.Header().Del("Content-Encoding")
 }
