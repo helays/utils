@@ -13,6 +13,7 @@ type RespCode interface {
 	RespCode() int   // 设置业务响应码
 	Message() string // 设置业务响应信息
 	EnableLog() bool // 是否记录日志
+
 }
 
 // RespErrWithCode 根据业务上配置的错误码，进行数据响应
@@ -23,7 +24,9 @@ func RespErrWithCode(w http.ResponseWriter, r *http.Request, respInfo RespCode, 
 	respData := resp{
 		Code: respInfo.RespCode(),
 		Msg:  msg,
-		Err:  err.Error(),
+	}
+	if err != nil {
+		respData.Err = err.Error()
 	}
 	dl := len(d)
 	if dl == 1 {
