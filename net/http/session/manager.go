@@ -63,7 +63,7 @@ func New(ctx context.Context, storage StorageDriver, opt ...*Options) *Manager {
 	if len(opt) > 0 {
 		options = opt[0]
 	}
-	options.CookieName = tools.Ternary(options.CookieName == "", CookieName, options.CookieName)
+	options.Cookie.Name = tools.Ternary(options.Cookie.Name == "", CookieName, options.Cookie.Name)
 	options.CheckInterval = tools.Ternary(options.CheckInterval <= 0, Interval, options.CheckInterval)
 	options.Carrier = tools.Ternary(options.Carrier == "", "cookie", options.Carrier)
 	options.GcProbability = tools.Ternary(options.GcProbability <= 0, 0.9, options.GcProbability) // 默认GC 90%

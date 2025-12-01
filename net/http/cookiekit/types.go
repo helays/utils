@@ -29,6 +29,14 @@ type Config struct {
 	Partitioned bool          `json:"partitioned" yaml:"partitioned"` // 布尔值，表示是否为分区 Cookie（跨站上下文中的存储隔离）
 }
 
+func (c *Config) Clone() *Config {
+	if c == nil {
+		return nil
+	}
+	clone := *c // 浅拷贝基础字段
+	return &clone
+}
+
 func SetCookie(w http.ResponseWriter, value *Config) {
 	cookie := http.Cookie{
 		Name:        value.Name,
@@ -51,6 +59,8 @@ func DelCookie(w http.ResponseWriter, value *Config) {
 		Name:     value.Name,
 		Value:    "",
 		Path:     tools.Ternary(value.Path == "", "/", value.Path),
+		Domain:   value.Domain,
+		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
 		Secure:   value.Secure,
 		HttpOnly: value.HttpOnly,

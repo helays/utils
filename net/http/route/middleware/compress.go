@@ -104,8 +104,9 @@ func (c *writer) WriteHeader(status int) {
 	if c.compressor != nil {
 		if !shouldCompress(h.Get("Content-Type")) {
 			c.closeCompressor()
+		} else {
+			c.Header().Del("Content-Length")
 		}
-		c.Header().Del("Content-Length")
 	}
 
 	c.w.WriteHeader(status)
@@ -139,7 +140,6 @@ func (c *writer) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 		if closer, ok := c.compressor.(io.Closer); ok {
 			vclose.Close(closer)
 		}
-		c.compressor = nil
 		c.closeCompressor()
 	}
 
@@ -177,4 +177,5 @@ func (c *writer) Flush() {
 
 func (c *writer) closeCompressor() {
 	c.w.Header().Del("Content-Encoding")
+	c.compressor = nil
 }
