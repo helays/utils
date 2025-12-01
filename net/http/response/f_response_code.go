@@ -16,22 +16,22 @@ type RespCode interface {
 }
 
 // RespErrWithCode 根据业务上配置的错误码，进行数据响应
-func RespErrWithCode(w http.ResponseWriter, r *http.Request, resp RespCode, err error, d ...any) {
+func RespErrWithCode(w http.ResponseWriter, r *http.Request, respInfo RespCode, err error, d ...any) {
 	RespJson(w)
-	w.WriteHeader(resp.HttpCode())
-	msg := resp.Message()
-	respData := map[string]any{
-		"code": resp.RespCode(),
-		"msg":  msg,
-		"err":  err.Error(),
+	w.WriteHeader(respInfo.HttpCode())
+	msg := respInfo.Message()
+	respData := resp{
+		Code: respInfo.RespCode(),
+		Msg:  msg,
+		Err:  err.Error(),
 	}
 	dl := len(d)
 	if dl == 1 {
-		respData["data"] = d[0]
+		respData.Data = d[0]
 	} else if dl > 1 {
-		respData["data"] = d
+		respData.Data = d
 	}
-	if resp.EnableLog() {
+	if respInfo.EnableLog() {
 		ulogs.Errorf("IP[%s]调用接口接口[%s]失败，描述[%s]，错误信息 %v", request.Getip(r), r.URL.String(), msg, err)
 	}
 	_ = json.NewEncoder(w).Encode(respData)
@@ -39,18 +39,19 @@ func RespErrWithCode(w http.ResponseWriter, r *http.Request, resp RespCode, err 
 }
 
 // RespWithCode 根据业务上配置的响应码，进行数据响应
-func RespWithCode(w http.ResponseWriter, resp RespCode, d ...any) {
+func RespWithCode(w http.ResponseWriter, respInfo RespCode, d ...any) {
 	RespJson(w)
-	w.WriteHeader(resp.HttpCode())
-	respData := map[string]any{
-		"code": resp.RespCode(),
-		"msg":  resp.Message(),
+	w.WriteHeader(respInfo.HttpCode())
+
+	respData := resp{
+		Code: respInfo.RespCode(),
+		Msg:  respInfo.Message(),
 	}
 	dl := len(d)
 	if dl == 1 {
-		respData["data"] = d[0]
+		respData.Data = d[0]
 	} else if dl > 1 {
-		respData["data"] = d
+		respData.Data = d
 	}
 	_ = json.NewEncoder(w).Encode(respData)
 

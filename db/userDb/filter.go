@@ -12,7 +12,7 @@ func FilterSoftDelete(tableName ...string) func(db *gorm.DB) *gorm.DB {
 		if len(tableName) > 0 {
 			column.Table = tableName[0]
 		}
-		return db.Where(clause.Eq{
+		return db.Where(clause.Neq{
 			Column: column,
 			Value:  1,
 		})

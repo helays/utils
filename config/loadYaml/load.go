@@ -2,15 +2,16 @@ package loadYaml
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
 	"github.com/helays/utils/v2/close/osClose"
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/tools"
 	"github.com/helays/utils/v2/tools/fileinclude"
 	"gopkg.in/yaml.v3"
-	"io"
-	"os"
-	"path/filepath"
 )
 
 func LoadYaml(i any) {
