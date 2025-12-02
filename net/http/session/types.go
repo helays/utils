@@ -80,3 +80,6 @@ const (
 	EngineMemory Engine = "memory"
 	EngineFile   Engine = "file"
 )
+
+// noinspection all
+const SessionID = "session_id"
