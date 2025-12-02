@@ -83,3 +83,8 @@ const (
 
 // noinspection all
 const SessionID = "session_id"
+
+type Callback struct {
+	BeforeRenew func(expire dataType.CustomTime, data any) error
+	AfterRenew  func(expire dataType.CustomTime, data any) error
+}

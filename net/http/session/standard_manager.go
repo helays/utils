@@ -135,7 +135,7 @@ func (m *Manager) GetUp(w http.ResponseWriter, r *http.Request, name string, dst
 // GetUpByRemainTime 根据剩余时间更新session
 // 当session 的有效期小于duration，那么将session的有效期延长到 session.Duration-duration
 // 比如：设置了15天有效期，duration设置一天，那么当检测到session的有效期 不大于一天的时候就更新session
-func (m *Manager) GetUpByRemainTime(w http.ResponseWriter, r *http.Request, name string, dst any, duration time.Duration) error {
+func (m *Manager) GetUpByRemainTime(w http.ResponseWriter, r *http.Request, name string, dst any, duration time.Duration, callbacks ...Callback) error {
 	v := reflect.ValueOf(dst)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return ErrNotPointer
@@ -145,9 +145,12 @@ func (m *Manager) GetUpByRemainTime(w http.ResponseWriter, r *http.Request, name
 		return err
 	}
 	v.Elem().Set(reflect.ValueOf(sv.Values.val))
-	if time.Time(sv.ExpireTime).Sub(time.Now()) <= duration {
-		sv.ExpireTime = dataType.CustomTime(time.Now().Add(sv.Duration))
-		return m.storage.Save(sv)
+
+	// 注意：当剩余时间 <= duration 时，会续期整个session.Duration
+	// 例如：session=1小时，duration=1分钟
+	// 剩余59秒时会触发，续期到1小时后
+	if sv.ExpireTime.Sub(time.Now()) <= duration {
+		return m.extendSession(sv, callbacks...)
 	}
 	return nil
 }
@@ -155,7 +158,7 @@ func (m *Manager) GetUpByRemainTime(w http.ResponseWriter, r *http.Request, name
 // GetUpByDuration 根据duration
 // 距离session 的过期时间少了duration那么长时间后，就延长 duration
 // 比如：设置了15天的有效期，duration设置成1天，当有效期剩余不到 15-1 的时候延长duration
-func (m *Manager) GetUpByDuration(w http.ResponseWriter, r *http.Request, name string, dst any, duration time.Duration) error {
+func (m *Manager) GetUpByDuration(w http.ResponseWriter, r *http.Request, name string, dst any, duration time.Duration, callbacks ...Callback) error {
 	v := reflect.ValueOf(dst)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return ErrNotPointer
@@ -165,9 +168,35 @@ func (m *Manager) GetUpByDuration(w http.ResponseWriter, r *http.Request, name s
 		return err
 	}
 	v.Elem().Set(reflect.ValueOf(sv.Values.val))
-	if time.Time(sv.ExpireTime).Sub(time.Now()) <= (sv.Duration - duration) {
-		sv.ExpireTime = dataType.CustomTime(time.Now().Add(sv.Duration))
-		return m.storage.Save(sv)
+
+	// 注意，当有效期剩余时间少于 duration-sv.Duration 时，会触发
+	// 例如：session=15天，duration=1天
+	// 那么时间过了一天，就会触发，延长session有效期到15天
+	if sv.ExpireTime.Sub(time.Now()) <= (sv.Duration - duration) {
+		return m.extendSession(sv, callbacks...)
+	}
+	return nil
+}
+
+// 延长session有效期
+func (m *Manager) extendSession(sv *Session, callbacks ...Callback) error {
+	sv.ExpireTime = dataType.CustomTime(time.Now().Add(sv.Duration))
+	for _, cb := range callbacks {
+		if cb.BeforeRenew != nil {
+			if err := cb.BeforeRenew(sv.ExpireTime, sv.Values.val); err != nil {
+				return err
+			}
+		}
+	}
+	if err := m.storage.Save(sv); err != nil {
+		return err
+	}
+	for _, cb := range callbacks {
+		if cb.AfterRenew != nil {
+			if err := cb.AfterRenew(sv.ExpireTime, sv.Values.val); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
