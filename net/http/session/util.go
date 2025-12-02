@@ -1,12 +1,13 @@
 package session
 
 import (
-	"strings"
+	"encoding/hex"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 // 创建session ID
 func newSessionId() string {
-	return strings.ReplaceAll(uuid.NewV4().String(), "-", "")
+	u := uuid.New()
+	return hex.EncodeToString(u[:])
 }
