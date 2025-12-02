@@ -177,5 +177,6 @@ func (c *writer) Flush() {
 
 func (c *writer) closeCompressor() {
 	c.w.Header().Del("Content-Encoding")
+	c.w.Header().Del("Vary")
 	c.compressor = nil
 }
