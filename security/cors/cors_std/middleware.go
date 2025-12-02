@@ -1,4 +1,4 @@
-package middleware
+package cors_std
 
 import (
 	"net/http"
