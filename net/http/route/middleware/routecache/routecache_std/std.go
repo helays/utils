@@ -13,9 +13,13 @@ type STD[T comparable] struct {
 }
 
 func New[T comparable](ctxField string) *STD[T] {
+	return NewWithCache(ctxField, routecache.New[T]())
+}
+
+func NewWithCache[T comparable](ctxField string, cache *routecache.RouteCache[T]) *STD[T] {
 	return &STD[T]{
 		ctxField: ctxField,
-		cache:    routecache.New[T](),
+		cache:    cache,
 	}
 }
 
