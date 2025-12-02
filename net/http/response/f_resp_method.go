@@ -2,6 +2,7 @@ package response
 
 import (
 	"net/http"
+	"strings"
 )
 
 // MethodNotAllow 405
@@ -14,10 +15,26 @@ func InternalServerError(w http.ResponseWriter) {
 
 // NotFound 设置返回 404
 func NotFound(w http.ResponseWriter, msg ...string) {
-	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	errMsg := http.StatusText(http.StatusNotFound)
+	if len(msg) > 0 {
+		errMsg = strings.Join(msg, "<br>")
+	}
+	http.Error(w, errMsg, http.StatusNotFound)
 }
 
 // Forbidden 设置系统返回403
 func Forbidden(w http.ResponseWriter, msg ...string) {
-	http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+	errMsg := http.StatusText(http.StatusForbidden)
+	if len(msg) > 0 {
+		errMsg = strings.Join(msg, "<br>")
+	}
+	http.Error(w, errMsg, http.StatusForbidden)
+}
+
+func Status(w http.ResponseWriter, code int, msg ...string) {
+	errMsg := http.StatusText(code)
+	if len(msg) > 0 {
+		errMsg = strings.Join(msg, "<br>")
+	}
+	http.Error(w, errMsg, code)
 }
