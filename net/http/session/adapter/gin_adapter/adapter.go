@@ -39,8 +39,8 @@ func (m *GinManager) Flashes(c *gin.Context, name string, dst any) error {
 	return m.manager.Flashes(c.Writer, c.Request, name, dst)
 }
 
-func (m *GinManager) Set(c *gin.Context, name string, value any, duration ...time.Duration) error {
-	return m.manager.Set(c.Writer, c.Request, name, value, duration...)
+func (m *GinManager) Set(c *gin.Context, value *session.Value) error {
+	return m.manager.Set(c.Writer, c.Request, value)
 }
 
 func (m *GinManager) Del(c *gin.Context, name string) error {

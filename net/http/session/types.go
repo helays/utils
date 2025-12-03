@@ -3,6 +3,7 @@ package session
 import (
 	"database/sql/driver"
 	"errors"
+	"time"
 
 	"github.com/helays/utils/v2/dataType"
 	"github.com/helays/utils/v2/tools"
@@ -87,4 +88,11 @@ const SessionID = "session_id"
 type Callback struct {
 	BeforeRenew func(expire dataType.CustomTime, data any) error
 	AfterRenew  func(expire dataType.CustomTime, data any) error
+}
+
+type Value struct {
+	SessionID string        // 可自定义session id
+	Field     string        // session 值字段
+	Value     any           // session 值
+	TTL       time.Duration // 有效期
 }

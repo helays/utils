@@ -6,8 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// 创建session ID
-func newSessionId() string {
+// GenerateSessionID 创建session ID
+func GenerateSessionID() string {
 	u := uuid.New()
 	return hex.EncodeToString(u[:])
 }

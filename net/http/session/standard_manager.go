@@ -8,6 +8,7 @@ import (
 
 	"github.com/helays/utils/v2/dataType"
 	"github.com/helays/utils/v2/net/http/cookiekit"
+	"github.com/helays/utils/v2/tools"
 )
 
 // c0449773432e4a478d157a8a923199ac
@@ -21,26 +22,37 @@ func (m *Manager) cookieName() string {
 }
 
 // 获取sessionId
-func (m *Manager) getSessionId(w http.ResponseWriter, r *http.Request) (string, error) {
+func (m *Manager) getSessionId(w http.ResponseWriter, r *http.Request, sessionId ...string) (string, error) {
+	var sid string
 	switch m.options.Carrier {
 	case CookieCarrierCookie, "":
 		cookie, err := r.Cookie(m.options.Cookie.Name)
 		if err != nil || !sessionRegexp.MatchString(cookie.Value) {
-			sid := newSessionId()
+			if len(sessionId) > 0 && sessionId[0] != "" {
+				sid = sessionId[0]
+			} else {
+				sid = GenerateSessionID()
+			}
 			m.setSessionId(w, sid)
-			return sid, nil
+		} else {
+			sid = cookie.Value
 		}
-		return cookie.Value, nil
 
 	case CookieCarrierHeader:
-		sid := r.Header.Get(m.cookieName())
+		sid = r.Header.Get(m.cookieName())
 		if sid == "" || !sessionRegexp.MatchString(sid) {
-			sid = newSessionId()
+			if len(sessionId) > 0 && sessionId[0] != "" {
+				sid = sessionId[0]
+			} else {
+				sid = GenerateSessionID()
+			}
 			m.setSessionId(w, sid)
 		}
 		return sid, nil
+	default:
+		return "", ErrUnSupport
 	}
-	return "", ErrUnSupport
+	return sid, nil
 }
 
 func (m *Manager) setSessionId(w http.ResponseWriter, sid string) {
@@ -93,11 +105,18 @@ func (m *Manager) getSession(w http.ResponseWriter, r *http.Request, name string
 }
 
 // UpdateSessionId 更新sessionId
-func (m *Manager) UpdateSessionId(w http.ResponseWriter, r *http.Request) (string, error) {
+func (m *Manager) UpdateSessionId(w http.ResponseWriter, r *http.Request, sessionId ...string) (string, error) {
 	if err := m.Destroy(w, r); err != nil {
 		return "", err
 	}
-	return m.getSessionId(w, r)
+	var sid string
+	if len(sessionId) > 0 && sessionId[0] != "" {
+		sid = sessionId[0]
+	} else {
+		sid = GenerateSessionID()
+	}
+	m.setSessionId(w, sid)
+	return sid, nil
 }
 
 // Get 获取session
@@ -216,36 +235,35 @@ func (m *Manager) Flashes(w http.ResponseWriter, r *http.Request, name string, d
 }
 
 // Set 设置session
-func (m *Manager) Set(w http.ResponseWriter, r *http.Request, name string, value any, duration ...time.Duration) error {
+func (m *Manager) Set(w http.ResponseWriter, r *http.Request, value *Value) error {
 	sessionId, err := m.getSessionId(w, r)
 	if err != nil {
 		return err
 	}
-	return m.setVal(sessionId, name, value, duration...)
+	value.SessionID = sessionId
+	return m.setVal(value)
 }
 
-func (m *Manager) setVal(sid, name string, value any, duration ...time.Duration) error {
+func (m *Manager) setVal(value *Value) error {
 	now := time.Now()
 	sv := Session{
-		Id:         sid,
-		Name:       name,
+		Id:         value.SessionID,
+		Name:       value.Field,
 		Values:     NewSessionValue(value),
 		CreateTime: dataType.NewCustomTime(now),
-		Duration:   ExpireTime,
-	}
-	if len(duration) > 0 {
-		sv.Duration = duration[0]
+		Duration:   tools.Ternary(value.TTL > 0, value.TTL, ExpireTime),
 	}
 	sv.ExpireTime = dataType.CustomTime(now.Add(sv.Duration)) // 设置过期时间
 	return m.storage.Save(&sv)
 }
 
-func (m *Manager) SetWithNewSessionId(w http.ResponseWriter, r *http.Request, name string, value any, duration ...time.Duration) error {
-	sid, err := m.UpdateSessionId(w, r)
+func (m *Manager) SetWithNewSessionId(w http.ResponseWriter, r *http.Request, value *Value) error {
+	sid, err := m.UpdateSessionId(w, r, value.SessionID)
 	if err != nil {
 		return err
 	}
-	return m.setVal(sid, name, value, duration...)
+	value.SessionID = sid
+	return m.setVal(value)
 }
 
 func (m *Manager) Del(w http.ResponseWriter, r *http.Request, name string) error {
