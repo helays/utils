@@ -1,6 +1,7 @@
 package request
 
 import (
+	"net"
 	"net/http"
 )
 
@@ -82,8 +83,12 @@ type IPSources struct {
 
 // ParseRequestIPSources 解析请求中的所有IP相关信息
 func ParseRequestIPSources(r *http.Request) IPSources {
+	remoteAddr, _, _ := net.SplitHostPort(r.RemoteAddr)
+	if remoteAddr == "::1" {
+		remoteAddr = "127.0.0.1"
+	}
 	sources := IPSources{
-		RemoteAddr: r.RemoteAddr,
+		RemoteAddr: remoteAddr,
 	}
 
 	// 收集所有标准头部
@@ -113,19 +118,20 @@ func Getip(r *http.Request, policys ...IPSource) string {
 	if len(policys) > 0 {
 		ps = policys
 	}
-
+outerLoop: // 定义标签
 	for _, ipSource := range ps {
-		if ipSource == RemoteAddr {
-			remoteAddr = r.RemoteAddr
-			break
-		}
-		if ip := r.Header.Get(ipSource.String()); ip != "" {
-			remoteAddr = ip
-			break
+		switch ipSource {
+		case RemoteAddr:
+			continue
+		default:
+			if ip := r.Header.Get(ipSource.String()); ip != "" {
+				remoteAddr = ip
+				break outerLoop
+			}
 		}
 	}
 	if remoteAddr == "" {
-		remoteAddr = r.RemoteAddr
+		remoteAddr, _, _ = net.SplitHostPort(r.RemoteAddr)
 	}
 	if remoteAddr == "::1" {
 		remoteAddr = "127.0.0.1"
