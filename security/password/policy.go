@@ -1,4 +1,4 @@
-package security_policy
+package password
 
 import (
 	"errors"
@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// PasswordPolicy 密码策略
-type PasswordPolicy struct {
+// Policy  密码策略
+type Policy struct {
 	PasswordMinLength      int  `json:"password_min_length"`      // 密码最小长度
 	PasswordRequireUpper   bool `json:"password_require_upper"`   // 需要大写字母
 	PasswordRequireLower   bool `json:"password_require_lower"`   //需要小写字母
@@ -25,7 +25,7 @@ type PasswordPolicy struct {
 }
 
 // ValidatePassword 验证密码是否符合策略
-func (p *PasswordPolicy) ValidatePassword(password string) error {
+func (p *Policy) ValidatePassword(password string) error {
 	if len(password) < p.PasswordMinLength {
 		return fmt.Errorf("密码长度不能少于%d位", p.PasswordMinLength)
 	}
@@ -112,7 +112,7 @@ func containsSpecial(s string) bool {
 }
 
 // hasSequentialChars 检查连续字符 (abc, 123, 987等)
-func (p *PasswordPolicy) hasSequentialChars(password string) bool {
+func (p *Policy) hasSequentialChars(password string) bool {
 	if p.MaxSequentialLen < 2 {
 		return false
 	}
@@ -147,7 +147,7 @@ func (p *PasswordPolicy) hasSequentialChars(password string) bool {
 }
 
 // hasKeyboardPattern 检查键盘模式
-func (p *PasswordPolicy) hasKeyboardPattern(password string) bool {
+func (p *Policy) hasKeyboardPattern(password string) bool {
 	if p.MaxSequentialLen < 2 {
 		return false
 	}
@@ -180,7 +180,7 @@ func (p *PasswordPolicy) hasKeyboardPattern(password string) bool {
 }
 
 // hasRepeatedChars 检查重复字符
-func (p *PasswordPolicy) hasRepeatedChars(password string) bool {
+func (p *Policy) hasRepeatedChars(password string) bool {
 	if p.MaxRepeatedChars < 1 {
 		return false
 	}
@@ -208,7 +208,7 @@ func (p *PasswordPolicy) hasRepeatedChars(password string) bool {
 }
 
 // isWeakPassword 检查弱密码
-func (p *PasswordPolicy) isWeakPassword(password string) bool {
+func (p *Policy) isWeakPassword(password string) bool {
 	weakPasswords := []string{
 		"password", "123456", "qwerty", "admin", "welcome",
 		"abc123", "password1", "12345678", "123456789",
@@ -253,7 +253,7 @@ func isAllSameChars(s string) bool {
 }
 
 // GetPasswordStrength 获取密码强度评分 (0-100)
-func (p *PasswordPolicy) GetPasswordStrength(password string) int {
+func (p *Policy) GetPasswordStrength(password string) int {
 	score := 0
 
 	// 长度评分
