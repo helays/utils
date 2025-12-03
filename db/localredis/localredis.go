@@ -1,3 +1,4 @@
+// noinspection all
 package localredis
 
 import (
@@ -20,6 +21,7 @@ type hMap struct {
 	mu   sync.RWMutex
 }
 
+// noinspection all
 func NewLocalCache() *LocalCache {
 	lc := &LocalCache{
 		hData:     make(map[string]*hMap),

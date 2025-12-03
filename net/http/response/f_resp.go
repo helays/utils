@@ -291,7 +291,7 @@ func SetReturnErrorDisableLog(w http.ResponseWriter, err error, code int, msg ..
 	}
 	rsp := resp{
 		Code: code,
-		Msg:  err.Error(),
+		Err:  err.Error(),
 	}
 	ml := len(msg)
 	if ml == 1 {

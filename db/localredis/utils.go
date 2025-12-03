@@ -2,6 +2,7 @@ package localredis
 
 import "strconv"
 
+// noinspection all
 func toString(v interface{}) (string, bool) {
 	switch val := v.(type) {
 	case string:
@@ -12,6 +13,8 @@ func toString(v interface{}) (string, bool) {
 		return "", false
 	}
 }
+
+// noinspection all
 func toInt64(v interface{}) int64 {
 	switch val := v.(type) {
 	case int:

@@ -75,11 +75,9 @@ func (h *HttpServer) initParams() {
 	for _, dom := range h.ServerName {
 		h.serverNameMap[strings.ToLower(dom)] = 0
 	}
-	if h.Logger.LogLevelConfigs != nil {
-		h.logger = middleware.NewResponseProcessor()
-		err := h.logger.SetLoggerConfig(h.Logger)
-		ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
-	}
+	h.logger = middleware.NewResponseProcessor()
+	err := h.logger.SetLoggerConfig(h.Logger)
+	ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
 	h.iptablesInit()
 	h.initRouter()
 	h.server = &http.Server{Addr: h.ListenAddr}

@@ -1,11 +1,13 @@
+// noinspection all
 package localredis
 
 import (
 	"context"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"strconv"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // Get 实现，增加过期检查
