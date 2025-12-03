@@ -15,7 +15,8 @@ import (
 
 func (c *Captcha) Text() http.HandlerFunc {
 	return c.TextWithStore(func(w http.ResponseWriter, r *http.Request, key, captchaId string) error {
-		return session.GetSession().Set(w, r, key, captchaId, c.opt.Text.ExpireTime)
+		sv := session.Value{Field: key, Value: captchaId, TTL: c.opt.Text.ExpireTime}
+		return session.GetSession().Set(w, r, &sv)
 	})
 }
 

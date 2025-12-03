@@ -84,7 +84,8 @@ func (s *Std) TokenHandler(w http.ResponseWriter, r *http.Request, method, path 
 
 	// 需要将token在服务端进行存储
 	if config.Strategy == csrf.StrategyToken {
-		if err := s.sessionManager.Set(w, r, tokenField, token, config.Timeout); err != nil {
+		sv := session.Value{Field: tokenField, Value: token, TTL: config.Timeout}
+		if err := s.sessionManager.Set(w, r, &sv); err != nil {
 			return "", err
 		}
 	}
