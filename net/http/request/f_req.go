@@ -2,7 +2,6 @@ package request
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 
