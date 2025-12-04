@@ -18,6 +18,7 @@ import (
 	"github.com/helays/utils/v2/net/http/mime"
 	"github.com/helays/utils/v2/net/http/response"
 	"github.com/helays/utils/v2/net/http/route"
+	"github.com/helays/utils/v2/net/http/session"
 	"github.com/helays/utils/v2/tools"
 )
 
@@ -165,7 +166,12 @@ func (ro *Router) Captcha(w http.ResponseWriter, r *http.Request) {
 
 	// 验证码存储在session中
 	captchaId := captcha.NewLen(4)
-	if err := ro.session.Set(w, r, CaptchaID, captchaId, 4*time.Minute); err != nil {
+	sv := session.Value{
+		Field: CaptchaID,
+		Value: captchaId,
+		TTL:   4 * time.Minute,
+	}
+	if err := ro.session.Set(w, r, &sv); err != nil {
 		response.InternalServerError(w)
 		return
 	}
