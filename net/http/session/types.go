@@ -16,15 +16,18 @@ func NewSessionValue(val any) SessionValue {
 	return SessionValue{val: val}
 }
 
+// noinspection all
 type SessionValue struct {
 	val any
 }
 
 // Value return blob value, implement driver.Valuer interface
+// noinspection all
 func (s SessionValue) Value() (driver.Value, error) {
 	return msgpack.Marshal(s.val)
 }
 
+// noinspection all
 func (s *SessionValue) Scan(val any) error {
 	if val == nil {
 		*s = SessionValue{}
@@ -39,6 +42,7 @@ func (s *SessionValue) Scan(val any) error {
 }
 
 // GormDBDataType gorm db data type
+// noinspection all
 func (SessionValue) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return dataType.BlobDbDataType(db, field)
 }
