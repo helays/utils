@@ -87,12 +87,7 @@ func (m *Manager) GetSessionId(w http.ResponseWriter, r *http.Request) (string, 
 	return m.getSessionId(w, r)
 }
 
-func (m *Manager) getSession(w http.ResponseWriter, r *http.Request, name string) (*Session, error) {
-	sessionId, err := m.getSessionId(w, r)
-	if err != nil {
-		return nil, err
-	}
-
+func (m *Manager) getSession(sessionId string, name string) (*Session, error) {
 	sv, err := m.storage.Get(sessionId, name)
 	if err != nil {
 		return nil, err
@@ -121,11 +116,19 @@ func (m *Manager) UpdateSessionId(w http.ResponseWriter, r *http.Request, sessio
 
 // Get 获取session
 func (m *Manager) Get(w http.ResponseWriter, r *http.Request, name string, dst any) error {
+	sessionId, err := m.getSessionId(w, r)
+	if err != nil {
+		return err
+	}
+	return m.GetWithSessionID(sessionId, name, dst)
+}
+
+func (m *Manager) GetWithSessionID(sessionID string, name string, dst any) error {
 	v := reflect.ValueOf(dst)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return ErrNotPointer
 	}
-	sv, err := m.getSession(w, r, name)
+	sv, err := m.getSession(sessionID, name)
 	if err != nil {
 		return err
 	}
@@ -135,11 +138,15 @@ func (m *Manager) Get(w http.ResponseWriter, r *http.Request, name string, dst a
 
 // GetUp 获取session并更新有效期
 func (m *Manager) GetUp(w http.ResponseWriter, r *http.Request, name string, dst any) error {
+	sessionId, err := m.getSessionId(w, r)
+	if err != nil {
+		return err
+	}
 	v := reflect.ValueOf(dst)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return ErrNotPointer
 	}
-	sv, err := m.getSession(w, r, name)
+	sv, err := m.getSession(sessionId, name)
 	if err != nil {
 		return err
 	}
@@ -155,11 +162,15 @@ func (m *Manager) GetUp(w http.ResponseWriter, r *http.Request, name string, dst
 // 当session 的有效期小于duration，那么将session的有效期延长到 session.Duration-duration
 // 比如：设置了15天有效期，duration设置一天，那么当检测到session的有效期 不大于一天的时候就更新session
 func (m *Manager) GetUpByRemainTime(w http.ResponseWriter, r *http.Request, name string, dst any, duration time.Duration, callbacks ...Callback) error {
+	sessionId, err := m.getSessionId(w, r)
+	if err != nil {
+		return err
+	}
 	v := reflect.ValueOf(dst)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return ErrNotPointer
 	}
-	sv, err := m.getSession(w, r, name)
+	sv, err := m.getSession(sessionId, name)
 	if err != nil {
 		return err
 	}
@@ -178,11 +189,15 @@ func (m *Manager) GetUpByRemainTime(w http.ResponseWriter, r *http.Request, name
 // 距离session 的过期时间少了duration那么长时间后，就延长 duration
 // 比如：设置了15天的有效期，duration设置成1天，当有效期剩余不到 15-1 的时候延长duration
 func (m *Manager) GetUpByDuration(w http.ResponseWriter, r *http.Request, name string, dst any, duration time.Duration, callbacks ...Callback) error {
+	sessionId, err := m.getSessionId(w, r)
+	if err != nil {
+		return err
+	}
 	v := reflect.ValueOf(dst)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return ErrNotPointer
 	}
-	sv, err := m.getSession(w, r, name)
+	sv, err := m.getSession(sessionId, name)
 	if err != nil {
 		return err
 	}
@@ -222,11 +237,15 @@ func (m *Manager) extendSession(sv *Session, callbacks ...Callback) error {
 
 // Flashes 获取并删除session
 func (m *Manager) Flashes(w http.ResponseWriter, r *http.Request, name string, dst any) error {
+	sessionId, err := m.getSessionId(w, r)
+	if err != nil {
+		return err
+	}
 	v := reflect.ValueOf(dst)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return ErrNotPointer
 	}
-	sv, err := m.getSession(w, r, name)
+	sv, err := m.getSession(sessionId, name)
 	if err != nil {
 		return err
 	}
@@ -241,10 +260,10 @@ func (m *Manager) Set(w http.ResponseWriter, r *http.Request, value *Value) erro
 		return err
 	}
 	value.SessionID = sessionId
-	return m.setVal(value)
+	return m.SetVal(value)
 }
 
-func (m *Manager) setVal(value *Value) error {
+func (m *Manager) SetVal(value *Value) error {
 	now := time.Now()
 	sv := Session{
 		Id:         value.SessionID,
@@ -263,7 +282,7 @@ func (m *Manager) SetWithNewSessionId(w http.ResponseWriter, r *http.Request, va
 		return err
 	}
 	value.SessionID = sid
-	return m.setVal(value)
+	return m.SetVal(value)
 }
 
 func (m *Manager) Del(w http.ResponseWriter, r *http.Request, name string) error {
