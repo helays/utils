@@ -14,7 +14,7 @@ func Middleware() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			if sessionId, err := session.GetSessionId(w, r); err != nil {
-				ulogs.Errorf("")
+				ulogs.Errorf("解析Session ID失败 path=%s, method=%s %v", r.URL.Path, r.Method, err)
 			} else {
 				ctx = context.WithValue(ctx, SessionID, sessionId)
 			}
