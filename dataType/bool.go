@@ -12,6 +12,7 @@ import (
 // Bool 注意当使用这个类型时，在定义模型时，默认值需要带上括号。不然pg数据库会报错。
 type Bool bool
 
+// noinspection all
 func (b Bool) Value() (driver.Value, error) {
 	if b {
 		return int64(1), nil
@@ -19,6 +20,7 @@ func (b Bool) Value() (driver.Value, error) {
 	return int64(0), nil
 }
 
+// noinspection all
 func (b *Bool) Scan(value any) error {
 	if value == nil {
 		*b = false
@@ -32,11 +34,13 @@ func (b *Bool) Scan(value any) error {
 	return nil
 }
 
+// noinspection all
 func (b Bool) GormDataType() string {
 	return "int"
 }
 
-func (Bool) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+// noinspection all
+func (Bool) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeSqlite:
 		return "integer"
@@ -48,4 +52,21 @@ func (Bool) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 		return "bit"
 	}
 	return "int"
+}
+
+// noinspection all
+func (b Bool) Bool() bool {
+	return bool(b)
+}
+
+// noinspection all
+func (b Bool) Int() int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func NewBool(b bool) Bool {
+	return Bool(b)
 }
