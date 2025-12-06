@@ -33,6 +33,8 @@ func (s *Server[T]) middleware(route *routerRule[T]) {
 
 	handler = Chain(mid...)(route.handle)
 
+	// 判断当前路由 是否设置了code key 和 code。
+	// 用于将路由默认的编码信息打入请求上下文中，后续在请求中就可直接使用当前code 去匹配当前路由的一些基本信息。
 	desc := route.description
 	needSetCode := desc.CodeKey != "" && desc.Code != ""
 	codeKey := desc.CodeKey
