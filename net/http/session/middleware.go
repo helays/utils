@@ -19,7 +19,6 @@ func Middleware() func(next http.Handler) http.Handler {
 				ctx = context.WithValue(ctx, SessionID, sessionId)
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
-
 		})
 	}
 }
