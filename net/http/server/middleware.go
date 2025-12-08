@@ -39,7 +39,7 @@ func (s *Server[T]) middleware(route *routerRule[T]) {
 	needSetCode := desc.CodeKey != "" && desc.Code != ""
 	codeKey := desc.CodeKey
 	codeValue := desc.Code
-
+	
 	// 最终的处理函数
 	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer httpClose.CloseReq(r)
