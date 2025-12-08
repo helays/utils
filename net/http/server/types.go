@@ -78,29 +78,19 @@ const (
 // Middleware 修改为支持 http.Handler
 type Middleware func(next http.Handler) http.Handler
 
-type RouteCode string
-
-func (c RouteCode) String() string {
-	return string(c)
-}
-
-func NewRouteCode(code string) RouteCode {
-	return RouteCode(code)
-}
-
 type Description[T any] struct {
 	Name     string // 路由名称
 	Version  string // 路由版本
 	CodeKey  string // 路由编码字段
 	Method   string
 	Path     string
-	Code     RouteCode // 路由编码
-	Metadata *T        // 自定义描述结构
+	Code     string // 路由编码
+	Metadata *T     // 自定义描述结构
 }
 
 func NewDesc[T any](key, code string, meta *T) Description[T] {
 	return Description[T]{
-		Code:     NewRouteCode(code),
+		Code:     code,
 		CodeKey:  key,
 		Metadata: meta,
 	}
