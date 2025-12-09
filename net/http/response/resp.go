@@ -36,18 +36,8 @@ func RespJson(w http.ResponseWriter) {
 // 如果 code 异常，不想记录日志，就可以直接使用这个
 func SetReturnData(w http.ResponseWriter, code int, msg any, data ...any) {
 	RespJson(w)
-
-	if code != 0 && code != 200 {
-		httpCode := code
-		if httpCode < 100 {
-			httpCode = http.StatusInternalServerError
-		}
-		w.WriteHeader(httpCode)
-	}
-	r := resp{
-		Code: code,
-		Msg:  msg,
-	}
+	setHttpCode(w, code)
+	r := resp{Code: code, Msg: msg}
 	if len(data) > 0 {
 		r.Data = data[0]
 		if len(data) > 1 {
@@ -62,7 +52,7 @@ func SetReturnFile(w http.ResponseWriter, r *http.Request, file string) {
 	f, err := os.Open(file)
 	defer osClose.CloseFile(f)
 	if err != nil {
-		SetReturnError(w, r, err, http.StatusForbidden, "模板下载失败")
+		SetReturnError(w, r, err, http.StatusForbidden, "文件打开失败")
 	}
 	// 设置响应头
 	mimeType, _ := mime2.GetFilePathMimeType(file)
@@ -109,13 +99,7 @@ func SetReturnError(w http.ResponseWriter, r *http.Request, err error, code int,
 	}
 
 	RespJson(w)
-	if code != 0 && code != 200 {
-		httpCode := code
-		if httpCode < 100 {
-			httpCode = http.StatusInternalServerError
-		}
-		w.WriteHeader(httpCode)
-	}
+	setHttpCode(w, code)
 	_ = json.NewEncoder(w).Encode(resp{Code: code, Msg: tools.AnySlice2Str(msg)})
 }
 
@@ -129,30 +113,15 @@ func SetReturnWithoutError(w http.ResponseWriter, r *http.Request, err error, co
 	}
 	RespJson(w)
 
-	if code != 0 && code != 200 {
-		httpCode := code
-		if httpCode < 100 {
-			httpCode = http.StatusInternalServerError
-		}
-		w.WriteHeader(httpCode)
-	}
+	setHttpCode(w, code)
 	_ = json.NewEncoder(w).Encode(resp{Code: code, Msg: tools.AnySlice2Str(msg)})
 }
 
 // SetReturnErrorDisableLog 不记录日志,err 变量忽略不处理
 func SetReturnErrorDisableLog(w http.ResponseWriter, err error, code int, msg ...any) {
 	RespJson(w)
-	if code != 0 && code != 200 {
-		httpCode := code
-		if httpCode < 100 {
-			httpCode = http.StatusInternalServerError
-		}
-		w.WriteHeader(httpCode)
-	}
-	rsp := resp{
-		Code: code,
-		Err:  err.Error(),
-	}
+	setHttpCode(w, code)
+	rsp := resp{Code: code, Err: err.Error()}
 	ml := len(msg)
 	if ml == 1 {
 		rsp.Msg = msg[0]
@@ -283,5 +252,14 @@ func ParseRequestBodyAsAnySliceAndLength(w http.ResponseWriter, r *http.Request)
 func AddContentEncoding(w http.ResponseWriter, encoding string) {
 	if encoding != "" {
 		w.Header().Set("Content-Encoding", encoding)
+	}
+}
+
+func setHttpCode(w http.ResponseWriter, code int) {
+	if code != 0 && code != 200 {
+		if code < 100 {
+			code = http.StatusInternalServerError
+		}
+		w.WriteHeader(code)
 	}
 }
