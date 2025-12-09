@@ -54,7 +54,7 @@ func JsonDecode[T any](rd io.Reader, dst *T) error {
 	var buf bytes.Buffer
 	tee := io.TeeReader(rd, &buf)
 	jd := json.NewDecoder(tee)
-	if err := jd.Decode(dst); err != nil {
+	if err := jd.Decode(dst); err != nil && !errors.Is(err, io.EOF) {
 		return &JsonDecodeError{
 			Err: err,
 			Raw: buf,
