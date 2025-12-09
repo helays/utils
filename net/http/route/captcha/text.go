@@ -12,7 +12,6 @@ import (
 )
 
 // Text 文字验证码
-
 func (c *Captcha) Text() http.HandlerFunc {
 	return c.TextWithStore(func(w http.ResponseWriter, r *http.Request, key, captchaId string) error {
 		sv := session.Value{Field: key, Value: captchaId, TTL: c.opt.Text.ExpireTime}
