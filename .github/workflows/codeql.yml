@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
         - language: go
-          build-mode: none
+          build-mode: manual
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -39,11 +39,12 @@ jobs:
       if: matrix.build-mode == 'manual'
       shell: bash
       run: |
-          # 对于 Go 库，什么都不做
-          echo "Go library detected, no build required"
-          # 只是验证模块
-          go mod download 2>/dev/null || echo "No go.mod found"
-          go list ./... 2>/dev/null || echo "Package listing successful"
+        echo 'If you are using a "manual" build mode for one or more of the' \
+          'languages you are analyzing, replace this with the commands to build' \
+          'your code, for example:'
+        echo '  make bootstrap'
+        echo '  make release'
+        exit 1
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
