@@ -1,9 +1,12 @@
 package dataType
 
 import (
+	"bytes"
 	"database/sql/driver"
+	"encoding/gob"
 	"encoding/json"
 	"strings"
+	"sync"
 
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/tools"
@@ -212,4 +215,52 @@ func (i IntString[T]) IsZero() bool {
 // IsValid 检查值是否有效
 func (i IntString[T]) IsValid() bool {
 	return i.valid
+}
+
+// 全局缓存编码器/解码器
+var (
+	gobBufferPool = &sync.Pool{
+		New: func() interface{} {
+			return new(bytes.Buffer)
+		},
+	}
+)
+
+func (i IntString[T]) GobEncode() ([]byte, error) {
+	// 从池中获取 buffer
+	buf := gobBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer gobBufferPool.Put(buf) // 用完后放回池中
+
+	// 创建一次编码器（避免重复分配）
+	enc := gob.NewEncoder(buf)
+
+	// 使用字段直接编码，避免中间结构体
+	// 注意：Gob 编码多个值时，会被编码为结构体
+	if err := enc.Encode(i.value); err != nil {
+		return nil, err
+	}
+	if err := enc.Encode(i.jsonAsString); err != nil {
+		return nil, err
+	}
+	if err := enc.Encode(i.valid); err != nil {
+		return nil, err
+	}
+
+	// 返回数据的副本（buf 会被放回池中重用）
+	return bytes.Clone(buf.Bytes()), nil
+}
+
+func (i *IntString[T]) GobDecode(data []byte) error {
+	// 使用传入的数据创建 reader
+	dec := gob.NewDecoder(bytes.NewReader(data))
+
+	if err := dec.Decode(&i.value); err != nil {
+		return err
+	}
+	if err := dec.Decode(&i.jsonAsString); err != nil {
+		return err
+	}
+	err := dec.Decode(&i.valid)
+	return err
 }
