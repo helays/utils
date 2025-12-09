@@ -10,113 +10,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/helays/utils/v2/close/osClose"
 	"github.com/helays/utils/v2/dataType/customWriter"
-	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/net/http/httpkit"
 	mime2 "github.com/helays/utils/v2/net/http/mime"
 	"github.com/helays/utils/v2/net/http/request"
 	"github.com/helays/utils/v2/tools"
 )
-
-// Play 公共函数文件
-// Deprecated: As of utils v1.1.0, this value is simply [router.Play].
-func Play(path string, w http.ResponseWriter, r *http.Request, args ...any) {
-	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
-	defer osClose.CloseFile(f)
-	if err != nil {
-		ulogs.Error("文件不存在", path)
-		http.NotFound(w, r)
-		return
-	}
-	ranges := int64(0)
-	rangeEnd := int(0)
-	rangeSwap := strings.TrimSpace(r.Header.Get("Range"))
-	if rangeSwap != "" {
-		rangeSwap = rangeSwap[6:]
-		rangListSwap := strings.Split(rangeSwap, "-")
-		if len(rangeSwap) >= 1 {
-			if num, err := strconv.Atoi(rangListSwap[0]); err == nil {
-				ranges = int64(num)
-			}
-			if len(rangeSwap) > 1 {
-				if num, err := strconv.Atoi(rangListSwap[1]); err == nil {
-					rangeEnd = int(num)
-				}
-			}
-		}
-	}
-
-	var (
-		fileSize int
-		//tmpF     []byte
-	)
-	fType := strings.ToLower(filepath.Ext(path)[1:])
-	fInfo, err := f.Stat()
-	if err != nil {
-		Forbidden(w, "403 Forbidden!")
-		return
-	}
-
-	//if fType=="mp4" {
-	//	tmpF = GetMP4Duration(f)
-	//	fileSize= len(tmpF)
-	//	if rangeSwap!="" && ranges>0 {
-	//		tmpF=tmpF[ranges:]
-	//	}
-	//}else{
-	//
-	//	if rangeSwap!="" && ranges>0 {
-	//		_, _ = f.Seek(ranges, 0)
-	//	}
-	//	fileSize=int(fInfo.Size())
-	//}
-	//GetMP4Duration(f)
-	if rangeSwap != "" && ranges > 0 {
-		_, _ = f.Seek(ranges, 0)
-	}
-	fileSize = int(fInfo.Size())
-	totalSize := fileSize
-	if rangeSwap != "" && rangeEnd > 0 {
-		totalSize = rangeEnd
-	}
-	total := strconv.Itoa(fileSize)
-	m := mime2.MimeMap[fType]
-	if m == "" {
-		m = "text/html;charset=utf-8"
-	}
-	w.Header().Set("Content-Type", m)
-	w.Header().Set("Content-Length", strconv.Itoa(totalSize-int(ranges)))
-	w.Header().Set("Last-Modified", fInfo.ModTime().Format(time.RFC822))
-	w.Header().Set("Accept-Ranges", "bytes")
-	w.Header().Set("Connection", "close")
-	w.Header().Set("Etag", `W/"`+strconv.FormatInt(fInfo.ModTime().Unix(), 16)+`-`+strconv.FormatInt(fInfo.Size(), 16)+`"`)
-	if len(args) > 0 {
-		if args[0] == "downloader" {
-			w.Header().Del("Accept-Ranges")
-			httpkit.SetDisposition(w, filepath.Base(path))
-		}
-	}
-	if rangeSwap != "" {
-		w.Header().Set("Content-Range", "bytes "+strconv.Itoa(int(ranges))+"-"+strconv.Itoa(totalSize-1)+"/"+total)
-		w.WriteHeader(206)
-	} else {
-		w.WriteHeader(200)
-	}
-
-	//if fType == "mp4" {
-	//	_byt, _ := io.ReadAll(f)
-	//	_, _ = w.Write(_byt)
-	//	return
-	//}
-	_, _ = io.Copy(w, f)
-}
 
 func ReqError(r *http.Request, i ...any) {
 	log.SetPrefix("")
@@ -129,80 +32,12 @@ func RespJson(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 }
 
-func SetReturnCheckErr(w http.ResponseWriter, r *http.Request, err error, code int, msg any, data ...any) {
-	if err == nil {
-		SetReturnData(w, 0, "成功", data...)
-		return
-	}
-	code = tools.Ternary(code != 0, code, http.StatusInternalServerError)
-	SetReturnError(w, r, err, 500, msg)
-}
-
-// SetReturnCheckErrDisableLog 设置响应数据，根据err判断响应内容， 并不记录日志
-func SetReturnCheckErrDisableLog(w http.ResponseWriter, r *http.Request, err error, code int, msg any, data ...any) {
-	if err == nil {
-		SetReturnData(w, 0, "成功", data...)
-		return
-	}
-	code = tools.Ternary(code != 0, code, http.StatusInternalServerError)
-	SetReturnErrorDisableLog(w, err, code, msg)
-}
-
-// SetReturnCheckErrWithoutError 设置响应数据，根据err判断响应内容， 不响应err信息
-func SetReturnCheckErrWithoutError(w http.ResponseWriter, r *http.Request, err error, code int, msg any, data ...any) {
-	if err == nil {
-		SetReturnData(w, 0, "成功", data...)
-		return
-	}
-	code = tools.Ternary(code != 0, code, http.StatusInternalServerError)
-	SetReturnWithoutError(w, r, err, code, msg)
-}
-
-// SetReturn 设置 返回函数Play
-// Deprecated:
-func SetReturn(w http.ResponseWriter, code int, msg ...any) {
-	RespJson(w)
-	if len(msg) < 1 {
-		if code == 0 {
-			msg = []any{"成功"}
-		} else {
-			msg = []any{"失败"}
-		}
-	}
-
-	_ = json.NewEncoder(w).Encode(resp{Code: code, Msg: msg[0]})
-}
-
-// SetReturnCode 设置返回函数
-// code值异常，会记录日志
-// Deprecated: 弃用
-func SetReturnCode(w http.ResponseWriter, r *http.Request, code int, msg any, data ...any) {
-	if code != 0 && code != 200 && code != 404 {
-		ReqError(r, code, msg)
-	}
-	if _, ok := msg.(error); ok {
-		if len(data) > 0 && reflect.TypeOf(data[0]).String() == "bool" && !data[0].(bool) {
-			msg = "系统处理失败"
-		} else {
-			msg = msg.(error).Error()
-		}
-	}
-	SetReturnData(w, code, msg, data...)
-}
-
 // SetReturnData 设置返回函数
 // 如果 code 异常，不想记录日志，就可以直接使用这个
 func SetReturnData(w http.ResponseWriter, code int, msg any, data ...any) {
 	RespJson(w)
-	if code == 0 || code == 200 {
-		w.WriteHeader(200)
-	} else {
-		w.WriteHeader(code)
-	}
-	r := resp{
-		Code: code,
-		Msg:  msg,
-	}
+	setHttpCode(w, code)
+	r := resp{Code: code, Msg: msg}
 	if len(data) > 0 {
 		r.Data = data[0]
 		if len(data) > 1 {
@@ -217,7 +52,7 @@ func SetReturnFile(w http.ResponseWriter, r *http.Request, file string) {
 	f, err := os.Open(file)
 	defer osClose.CloseFile(f)
 	if err != nil {
-		SetReturnError(w, r, err, http.StatusForbidden, "模板下载失败")
+		SetReturnError(w, r, err, http.StatusForbidden, "文件打开失败")
 	}
 	// 设置响应头
 	mimeType, _ := mime2.GetFilePathMimeType(file)
@@ -255,15 +90,16 @@ func SetReturnError(w http.ResponseWriter, r *http.Request, err error, code int,
 	if code != 404 {
 		ReqError(r, append([]any{err}, msg...)...)
 	}
-	if len(msg) < 1 {
-		msg = []any{err.Error()}
-	} else {
-		msg = append(msg, err.Error())
+	if err != nil {
+		if len(msg) < 1 {
+			msg = []any{err.Error()}
+		} else {
+			msg = append(msg, err.Error())
+		}
 	}
+
 	RespJson(w)
-	if code != 0 && code != 200 {
-		w.WriteHeader(code)
-	}
+	setHttpCode(w, code)
 	_ = json.NewEncoder(w).Encode(resp{Code: code, Msg: tools.AnySlice2Str(msg)})
 }
 
@@ -277,22 +113,15 @@ func SetReturnWithoutError(w http.ResponseWriter, r *http.Request, err error, co
 	}
 	RespJson(w)
 
-	if code != 0 && code != 200 {
-		w.WriteHeader(code)
-	}
+	setHttpCode(w, code)
 	_ = json.NewEncoder(w).Encode(resp{Code: code, Msg: tools.AnySlice2Str(msg)})
 }
 
 // SetReturnErrorDisableLog 不记录日志,err 变量忽略不处理
 func SetReturnErrorDisableLog(w http.ResponseWriter, err error, code int, msg ...any) {
 	RespJson(w)
-	if code != 0 && code != 200 {
-		w.WriteHeader(code)
-	}
-	rsp := resp{
-		Code: code,
-		Err:  err.Error(),
-	}
+	setHttpCode(w, code)
+	rsp := resp{Code: code, Err: err.Error()}
 	ml := len(msg)
 	if ml == 1 {
 		rsp.Msg = msg[0]
@@ -300,6 +129,35 @@ func SetReturnErrorDisableLog(w http.ResponseWriter, err error, code int, msg ..
 		rsp.Msg = msg
 	}
 	_ = json.NewEncoder(w).Encode(rsp)
+}
+
+func SetReturnCheckErr(w http.ResponseWriter, r *http.Request, err error, code int, msg any, data ...any) {
+	if err == nil {
+		SetReturnData(w, 0, "成功", data...)
+		return
+	}
+	code = tools.Ternary(code != 0, code, http.StatusInternalServerError)
+	SetReturnError(w, r, err, 500, msg)
+}
+
+// SetReturnCheckErrDisableLog 设置响应数据，根据err判断响应内容， 并不记录日志
+func SetReturnCheckErrDisableLog(w http.ResponseWriter, r *http.Request, err error, code int, msg any, data ...any) {
+	if err == nil {
+		SetReturnData(w, 0, "成功", data...)
+		return
+	}
+	code = tools.Ternary(code != 0, code, http.StatusInternalServerError)
+	SetReturnErrorDisableLog(w, err, code, msg)
+}
+
+// SetReturnCheckErrWithoutError 设置响应数据，根据err判断响应内容， 不响应err信息
+func SetReturnCheckErrWithoutError(w http.ResponseWriter, r *http.Request, err error, code int, msg any, data ...any) {
+	if err == nil {
+		SetReturnData(w, 0, "成功", data...)
+		return
+	}
+	code = tools.Ternary(code != 0, code, http.StatusInternalServerError)
+	SetReturnWithoutError(w, r, err, code, msg)
 }
 
 // CheckReqPost 检查请求是否post
@@ -377,9 +235,9 @@ func ParseRequestBodyAsAnySliceAndLength(w http.ResponseWriter, r *http.Request)
 	dec.UseNumber()
 	if err := dec.Decode(&_postData); err != nil {
 		if err == io.EOF {
-			SetReturnCode(w, r, http.StatusInternalServerError, fmt.Errorf("请求体为空"))
+			SetReturnError(w, r, fmt.Errorf("请求体为空"), http.StatusInternalServerError)
 		} else {
-			SetReturnCode(w, r, http.StatusInternalServerError, err)
+			SetReturnError(w, r, err, http.StatusInternalServerError)
 		}
 
 		return nil, int(counter.TotalSize), err
@@ -394,5 +252,14 @@ func ParseRequestBodyAsAnySliceAndLength(w http.ResponseWriter, r *http.Request)
 func AddContentEncoding(w http.ResponseWriter, encoding string) {
 	if encoding != "" {
 		w.Header().Set("Content-Encoding", encoding)
+	}
+}
+
+func setHttpCode(w http.ResponseWriter, code int) {
+	if code != 0 && code != 200 {
+		if code < 100 {
+			code = http.StatusInternalServerError
+		}
+		w.WriteHeader(code)
 	}
 }
