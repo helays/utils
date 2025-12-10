@@ -43,8 +43,6 @@ type StorageDriver interface {
 	// GC 相关
 	GC(ctx context.Context) error
 	Close() error
-
-	Register(value ...any) // 注册结构定义
 }
 
 // noinspection all
