@@ -9,6 +9,8 @@ import (
 
 	"github.com/helays/utils/v2/close/osClose"
 	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/logger/ulogs"
 )
 
 type ReadRowCallback func(scanner *bufio.Scanner) error
@@ -109,4 +111,33 @@ func FileGetContents(path string) ([]byte, error) {
 		return nil, err
 	}
 	return io.ReadAll(file)
+}
+
+// Mkdir 判断目录是否存在，否则创建目录
+func Mkdir(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	}
+	return os.MkdirAll(path, 0755)
+}
+
+// Fileabs 生成文件的绝对路径
+// noinspection SpellCheckingInspection
+func Fileabs(cpath string) string {
+	if filepath.IsAbs(cpath) {
+		return cpath
+	}
+	return filepath.Join(config.Appath, cpath)
+}
+
+// FileAbsWithCurrent 生成文件的绝对路径,根目录手动指定
+func FileAbsWithCurrent(current, cpath string) string {
+	if filepath.IsAbs(cpath) {
+		return cpath
+	}
+	return filepath.Join(current, cpath)
+}
+
+func RemoveAll(path string) {
+	ulogs.Checkerr(os.RemoveAll(path), "删除文件失败")
 }

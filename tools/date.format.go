@@ -1,8 +1,9 @@
 package tools
 
 import (
-	"github.com/helays/utils/v2/config"
 	"strings"
+
+	"github.com/helays/utils/v2/config"
 )
 
 // 判断是否是Go语言的时间格式模板
