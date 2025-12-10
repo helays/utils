@@ -15,6 +15,7 @@ import (
 type JSONRaw json.RawMessage
 
 // Value return json value, implement driver.Valuer interface
+// noinspection all
 func (j JSONRaw) Value() (driver.Value, error) {
 	if len(j) == 0 {
 		return nil, nil
@@ -23,6 +24,7 @@ func (j JSONRaw) Value() (driver.Value, error) {
 }
 
 // Scan value into Jsonb, implements sql.Scanner interface
+// noinspection all
 func (j *JSONRaw) Scan(value interface{}) error {
 	if value == nil {
 		*j = JSONRaw("null")
@@ -50,16 +52,19 @@ func (j *JSONRaw) Scan(value interface{}) error {
 	return nil
 }
 
-// GormDataType gorm common data type
+// GormDataType gorm common data type.
+// noinspection all
 func (JSONRaw) GormDataType() string {
 	return "json"
 }
 
 // GormDBDataType gorm db data type
+// noinspection all
 func (JSONRaw) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return JsonDbDataType(db, field)
 }
 
+// noinspection all
 func (js JSONRaw) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 	if len(js) == 0 {
 		return gorm.Expr("NULL")
@@ -69,11 +74,13 @@ func (js JSONRaw) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 }
 
 // MarshalJSON to output non base64 encoded []byte
+// noinspection all
 func (js JSONRaw) MarshalJSON() ([]byte, error) {
 	return json.RawMessage(js).MarshalJSON()
 }
 
 // UnmarshalJSON to deserialize []byte
+// noinspection all
 func (js *JSONRaw) UnmarshalJSON(b []byte) error {
 	result := json.RawMessage{}
 	err := result.UnmarshalJSON(b)

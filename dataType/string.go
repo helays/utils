@@ -12,19 +12,23 @@ import (
 
 type String string
 
+// noinspection all
 func (s *String) Scan(val interface{}) (err error) {
 	return HelperStringScan(val, s)
 }
 
+// noinspection all
 func (s String) Value() (driver.Value, error) {
 	return string(s), nil
 }
 
+// noinspection all
 func (s String) GormDataType() string {
 	return "string"
 }
 
 // GormDBDataType gorm db data type
+// noinspection all
 func (String) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeSqlite:

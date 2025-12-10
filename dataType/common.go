@@ -19,7 +19,7 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-func BlobDbDataType(db *gorm.DB, field *schema.Field) string {
+func BlobDbDataType(db *gorm.DB, _ *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeMysql:
 		return "longblob"
@@ -32,7 +32,7 @@ func BlobDbDataType(db *gorm.DB, field *schema.Field) string {
 	}
 }
 
-func JsonDbDataType(db *gorm.DB, field *schema.Field) string {
+func JsonDbDataType(db *gorm.DB, _ *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeSqlite:
 		return "JSON"
