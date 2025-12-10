@@ -2,8 +2,10 @@ package tools
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -667,7 +669,7 @@ var (
 func CheckIsObject(v any) bool {
 	// 先尝试类型断言（最快路径）
 	switch v.(type) {
-	case map[string]any, []any,     // 最常见
+	case map[string]any, []any, // 最常见
 		map[any]any,                // 任意 key 的 map
 		[]map[string]any,           // map 数组
 		[]int, []float64, []string, // 基本类型 slice
@@ -704,4 +706,113 @@ func CheckIsObject(v any) bool {
 	default:
 		return false
 	}
+}
+
+// Int32tobooltoint 将 int32 转换为 bool 并返回 int
+// noinspection all
+func Int32tobooltoint(i int32) int {
+	if i > 0 {
+		return 1
+	}
+	return 0
+}
+
+// Float32tostring 将 float32 转换为字符串
+// noinspection all
+func Float32tostring(f float32) string {
+	return Float64tostring(float64(f))
+}
+
+// Float64tostring 将 float64 转换为字符串
+// noinspection all
+func Float64tostring(f float64) string {
+	if math.IsNaN(f) || math.IsInf(f, 0) {
+		return "0"
+	}
+	if f == math.Trunc(f) {
+		return strconv.FormatInt(int64(f), 10)
+	}
+	return strconv.FormatFloat(f, 'f', 6, 64)
+}
+
+// StrToFloat64 字符串转 float 64
+func StrToFloat64(s string) (float64, error) {
+	return strconv.ParseFloat(s, 64)
+}
+
+func Bool1time(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// Booltostring 布尔转 1 0
+func Booltostring(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
+}
+
+// Uint64tostring uint64 转 string
+// noinspection SpellCheckingInspection
+func Uint64tostring(i uint64) string {
+	return strconv.FormatUint(i, 10)
+}
+
+func Uint16ToBytes(n int) ([]byte, error) {
+	var err error
+	tmp := uint16(n)
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	err = binary.Write(bytesBuffer, binary.BigEndian, tmp)
+	return bytesBuffer.Bytes(), err
+}
+
+func Uint32ToBytes(n int) ([]byte, error) {
+	var err error
+	tmp := uint32(n)
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	err = binary.Write(bytesBuffer, binary.BigEndian, tmp)
+	return bytesBuffer.Bytes(), err
+}
+
+// BytesToInt 字节转换成整形
+func BytesToInt(b []byte) int {
+	bytesBuffer := bytes.NewBuffer(b)
+
+	var x int32
+	_ = binary.Read(bytesBuffer, binary.BigEndian, &x)
+
+	return int(x)
+}
+
+func BytesToUint16(b []byte) uint16 {
+	bytesBuffer := bytes.NewBuffer(b)
+	var tmp uint16
+	_ = binary.Read(bytesBuffer, binary.BigEndian, &tmp)
+	return tmp
+}
+
+// EmptyString2 空字符串转为 -
+func EmptyString2(s string) string {
+	if s = strings.TrimSpace(s); s == "" {
+		return "-"
+	}
+	return s
+}
+
+func NumberEmptyString(s string) string {
+	if s = strings.TrimSpace(s); s == "" {
+		return "0"
+	}
+	return s
+}
+
+// Struct2Map 将结构体转换为map
+func Struct2Map(src any) map[string]any {
+	var _map map[string]any
+	byt, _ := json.Marshal(src)
+	_ = json.Unmarshal(byt, &_map)
+	return _map
 }

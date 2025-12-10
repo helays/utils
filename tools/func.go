@@ -2,11 +2,9 @@ package tools
 
 import (
 	"bytes"
-	"cmp"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,24 +12,11 @@ import (
 	"math/rand/v2"
 	"net"
 	url2 "net/url"
-	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
 )
-
-// NestedMapSet 自动初始化嵌套 map 并设置值
-// 如果内层map不存在，会自动创建
-func NestedMapSet[K comparable, V comparable, T any](m map[K]map[V]T, outerKey K, innerKey V, value T) {
-	if _, ok := m[outerKey]; !ok {
-		m[outerKey] = make(map[V]T)
-	}
-	m[outerKey][innerKey] = value
-}
 
 // PadRight 在字符串后面补齐固定字符，并达到n个长度
 func PadRight(str string, padStr string, lenght int) string {
@@ -57,7 +42,7 @@ func SnakeString(s string) string {
 			// 向前看是否跟着一个小写字母
 			isNextLower := i+1 < num && s[i+1] >= 'a' && s[i+1] <= 'z'
 			// 向后看是否前面是小写字母或数字
-			isPrevLowerOrDigit := i > 0 && (s[i-1] >= 'a' && s[i-1] <= 'z' || s[i-1] >= '0' && s[i-1] <= '9')
+			isPrevLowerOrDigit := s[i-1] >= 'a' && s[i-1] <= 'z' || s[i-1] >= '0' && s[i-1] <= '9'
 
 			// 如果当前字符是大写，并且前面是小写字母或数字，或者后面是小写字母，则添加下划线
 			if isPrevLowerOrDigit || isNextLower {
@@ -108,25 +93,6 @@ func JsonEncode(j any) ([]byte, error) {
 	return bf.Bytes(), nil
 }
 
-// DeleteStrarr 删除字符串切片的某一个元素
-func DeleteStrarr(arr []string, val string) []string {
-	for index, _id := range arr {
-		if _id == val {
-			arr = append(arr[:index], arr[index+1:]...)
-			break
-		}
-	}
-	return arr
-}
-
-// Mkdir 判断目录是否存在，否则创建目录
-func Mkdir(path string) error {
-	if _, err := os.Stat(path); err == nil {
-		return nil
-	}
-	return os.MkdirAll(path, 0755)
-}
-
 // UrlEncode 将 query部分进行 url encode
 func UrlEncode(url string) string {
 	u, err := url2.Parse(url)
@@ -135,186 +101,6 @@ func UrlEncode(url string) string {
 	}
 	u.RawQuery = url2.PathEscape(u.RawQuery)
 	return u.String()
-}
-
-func Int32tostring(i int32) string {
-	return strconv.Itoa(int(i))
-}
-
-func Int32tobooltoint(i int32) int {
-	if i > 0 {
-		return 1
-	}
-	return 0
-}
-
-func Int64tostring(i int64) string {
-	return strconv.FormatInt(i, 10)
-}
-
-func Float32tostring(f float32) string {
-	return Float64tostring(float64(f))
-}
-
-func Float64tostring(f float64) string {
-	if math.IsNaN(f) || math.IsInf(f, 0) {
-		return "0"
-	}
-	if f == math.Trunc(f) {
-		return strconv.FormatInt(int64(f), 10)
-	}
-	return strconv.FormatFloat(f, 'f', 6, 64)
-}
-
-func Max[T cmp.Ordered](d1, d2 T) T {
-	if d1 > d2 {
-		return d1
-	}
-	return d2
-}
-
-func Min[T cmp.Ordered](d1, d2 T) T {
-	if d1 < d2 {
-		return d1
-	}
-	return d2
-}
-
-func MaxInt32(d1, d2 int32) int32 {
-	if d1 > d2 {
-		return d1
-	}
-	return d2
-}
-
-// AvgInt32 计算平均数
-func AvgInt32(d1, d2 int32, isf bool) int32 {
-	if isf {
-		if d1 > d2 {
-			return d1
-		}
-		return d2
-	}
-	return (d1 + d2) / 2
-}
-
-func MinInt32(d1, d2 int32) int32 {
-	if d1 > d2 {
-		return d2
-	}
-	return d1
-}
-
-func MaxInt64(d1, d2 int64) int64 {
-	if d1 > d2 {
-		return d1
-	}
-	return d2
-}
-
-func MinInt64(d1, d2 int64) int64 {
-	if d1 > d2 {
-		return d2
-	}
-	return d1
-}
-
-func AvgInt64(d1, d2 int64, isf bool) int64 {
-	if isf {
-		if d1 > d2 {
-			return d1
-		}
-		return d2
-	}
-	return (d1 + d2) / 2
-}
-
-func MaxUint64(d1, d2 uint64) uint64 {
-	if d1 > d2 {
-		return d1
-	}
-	return d2
-}
-
-func MinUint64(d1, d2 uint64) uint64 {
-	if d1 > d2 {
-		return d2
-	}
-	return d1
-}
-
-func AvgUint64(d1, d2 uint64, isf bool) uint64 {
-	if isf {
-		if d1 > d2 {
-			return d1
-		}
-		return d2
-	}
-	return (d1 + d2) / 2
-}
-
-func MaxFloat32(d1, d2 float32) float32 {
-	if d1 > d2 {
-		return d1
-	}
-	return d2
-}
-
-func MinFloat32(d1, d2 float32) float32 {
-	if d1 > d2 {
-		return d2
-	}
-	return d1
-}
-
-func AvgFloat32(d1, d2 float32, isf bool) float32 {
-	if isf {
-		if d1 > d2 {
-			return d1
-		}
-		return d2
-	}
-	return (d1 + d2) / 2
-}
-
-// StrToFloat64 字符串转 float 64
-func StrToFloat64(s string) (float64, error) {
-	return strconv.ParseFloat(s, 64)
-}
-
-func Bool1time(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-// Booltostring 布尔转 1 0
-func Booltostring(b bool) string {
-	if b {
-		return "1"
-	}
-	return "0"
-}
-
-func Uint64tostring(i uint64) string {
-	return strconv.FormatUint(i, 10)
-}
-
-func Uint16ToBytes(n int) ([]byte, error) {
-	var err error
-	tmp := uint16(n)
-	bytesBuffer := bytes.NewBuffer([]byte{})
-	err = binary.Write(bytesBuffer, binary.BigEndian, tmp)
-	return bytesBuffer.Bytes(), err
-}
-
-func Uint32ToBytes(n int) ([]byte, error) {
-	var err error
-	tmp := uint32(n)
-	bytesBuffer := bytes.NewBuffer([]byte{})
-	err = binary.Write(bytesBuffer, binary.BigEndian, tmp)
-	return bytesBuffer.Bytes(), err
 }
 
 // // 字节转换成整形
@@ -326,38 +112,6 @@ func Uint32ToBytes(n int) ([]byte, error) {
 //
 // 	return int(x), err
 // }
-
-// BytesToInt 字节转换成整形
-func BytesToInt(b []byte) int {
-	bytesBuffer := bytes.NewBuffer(b)
-
-	var x int32
-	_ = binary.Read(bytesBuffer, binary.BigEndian, &x)
-
-	return int(x)
-}
-
-func BytesToUint16(b []byte) uint16 {
-	bytesBuffer := bytes.NewBuffer(b)
-	var tmp uint16
-	_ = binary.Read(bytesBuffer, binary.BigEndian, &tmp)
-	return tmp
-}
-
-// EmptyString2 空字符串转为 -
-func EmptyString2(s string) string {
-	if s = strings.TrimSpace(s); s == "" {
-		return "-"
-	}
-	return s
-}
-
-func NumberEmptyString(s string) string {
-	if s = strings.TrimSpace(s); s == "" {
-		return "0"
-	}
-	return s
-}
 
 // StringUniq 对字符串切片进行去重
 func StringUniq(tmp []string) []string {
@@ -401,33 +155,6 @@ func ByteFormat(s int) string {
 	return fmt.Sprintf("%.2f %s", converted, units[int(exponent)])
 }
 
-// MapDeepCopy map 深拷贝
-func MapDeepCopy[T any](src T, dst *T) {
-	byt, _ := json.Marshal(src)
-	_ = json.Unmarshal(byt, dst)
-}
-
-// Fileabs 生成文件的绝对路径
-// noinspection SpellCheckingInspection
-func Fileabs(cpath string) string {
-	if filepath.IsAbs(cpath) {
-		return cpath
-	}
-	return filepath.Join(config.Appath, cpath)
-}
-
-// FileAbsWithCurrent 生成文件的绝对路径,根目录手动指定
-func FileAbsWithCurrent(current, cpath string) string {
-	if filepath.IsAbs(cpath) {
-		return cpath
-	}
-	return filepath.Join(current, cpath)
-}
-
-func RemoveAll(path string) {
-	ulogs.Checkerr(os.RemoveAll(path), "删除文件失败")
-}
-
 var defaultLetters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 // RandomString 伪随机字符串
@@ -449,33 +176,6 @@ func RandomString(n int, allowedChars ...[]rune) string {
 	return string(b)
 }
 
-// MinMaxAvgSum 获取数组中最大值最小值平均值和求和
-func MinMaxAvgSum(nums []int) (min int, max int, avg float64, sum int) {
-	if len(nums) == 0 {
-		return 0, 0, 0, 0
-	}
-	min, max, sum = nums[0], nums[0], nums[0]
-	for _, num := range nums[1:] {
-		if num < min {
-			min = num
-		}
-		if num > max {
-			max = num
-		}
-		sum += num
-	}
-	avg = float64(sum) / float64(len(nums))
-	return
-}
-
-// Struct2Map 将结构体转换为map
-func Struct2Map(src any) map[string]any {
-	var _map map[string]any
-	byt, _ := json.Marshal(src)
-	_ = json.Unmarshal(byt, &_map)
-	return _map
-}
-
 // GetIpVersion 解析ip地址，确认ip版本
 func GetIpVersion(ip string) (string, error) {
 	_ip := net.ParseIP(ip)
@@ -486,19 +186,6 @@ func GetIpVersion(ip string) (string, error) {
 		return "ipv4", nil
 	}
 	return "ipv6", nil
-}
-
-// Str2StrSlice 字符串转切片
-func Str2StrSlice(values string) ([]string, error) {
-	values = strings.TrimSpace(values)
-	if values == "" {
-		return nil, nil
-	}
-	var slice []string
-	if err := json.Unmarshal([]byte(values), &slice); err != nil {
-		return nil, fmt.Errorf("解析数据 [%s] 失败：%v", values, err)
-	}
-	return slice, nil
 }
 
 // Ternary 是一个通用的三元运算函数。
@@ -525,30 +212,4 @@ func AutoTimeDuration(input time.Duration, unit time.Duration, dValue ...time.Du
 		return input * unit
 	}
 	return input
-}
-
-// ReverseMapUnique 反转值唯一的 map
-func ReverseMapUnique[K comparable, V comparable](m map[K]V) map[V]K {
-	reversed := make(map[V]K)
-	for k, v := range m {
-		reversed[v] = k
-	}
-	return reversed
-}
-
-// GetLevel2MapValue 获取二级map的值
-func GetLevel2MapValue[K any](inp map[string]map[string]K, key1, key2 string) (K, bool) {
-	if v, ok := inp[key1]; ok {
-		if vv, ok := v[key2]; ok {
-			return vv, true
-		}
-	}
-	var zeroValue K
-	return zeroValue, false
-}
-
-// IsZero isZero 检查值是否为类型的零值
-func IsZero[T comparable](v T) bool {
-	var zero T
-	return v == zero
 }
