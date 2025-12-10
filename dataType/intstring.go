@@ -218,13 +218,11 @@ func (i IntString[T]) IsValid() bool {
 }
 
 // 全局缓存编码器/解码器
-var (
-	gobBufferPool = &sync.Pool{
-		New: func() interface{} {
-			return new(bytes.Buffer)
-		},
-	}
-)
+var gobBufferPool = &sync.Pool{
+	New: func() any {
+		return new(bytes.Buffer)
+	},
+}
 
 func (i IntString[T]) GobEncode() ([]byte, error) {
 	// 从池中获取 buffer
@@ -254,7 +252,6 @@ func (i IntString[T]) GobEncode() ([]byte, error) {
 func (i *IntString[T]) GobDecode(data []byte) error {
 	// 使用传入的数据创建 reader
 	dec := gob.NewDecoder(bytes.NewReader(data))
-
 	if err := dec.Decode(&i.value); err != nil {
 		return err
 	}

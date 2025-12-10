@@ -14,19 +14,19 @@ import (
 )
 
 func NewSessionValue(val any) SessionValue {
-	return SessionValue{val: val}
+	return SessionValue{Val: val}
 }
 
 // noinspection all
 type SessionValue struct {
-	val any
+	Val any
 }
 
 // Value return blob value, implement driver.Valuer interface
 // noinspection all
 func (s SessionValue) Value() (driver.Value, error) {
 	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(s.val)
+	err := gob.NewEncoder(&buf).Encode(s)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,10 @@ func (s *SessionValue) Scan(val any) error {
 	if err != nil {
 		return err
 	}
-	return gob.NewDecoder(bytes.NewReader(b)).Decode(&s.val)
+
+	err = gob.NewDecoder(bytes.NewReader(b)).Decode(s)
+
+	return err
 }
 
 // GormDBDataType gorm db data type

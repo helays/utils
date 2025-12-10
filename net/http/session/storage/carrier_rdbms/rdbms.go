@@ -2,7 +2,6 @@ package carrier_rdbms
 
 import (
 	"context"
-	"encoding/gob"
 	"time"
 
 	"github.com/helays/utils/v2/db/userDb"
@@ -22,17 +21,6 @@ func New(db *gorm.DB) *Instance {
 	}
 	userDb.AutoCreateTableWithStruct(ins.db, session.Session{}, "创建session表失败")
 	return ins
-}
-
-// Register 注册结构定义
-// 在使用文件作为session引擎的时候，需要将存储session值的结构注册进来。
-func (i *Instance) Register(value ...any) {
-	if len(value) < 1 {
-		return
-	}
-	for _, v := range value {
-		gob.Register(v)
-	}
 }
 
 func (i *Instance) Close() error {

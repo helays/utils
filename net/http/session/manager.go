@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"encoding/gob"
 	"sync"
 	"time"
 
@@ -61,6 +62,7 @@ func New(ctx context.Context, storage StorageDriver, opt ...*Options) *Manager {
 		options: options,
 		storage: storage,
 	}
+	gob.Register(SessionValue{})
 	if !options.DisableGc {
 		go manager.startGC(ctx)
 	}
