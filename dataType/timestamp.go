@@ -28,6 +28,7 @@ func NewTimestamp(t time.Time, formats ...string) *Timestamp {
 	}
 }
 
+// noinspection all
 func (t *Timestamp) Scan(value interface{}) error {
 	if value == nil {
 		t.timestamp = time.Time{}
@@ -88,6 +89,7 @@ func (t *Timestamp) Scan(value interface{}) error {
 }
 
 // Value 实现 driver.Valuer 接口，将时间 转成微秒级时间戳
+// noinspection all
 func (t Timestamp) Value() (driver.Value, error) {
 	if t.timestamp.IsZero() {
 		return nil, nil
@@ -96,11 +98,13 @@ func (t Timestamp) Value() (driver.Value, error) {
 }
 
 // GormDataType gorm db data type
+// noinspection all
 func (t Timestamp) GormDataType() string {
 	return "timestamp"
 }
 
 // GormDBDataType gorm db data type
+// noinspection all
 func (t Timestamp) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeSqlite:
@@ -116,11 +120,13 @@ func (t Timestamp) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 }
 
 // Time 返回内部的 time.Time
+// noinspection all
 func (t *Timestamp) Time() time.Time {
 	return t.timestamp
 }
 
 // String 实现 Stringer 接口
+// noinspection all
 func (t *Timestamp) String() string {
 	if t.timestamp.IsZero() {
 		return ""
@@ -129,6 +135,7 @@ func (t *Timestamp) String() string {
 }
 
 // Format 使用指定格式格式化时间
+// noinspection all
 func (t *Timestamp) Format(layout string) string {
 	if t.timestamp.IsZero() {
 		return ""
@@ -137,41 +144,49 @@ func (t *Timestamp) Format(layout string) string {
 }
 
 // Unix 返回秒级时间戳
+// noinspection all
 func (t *Timestamp) Unix() int64 {
 	return t.timestamp.Unix()
 }
 
 // UnixMilli 返回毫秒级时间戳
+// noinspection all
 func (t *Timestamp) UnixMilli() int64 {
 	return t.timestamp.UnixMilli()
 }
 
 // UnixMicro 返回微秒级时间戳
+// noinspection all
 func (t *Timestamp) UnixMicro() int64 {
 	return t.timestamp.UnixMicro()
 }
 
 // UnixNano 返回纳秒级时间戳
+// noinspection all
 func (t *Timestamp) UnixNano() int64 {
 	return t.timestamp.UnixNano()
 }
 
 // IsZero 判断时间是否为零值
+// noinspection all
 func (t *Timestamp) IsZero() bool {
 	return t.timestamp.IsZero()
 }
 
 // SetTime 设置时间
+// noinspection all
 func (t *Timestamp) SetTime(time time.Time) {
 	t.timestamp = time
 }
 
 // SetFormat 设置格式化字符串
+// noinspection all
 func (t *Timestamp) SetFormat(format string) {
 	t.format = format
 }
 
 // MarshalJSON 实现 JSON 序列化接口
+// noinspection all
 func (t *Timestamp) MarshalJSON() ([]byte, error) {
 	if t.timestamp.IsZero() {
 		return []byte("null"), nil
@@ -180,6 +195,7 @@ func (t *Timestamp) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON 实现 JSON 反序列化接口
+// noinspection all
 func (t *Timestamp) UnmarshalJSON(data []byte) error {
 	s := strings.Trim(string(data), "\"")
 	if s == "null" || s == "" {

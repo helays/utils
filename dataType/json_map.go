@@ -12,14 +12,17 @@ import (
 )
 
 // JSONMap defined JSON data type, need to implements driver.Valuer, sql.Scanner interface
+// noinspection all
 type JSONMap map[string]any
 
 // Value return json value, implement driver.Valuer interface
+// noinspection all
 func (m JSONMap) Value() (driver.Value, error) {
 	return DriverValueWithJson(m)
 }
 
 // Scan scan value into Jsonb, implements sql.Scanner interface
+// noinspection all
 func (m *JSONMap) Scan(val any) error {
 	return DriverScanWithJson(val, m) // 这里暂时先用这个版本
 	//if val == nil {
@@ -45,6 +48,7 @@ func (m *JSONMap) Scan(val any) error {
 }
 
 // MarshalJSON to output non base64 encoded []byte
+// noinspection all
 func (m JSONMap) MarshalJSON() ([]byte, error) {
 	if m == nil {
 		return []byte("null"), nil
@@ -55,6 +59,7 @@ func (m JSONMap) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON to deserialize []byte
 // 这个函数很重要，Scan的时候  序列化通用函数会用到这个
+// noinspection all
 func (m *JSONMap) UnmarshalJSON(b []byte) error {
 	rd := bytes.NewReader(b)
 	decoder := json.NewDecoder(rd)
@@ -66,15 +71,18 @@ func (m *JSONMap) UnmarshalJSON(b []byte) error {
 }
 
 // GormDataType gorm common data type
+// noinspection all
 func (m JSONMap) GormDataType() string {
 	return "custom_json_map"
 }
 
 // GormDBDataType gorm db data type
+// noinspection all
 func (JSONMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return JsonDbDataType(db, field)
 }
 
+// noinspection all
 func (jm JSONMap) GormValue(_ context.Context, db *gorm.DB) clause.Expr {
 	data, _ := jm.MarshalJSON()
 	return MapGormValue(string(data), db)

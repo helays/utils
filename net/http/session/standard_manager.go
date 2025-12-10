@@ -132,7 +132,7 @@ func (m *Manager) GetWithSessionID(sessionID string, name string, dst any) error
 	if err != nil {
 		return err
 	}
-	v.Elem().Set(reflect.ValueOf(sv.Values.val))
+	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
 	return nil
 }
 
@@ -154,7 +154,7 @@ func (m *Manager) GetUp(w http.ResponseWriter, r *http.Request, name string, dst
 	if err = m.storage.Save(sv); err != nil {
 		return err
 	}
-	v.Elem().Set(reflect.ValueOf(sv.Values.val))
+	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
 	return nil
 }
 
@@ -174,7 +174,7 @@ func (m *Manager) GetUpByRemainTime(w http.ResponseWriter, r *http.Request, name
 	if err != nil {
 		return err
 	}
-	v.Elem().Set(reflect.ValueOf(sv.Values.val))
+	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
 
 	// 注意：当剩余时间 <= duration 时，会续期整个session.Duration
 	// 例如：session=1小时，duration=1分钟
@@ -201,7 +201,7 @@ func (m *Manager) GetUpByDuration(w http.ResponseWriter, r *http.Request, name s
 	if err != nil {
 		return err
 	}
-	v.Elem().Set(reflect.ValueOf(sv.Values.val))
+	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
 
 	// 注意，当有效期剩余时间少于 duration-sv.Duration 时，会触发
 	// 例如：session=15天，duration=1天
@@ -217,7 +217,7 @@ func (m *Manager) extendSession(sv *Session, callbacks ...Callback) error {
 	sv.ExpireTime = dataType.CustomTime(time.Now().Add(sv.Duration))
 	for _, cb := range callbacks {
 		if cb.BeforeRenew != nil {
-			if err := cb.BeforeRenew(sv.ExpireTime, sv.Values.val); err != nil {
+			if err := cb.BeforeRenew(sv.ExpireTime, sv.Values.Val); err != nil {
 				return err
 			}
 		}
@@ -227,7 +227,7 @@ func (m *Manager) extendSession(sv *Session, callbacks ...Callback) error {
 	}
 	for _, cb := range callbacks {
 		if cb.AfterRenew != nil {
-			if err := cb.AfterRenew(sv.ExpireTime, sv.Values.val); err != nil {
+			if err := cb.AfterRenew(sv.ExpireTime, sv.Values.Val); err != nil {
 				return err
 			}
 		}
@@ -249,7 +249,7 @@ func (m *Manager) Flashes(w http.ResponseWriter, r *http.Request, name string, d
 	if err != nil {
 		return err
 	}
-	v.Elem().Set(reflect.ValueOf(sv.Values.val))
+	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
 	return m.storage.Delete(sv.Id, sv.Name)
 }
 
@@ -268,7 +268,7 @@ func (m *Manager) SetVal(value *Value) error {
 	sv := Session{
 		Id:         value.SessionID,
 		Name:       value.Field,
-		Values:     NewSessionValue(value),
+		Values:     NewSessionValue(value.Value),
 		CreateTime: dataType.NewCustomTime(now),
 		Duration:   tools.Ternary(value.TTL > 0, value.TTL, ExpireTime),
 	}

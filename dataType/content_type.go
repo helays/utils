@@ -14,14 +14,17 @@ import (
 // ContentType 表示检测到的内容类型
 type ContentType int
 
+// noinspection all
 func (ct ContentType) Value() (driver.Value, error) {
 	return int64(ct), nil
 }
 
+// noinspection all
 func (ct *ContentType) Scan(val any) error {
 	return DriverScanWithInt(val, ct)
 }
 
+// noinspection all
 func (ContentType) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeSqlite:
@@ -37,6 +40,7 @@ func (ContentType) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 }
 
 // String 返回内容类型的字符串表示
+// noinspection all
 func (ct ContentType) String() string {
 	switch ct {
 	case JSON:
@@ -52,6 +56,7 @@ func (ct ContentType) String() string {
 	}
 }
 
+// noinspection all
 func (ct ContentType) Ext() string {
 	switch ct {
 	case JSON:

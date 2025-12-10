@@ -11,10 +11,12 @@ import (
 
 type Byte byte
 
+// noinspection all
 func (b Byte) Value() (driver.Value, error) {
 	return int64(b), nil
 }
 
+// noinspection all
 func (b *Byte) Scan(value any) error {
 	if value == nil {
 		*b = 0
@@ -37,6 +39,7 @@ func (b *Byte) Scan(value any) error {
 	return nil
 }
 
+// noinspection all
 func (Byte) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeSqlite:

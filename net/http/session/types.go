@@ -1,30 +1,36 @@
 package session
 
 import (
+	"bytes"
 	"database/sql/driver"
+	"encoding/gob"
 	"errors"
 	"time"
 
 	"github.com/helays/utils/v2/dataType"
 	"github.com/helays/utils/v2/tools"
-	"github.com/vmihailenco/msgpack/v5"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
 func NewSessionValue(val any) SessionValue {
-	return SessionValue{val: val}
+	return SessionValue{Val: val}
 }
 
 // noinspection all
 type SessionValue struct {
-	val any
+	Val any
 }
 
 // Value return blob value, implement driver.Valuer interface
 // noinspection all
 func (s SessionValue) Value() (driver.Value, error) {
-	return msgpack.Marshal(s.val)
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(s)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // noinspection all
@@ -33,18 +39,25 @@ func (s *SessionValue) Scan(val any) error {
 		*s = SessionValue{}
 		return nil
 	}
+
 	b, err := tools.Any2bytes(val)
 	if err != nil {
 		return err
 	}
-	// 这里应该使用 msgpack.Unmarshal 而不是 gob
-	return msgpack.Unmarshal(b, &s.val)
+
+	err = gob.NewDecoder(bytes.NewReader(b)).Decode(s)
+
+	return err
 }
 
 // GormDBDataType gorm db data type
 // noinspection all
 func (SessionValue) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return dataType.BlobDbDataType(db, field)
+}
+
+func (s SessionValue) GormDataType() string {
+	return "blob"
 }
 
 //  这个需要移除 上级Session 已经实现了二进制序列化

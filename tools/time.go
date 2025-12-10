@@ -28,7 +28,7 @@ func AutoDetectTimestampString(timestampStr string) (time.Time, error) {
 		}
 	}
 
-	length := len(strconv.Itoa(int(timestamp)))
+	length := len(Int64tostring(timestamp))
 	switch {
 	case length <= 10:
 		// 如果时间戳的位数不超过10位，可能是秒级时间戳

@@ -2,13 +2,13 @@ package session
 
 import (
 	"context"
+	"encoding/gob"
 	"sync"
 	"time"
 
 	"github.com/helays/utils/v2/dataType"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/tools"
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 const (
@@ -27,16 +27,6 @@ type Session struct {
 	Duration   time.Duration       `json:"duration" gorm:"comment:session有效期"`
 }
 
-// noinspection all
-func (s Session) GobEncode() ([]byte, error) {
-	return msgpack.Marshal(s)
-}
-
-// noinspection all
-func (s *Session) GobDecode(data []byte) error {
-	return msgpack.Unmarshal(data, s)
-}
-
 type Manager struct {
 	options *Options
 	storage StorageDriver
@@ -53,8 +43,6 @@ type StorageDriver interface {
 	// GC 相关
 	GC(ctx context.Context) error
 	Close() error
-
-	Register(value ...any) // 注册结构定义
 }
 
 // noinspection all
@@ -72,6 +60,7 @@ func New(ctx context.Context, storage StorageDriver, opt ...*Options) *Manager {
 		options: options,
 		storage: storage,
 	}
+	gob.Register(SessionValue{})
 	if !options.DisableGc {
 		go manager.startGC(ctx)
 	}
