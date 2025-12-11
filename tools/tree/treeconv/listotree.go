@@ -1,17 +1,18 @@
 package treeconv
 
 type ListItem[T comparable, S TreeNode[S]] interface {
-	GetID() T
-	GetParentID() T
-	ToTreeNode(level int, parentNode ...S) S
+	GetID() T                                // 获取 ID
+	GetParentID() T                          // 获取父 ID
+	ToTreeNode(level int, parentNode ...S) S // 转换成树节点
 }
 
 type TreeNode[S any] interface {
-	PrepareChildren(n int)
-	AddChild(Node S)
-	GetLastChild() S
+	PrepareChildren(n int)   // 预分配子节点
+	AddChild(Node S)         // 添加子节点
+	GetLastChild() (S, bool) // 获取最后一个子节点
 }
 
+// ListToTree 列表转树
 func ListToTree[L ListItem[T, S], T comparable, S TreeNode[S]](src []L) []S {
 	var (
 		result []S
@@ -61,9 +62,9 @@ func ListToTree[L ListItem[T, S], T comparable, S TreeNode[S]](src []L) []S {
 				// 添加父节点
 				top.node.AddChild(childNode)
 				// 由于上面的SetChildren 里面会解引用，所以这里不能直接用childNode
-				lastChild := top.node.GetLastChild()
+				lastChild, ok := top.node.GetLastChild()
 				// 确保 GetLastChild() 不为 nil
-				if lastChild == nil {
+				if !ok {
 					continue
 				}
 				stack = append(stack, stackItem{
