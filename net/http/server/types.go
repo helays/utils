@@ -26,17 +26,18 @@ type Config struct {
 	MaxHeaderBytes               int           `json:"max_header_bytes" yaml:"max_header_bytes"`                               // 服务器解析请求头时读取的最大字节数（包括请求行），如果为零，使用 DefaultMaxHeaderBytes（1MB）
 	ServerName                   []string      `json:"server_name" yaml:"server_name"`                                         // 绑定域名
 
+	TLS TLSConfig `json:"tls" yaml:"tls"` // TLS 配置
+
 	EnableQuickH3      bool              `json:"enable_quick_h3" yaml:"enable_quick_h3"`         // 启用 QUIC HTTP/3
 	EnableDatagrams    bool              `json:"enable_datagrams" yaml:"enable_datagrams"`       // 启用 HTTP/3 数据报支持（RFC 9297）
 	AdditionalSettings map[uint64]uint64 `json:"additional_settings" yaml:"additional_settings"` // 额外的设置，QUIC 包配置
 	QUICConfig         QUICConfig        `json:"quic_config" yaml:"quic_config"`                 // QUIC 配置
 
-	TLS         TLSConfig                    `json:"tls" yaml:"tls"`                          // TLS 配置
 	Security    SecurityConfig               `ini:"security" json:"security" yaml:"security"` // 安全配置
 	Compression middleware.CompressionConfig `json:"compression" yaml:"compression"`          // 压缩配置
 	Logger      zaploger.Config              `json:"logger" yaml:"logger"`                    // 日志配置
 
-	Route *route.Config `json:"route" yaml:"route"` // 路由配置
+	Route route.Config `json:"route" yaml:"route"` // 路由配置
 }
 
 type SecurityConfig struct {

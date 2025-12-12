@@ -46,7 +46,7 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 		return nil, err
 	}
 	s.routes = make(map[string]*routerRule[T])
-	s.route = route.New(s.opt.Route) // 系统 通用路由
+	s.route = route.New(&s.opt.Route) // 系统 通用路由
 
 	mime.InitMimeTypes()
 	return s, nil
@@ -149,12 +149,17 @@ func (s *Server[T]) tls() error {
 		ulogs.Infof("HTTP服务未启用 TLS")
 		return nil
 	}
+
+	if s.quicH3Server != nil {
+		tlsConfig, err := tlsOpts.ToTLSConfig()
+		if err != nil {
+			return err
+		}
+		s.quicH3Server.TLSConfig = tlsConfig
+	}
 	tlsConfig, err := tlsOpts.ToTLSConfig()
 	if err != nil {
 		return err
-	}
-	if s.quicH3Server != nil {
-		s.quicH3Server.TLSConfig = tlsConfig
 	}
 	s.server.TLSConfig = tlsConfig
 	return nil
