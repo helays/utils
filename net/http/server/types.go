@@ -9,6 +9,7 @@ import (
 	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/security/cors"
+	quicHttp3 "github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/websocket"
 )
 
@@ -16,6 +17,7 @@ const Version = "vs/2.1"
 
 type Config struct {
 	Addr                         string        `json:"addr" yaml:"addr"`                                                       // 监听地址
+	Port                         int           `json:"port" yaml:"port"`                                                       //用于 Alt-Svc 响应头中的端口,用于防火墙重定向等场景，允许客户端使用与服务器监听端口不同的端口
 	DisableGeneralOptionsHandler bool          `json:"disable_general_options_handler" yaml:"disable_general_options_handler"` // 如果为 true，将 "OPTIONS *" 请求传递给 Handler；否则自动响应 200 O
 	ReadTimeout                  time.Duration `json:"read_timeout" yaml:"read_timeout"`                                       // 读取超时，零或负值表示无超时
 	ReadHeaderTimeout            time.Duration `json:"read_header_timeout" yaml:"read_header_timeout"`                         // 读取请求头超时，零或负值表示无超时
@@ -24,12 +26,18 @@ type Config struct {
 	MaxHeaderBytes               int           `json:"max_header_bytes" yaml:"max_header_bytes"`                               // 服务器解析请求头时读取的最大字节数（包括请求行），如果为零，使用 DefaultMaxHeaderBytes（1MB）
 	ServerName                   []string      `json:"server_name" yaml:"server_name"`                                         // 绑定域名
 
-	TLS         TLSConfig                    `json:"tls" yaml:"tls"`                          // TLS 配置
+	TLS TLSConfig `json:"tls" yaml:"tls"` // TLS 配置
+
+	EnableQuickH3      bool              `json:"enable_quick_h3" yaml:"enable_quick_h3"`         // 启用 QUIC HTTP/3
+	EnableDatagrams    bool              `json:"enable_datagrams" yaml:"enable_datagrams"`       // 启用 HTTP/3 数据报支持（RFC 9297）
+	AdditionalSettings map[uint64]uint64 `json:"additional_settings" yaml:"additional_settings"` // 额外的设置，QUIC 包配置
+	QUICConfig         QUICConfig        `json:"quic_config" yaml:"quic_config"`                 // QUIC 配置
+
 	Security    SecurityConfig               `ini:"security" json:"security" yaml:"security"` // 安全配置
 	Compression middleware.CompressionConfig `json:"compression" yaml:"compression"`          // 压缩配置
 	Logger      zaploger.Config              `json:"logger" yaml:"logger"`                    // 日志配置
 
-	Route *route.Config `json:"route" yaml:"route"` // 路由配置
+	Route route.Config `json:"route" yaml:"route"` // 路由配置
 }
 
 type SecurityConfig struct {
@@ -52,10 +60,11 @@ type Server[T any] struct {
 	route       *route.Route              // 系统默认路由
 
 	enhancedWriter *middleware.ResponseProcessor  // 通用响应处理中间件
-	ipAccess       *middleware.IPAccessMiddleware // IP访问控制中间件
+	ipAccess       *middleware.IPAccessMiddleware // IP 访问控制中间件
 
-	mux    *http.ServeMux
-	server *http.Server
+	mux          *http.ServeMux
+	server       *http.Server
+	quicH3Server *quicHttp3.Server
 }
 
 type routerRule[T any] struct {

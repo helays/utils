@@ -13,6 +13,8 @@ import (
 	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipmatch"
 	"github.com/helays/utils/v2/tools"
+	"github.com/quic-go/quic-go"
+	quicHttp3 "github.com/quic-go/quic-go/http3"
 )
 
 // noinspection all
@@ -38,6 +40,20 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 	if err := s.ipAccessInit(); err != nil {
 		return nil, err
 	}
+	s.httpServer()
+	s.quicHttp3Server()
+	if err := s.tls(); err != nil {
+		return nil, err
+	}
+	s.routes = make(map[string]*routerRule[T])
+	s.route = route.New(&s.opt.Route) // 系统 通用路由
+
+	mime.InitMimeTypes()
+	return s, nil
+}
+
+// http1.1 http2 配置处理
+func (s *Server[T]) httpServer() {
 	s.server = &http.Server{
 		Addr:                         s.opt.Addr,
 		DisableGeneralOptionsHandler: s.opt.DisableGeneralOptionsHandler,
@@ -47,14 +63,39 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 		IdleTimeout:                  tools.AutoTimeDuration(s.opt.IdleTimeout, time.Second),
 		MaxHeaderBytes:               s.opt.MaxHeaderBytes,
 	}
-	if err := s.tls(); err != nil {
-		return nil, err
-	}
-	s.routes = make(map[string]*routerRule[T])
-	s.route = route.New(s.opt.Route) // 系统 通用路由
+}
 
-	mime.InitMimeTypes()
-	return s, nil
+// http3 配置处理
+func (s *Server[T]) quicHttp3Server() {
+	if !s.opt.EnableQuickH3 {
+		return
+	}
+	s.quicH3Server = &quicHttp3.Server{
+		Addr: s.opt.Addr,
+		Port: s.opt.Port,
+		QUICConfig: &quic.Config{
+			HandshakeIdleTimeout:             tools.AutoTimeDuration(s.opt.QUICConfig.HandshakeIdleTimeout, time.Second),
+			MaxIdleTimeout:                   tools.AutoTimeDuration(s.opt.QUICConfig.MaxIdleTimeout, time.Second),
+			InitialStreamReceiveWindow:       s.opt.QUICConfig.InitialStreamReceiveWindow,
+			MaxStreamReceiveWindow:           s.opt.QUICConfig.MaxStreamReceiveWindow,
+			InitialConnectionReceiveWindow:   s.opt.QUICConfig.InitialConnectionReceiveWindow,
+			MaxConnectionReceiveWindow:       s.opt.QUICConfig.MaxConnectionReceiveWindow,
+			MaxIncomingStreams:               s.opt.QUICConfig.MaxIncomingStreams,
+			MaxIncomingUniStreams:            s.opt.QUICConfig.MaxIncomingUniStreams,
+			KeepAlivePeriod:                  s.opt.QUICConfig.KeepAlivePeriod,
+			InitialPacketSize:                s.opt.QUICConfig.InitialPacketSize,
+			DisablePathMTUDiscovery:          s.opt.QUICConfig.DisablePathMTUDiscovery,
+			Allow0RTT:                        s.opt.QUICConfig.Allow0RTT,
+			EnableDatagrams:                  s.opt.QUICConfig.EnableDatagrams,
+			EnableStreamResetPartialDelivery: s.opt.QUICConfig.EnableStreamResetPartialDelivery,
+		},
+		EnableDatagrams:    s.opt.EnableDatagrams,
+		MaxHeaderBytes:     s.opt.MaxHeaderBytes,
+		AdditionalSettings: s.opt.AdditionalSettings,
+
+		IdleTimeout: tools.AutoTimeDuration(s.opt.IdleTimeout, time.Second),
+	}
+
 }
 
 // 验证参数
@@ -108,6 +149,14 @@ func (s *Server[T]) tls() error {
 		ulogs.Infof("HTTP服务未启用 TLS")
 		return nil
 	}
+
+	if s.quicH3Server != nil {
+		tlsConfig, err := tlsOpts.ToTLSConfig()
+		if err != nil {
+			return err
+		}
+		s.quicH3Server.TLSConfig = tlsConfig
+	}
 	tlsConfig, err := tlsOpts.ToTLSConfig()
 	if err != nil {
 		return err
@@ -119,6 +168,7 @@ func (s *Server[T]) tls() error {
 func (s *Server[T]) Close() {
 	s.ipAccess.Close()
 	httpClose.Server(s.server)
+	httpClose.ServerQuick(s.quicH3Server)
 	ulogs.Log("http server已关闭")
 }
 
@@ -127,6 +177,16 @@ func (s *Server[T]) Run() error {
 	s.mux = http.NewServeMux()
 	s.setRoutes()
 	s.server.Handler = s.mux
+
+	if s.quicH3Server != nil {
+		s.quicH3Server.Handler = s.mux
+		go func() {
+			err := s.quicH3Server.ListenAndServe()
+			if err != nil {
+				panic(fmt.Errorf("quic http3服务启动失败：%s", err))
+			}
+		}()
+	}
 
 	if s.opt.TLS.Enable {
 		ulogs.Log("启动https server", s.opt.Addr)

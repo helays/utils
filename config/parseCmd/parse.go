@@ -3,10 +3,11 @@ package parseCmd
 import (
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/helays/utils/v2"
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/logger/ulogs"
-	"os"
 )
 
 // Parseparams 解析启动参数

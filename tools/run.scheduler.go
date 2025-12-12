@@ -192,3 +192,12 @@ func WaitForCondition(ctx context.Context, condition func() bool) bool {
 		}
 	}
 }
+
+// RunOnContextDone 在context.Done()时执行回调函数
+func RunOnContextDone(ctx context.Context, callback func()) {
+	if ctx == nil || callback == nil {
+		return
+	}
+	<-ctx.Done()
+	callback()
+}
