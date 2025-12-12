@@ -2,6 +2,8 @@ package httpClose
 
 import (
 	"net/http"
+
+	"github.com/quic-go/quic-go/http3"
 )
 
 func CloseResp(resp *http.Response) {
@@ -27,6 +29,12 @@ func Closeresponse(resp *http.Response) {
 
 // Server 关闭http server
 func Server(s *http.Server) {
+	if s != nil {
+		_ = s.Close()
+	}
+}
+
+func ServerQuick(s *http3.Server) {
 	if s != nil {
 		_ = s.Close()
 	}

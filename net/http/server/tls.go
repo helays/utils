@@ -150,6 +150,7 @@ var (
 	AllProtocols        = []string{ProtocolHTTP11, ProtocolHTTP2, ProtocolHTTP3} // 全协议支持
 )
 
+// noinspection all
 type TLSConfig struct {
 	Enable       bool          `json:"enable" yaml:"enable"`
 	Certificates []Certificate `json:"certificates" yaml:"certificates"` // 证书

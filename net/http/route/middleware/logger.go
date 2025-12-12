@@ -25,27 +25,27 @@ func (c *ResponseProcessor) metrics(w *writer) {
 			ulogs.Infof("[%s] %s %s %d %d %s [%dms]", ip, method, uri, status, contentSize, ua, elapsed)
 		}
 		return
+	}
+
+	if status >= http.StatusBadRequest {
+		c.logger.Error(
+			context.Background(),
+			ip,
+			zap.String(method, uri),
+			zap.Int("status", status),
+			zap.Int64("bytes_send", contentSize),
+			zap.String("http_user_agent", ua),
+			zap.Int64("elapsed", elapsed),
+		)
 	} else {
-		if status >= http.StatusBadRequest {
-			c.logger.Error(
-				context.Background(),
-				ip,
-				zap.String(method, uri),
-				zap.Int("status", status),
-				zap.Int64("bytes_send", contentSize),
-				zap.String("http_user_agent", ua),
-				zap.Int64("elapsed", elapsed),
-			)
-		} else {
-			c.logger.Debug(
-				context.Background(),
-				ip,
-				zap.String(method, uri),
-				zap.Int("status", status),
-				zap.Int64("bytes_send", contentSize),
-				zap.String("http_user_agent", ua),
-				zap.Int64("elapsed", elapsed),
-			)
-		}
+		c.logger.Debug(
+			context.Background(),
+			ip,
+			zap.String(method, uri),
+			zap.Int("status", status),
+			zap.Int64("bytes_send", contentSize),
+			zap.String("http_user_agent", ua),
+			zap.Int64("elapsed", elapsed),
+		)
 	}
 }
