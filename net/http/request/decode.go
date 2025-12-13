@@ -17,11 +17,20 @@ import (
 	"github.com/helays/utils/v2/tools/decode/json_decode_tee"
 )
 
+// QueryDecode 解析query数据
 func QueryDecode(u url.Values, dst any) error {
 	decoder := schema.NewDecoder()
 	decoder.SetAliasTag("query")
 	decoder.IgnoreUnknownKeys(true)
 	return decoder.Decode(dst, u)
+}
+
+// FormDecode 解析 application/x-www-form-urlencoded 编码的 form 数据
+func FormDecode(r *http.Request, dst any) error {
+	decoder := schema.NewDecoder()
+	decoder.SetAliasTag("form")
+	decoder.IgnoreUnknownKeys(true)
+	return decoder.Decode(dst, r.PostForm)
 }
 
 // JsonDecode 解析json数据
