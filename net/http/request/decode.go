@@ -20,6 +20,7 @@ import (
 func QueryDecode(u url.Values, dst any) error {
 	decoder := schema.NewDecoder()
 	decoder.SetAliasTag("query")
+	decoder.IgnoreUnknownKeys(true)
 	return decoder.Decode(dst, u)
 }
 
