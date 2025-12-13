@@ -93,9 +93,9 @@ func (m *Manager) getSession(sessionId string, name string) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	sv.ExpireTime.AdjustTimezoneIfNeeded()
 	// 这里时区存在问题，数据库存储的是无时区的时间，所以这里需要硬转一次时区，但是要保证时间数字不变。
-	if sv.ExpireTime.AdjustTimezoneIfNeeded().Before(time.Now()) {
+	if sv.ExpireTime.Before(time.Now()) {
 		_ = m.storage.Delete(sessionId, name)
 		return nil, ErrNotFound
 	}

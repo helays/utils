@@ -170,8 +170,10 @@ func (c CustomTime) IsZero() bool {
 	return c.IsZero()
 }
 
-func (c CustomTime) AdjustTimezoneIfNeeded() time.Time {
-	return tools.AdjustTimezoneIfNeeded(c.Time)
+// AdjustTimezoneIfNeeded 调整时区
+// noinspection all
+func (c *CustomTime) AdjustTimezoneIfNeeded() {
+	c.Time = tools.AdjustTimezoneIfNeeded(c.Time)
 }
 
 type DynamicTime struct {
