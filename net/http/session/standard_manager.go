@@ -22,7 +22,7 @@ func (m *Manager) cookieName() string {
 	return prefix + m.options.Cookie.Name
 }
 
-// 获取sessionId
+// 获取 sessionId
 func (m *Manager) getSessionId(w http.ResponseWriter, r *http.Request, sessionId ...string) (string, error) {
 	var sid string
 	switch m.options.Carrier {
@@ -93,7 +93,9 @@ func (m *Manager) getSession(sessionId string, name string) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	if time.Time(sv.ExpireTime).Before(time.Now()) {
+
+	// 这里时区存在问题，数据库存储的是无时区的时间，所以这里需要硬转一次时区，但是要保证时间数字不变。
+	if sv.ExpireTime.AdjustTimezoneIfNeeded().Before(time.Now()) {
 		_ = m.storage.Delete(sessionId, name)
 		return nil, ErrNotFound
 	}
@@ -151,7 +153,8 @@ func (m *Manager) GetUp(w http.ResponseWriter, r *http.Request, name string, dst
 	if err != nil {
 		return err
 	}
-	sv.ExpireTime = dataType.CustomTime(time.Now().Add(sv.Duration))
+
+	sv.ExpireTime = dataType.NewCustomTime(time.Now().Add(sv.Duration))
 	if err = m.storage.Save(sv); err != nil {
 		return err
 	}
@@ -244,12 +247,12 @@ func (m *Manager) GetUpByDuration(w http.ResponseWriter, r *http.Request, name s
 	return nil
 }
 
-// 延长session有效期
+// 延长session 有效期
 func (m *Manager) extendSession(sv *Session, callbacks ...Callback) error {
-	sv.ExpireTime = dataType.CustomTime(time.Now().Add(sv.Duration))
+	sv.ExpireTime = dataType.NewCustomTime(time.Now().Add(sv.Duration))
 	for _, cb := range callbacks {
 		if cb.BeforeRenew != nil {
-			if err := cb.BeforeRenew(sv.ExpireTime, sv.Values.Val); err != nil {
+			if err := cb.BeforeRenew(sv.Id, sv.ExpireTime, sv.Values.Val); err != nil {
 				return err
 			}
 		}
@@ -259,7 +262,7 @@ func (m *Manager) extendSession(sv *Session, callbacks ...Callback) error {
 	}
 	for _, cb := range callbacks {
 		if cb.AfterRenew != nil {
-			if err := cb.AfterRenew(sv.ExpireTime, sv.Values.Val); err != nil {
+			if err := cb.AfterRenew(sv.Id, sv.ExpireTime, sv.Values.Val); err != nil {
 				return err
 			}
 		}
@@ -304,7 +307,7 @@ func (m *Manager) SetVal(value *Value) error {
 		CreateTime: dataType.NewCustomTime(now),
 		Duration:   tools.Ternary(value.TTL > 0, value.TTL, ExpireTime),
 	}
-	sv.ExpireTime = dataType.CustomTime(now.Add(sv.Duration)) // 设置过期时间
+	sv.ExpireTime = dataType.NewCustomTime(now.Add(sv.Duration)) // 设置过期时间
 	return m.storage.Save(&sv)
 }
 

@@ -103,8 +103,8 @@ const (
 const SessionID = "session_id"
 
 type Callback struct {
-	BeforeRenew func(expire dataType.CustomTime, data any) error
-	AfterRenew  func(expire dataType.CustomTime, data any) error
+	BeforeRenew func(sessionID string, expire dataType.CustomTime, data any) error
+	AfterRenew  func(sessionID string, expire dataType.CustomTime, data any) error
 }
 
 type Value struct {

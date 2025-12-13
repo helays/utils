@@ -2,10 +2,11 @@ package db
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/tools"
 	"net/url"
 	"strings"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/tools"
 )
 
 func (this *Dbbase) Dsn() string {
@@ -74,6 +75,8 @@ func (d *Dbbase) sqliteDSN() string {
 	args := []string{
 		"cache=shared",
 		"mode=rwc",
+		"loc=Local",
+		"_time_format=sqlite",
 		"journal_mode=WAL",
 		"synchronous=NORMAL",
 	}
