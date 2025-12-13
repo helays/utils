@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -155,6 +156,37 @@ func (m *Manager) GetUp(w http.ResponseWriter, r *http.Request, name string, dst
 		return err
 	}
 	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
+	return nil
+}
+
+// GetUpByRemainRatio 根据剩余时间占比自动续期
+// ratio: 0.0-1.0 之间的值，表示触发续期的剩余时间占比
+// 例如：session总时长15天，ratio=0.2，当剩余时间少于3天（15*0.2）时触发续期
+func (m *Manager) GetUpByRemainRatio(w http.ResponseWriter, r *http.Request, name string, dst any, ratio float64, callbacks ...Callback) error {
+	if ratio <= 0 || ratio >= 1 {
+		return fmt.Errorf("ratio 必须介于0-1之间")
+	}
+	sessionId, err := m.getSessionId(w, r)
+	if err != nil {
+		return err
+	}
+	v := reflect.ValueOf(dst)
+	if v.Kind() != reflect.Ptr || v.IsNil() {
+		return ErrNotPointer
+	}
+	sv, err := m.getSession(sessionId, name)
+	if err != nil {
+		return err
+	}
+	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
+	// 计算当前剩余时间占总时长的比例
+	remaining := sv.ExpireTime.Sub(time.Now())
+	totalDuration := sv.Duration
+	// 当剩余时间占比小于等于设定的ratio 时触发续期
+	if float64(remaining) <= float64(totalDuration)*ratio {
+		return m.extendSession(sv, callbacks...)
+	}
+
 	return nil
 }
 
