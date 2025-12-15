@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -182,7 +183,7 @@ func (s *Server[T]) Run() error {
 		s.quicH3Server.Handler = s.mux
 		go func() {
 			err := s.quicH3Server.ListenAndServe()
-			if err != nil {
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				panic(fmt.Errorf("quic http3服务启动失败：%s", err))
 			}
 		}()
@@ -190,10 +191,18 @@ func (s *Server[T]) Run() error {
 
 	if s.opt.TLS.Enable {
 		ulogs.Log("启动https server", s.opt.Addr)
-		return s.server.ListenAndServeTLS("", "")
+		err := s.server.ListenAndServeTLS("", "")
+		if err == nil || errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return fmt.Errorf("https服务启动失败：%s", err)
 	}
 	ulogs.Log("启动http server", s.opt.Addr)
-	return s.server.ListenAndServe()
+	err := s.server.ListenAndServe()
+	if err == nil || errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return fmt.Errorf("http服务启动失败：%s", err)
 }
 
 func (s *Server[T]) GetRouteDescriptions() []Description[T] {
