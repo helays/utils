@@ -182,6 +182,7 @@ func (s *Server[T]) Run() error {
 	if s.quicH3Server != nil {
 		s.quicH3Server.Handler = s.mux
 		go func() {
+			ulogs.Log("启动quic http3服务", s.opt.Addr)
 			err := s.quicH3Server.ListenAndServe()
 			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				panic(fmt.Errorf("quic http3服务启动失败：%s", err))
