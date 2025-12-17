@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/helays/utils/v2/close/vclose"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/tools"
 	"github.com/redis/go-redis/v9"
@@ -52,7 +53,7 @@ type MaintNotificationsConfig struct {
 }
 
 // NewUniversalClient 创建一个通用的 Redis 客户端
-func (r Rediscfg) NewUniversalClient() (redis.UniversalClient, error) {
+func (r Rediscfg) NewUniversalClient(ctx context.Context) (redis.UniversalClient, error) {
 	c := redis.UniversalOptions{
 		Addrs:            r.Addrs,
 		ClientName:       r.ClientName,
@@ -100,6 +101,7 @@ func (r Rediscfg) NewUniversalClient() (redis.UniversalClient, error) {
 	}
 	ulogs.Log("redis连接参数", r.Addrs, "库编号", r.Db, "二次认证", r.OnConnect || r.EnableAuthOnConnect, "set lib", r.DisableIdentity)
 	rdb := redis.NewUniversalClient(&c)
+	go tools.RunOnContextDone(ctx, func() { vclose.Close(rdb) })
 	if r.EnableCheckOnInit {
 		status := rdb.Ping(context.Background())
 		err := status.Err()

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -166,7 +167,7 @@ func (s *Server[T]) tls() error {
 	return nil
 }
 
-func (s *Server[T]) Close() {
+func (s *Server[T]) close() {
 	s.ipAccess.Close()
 	httpClose.Server(s.server)
 	httpClose.ServerQuick(s.quicH3Server)
@@ -174,7 +175,8 @@ func (s *Server[T]) Close() {
 }
 
 // Run 启动服务
-func (s *Server[T]) Run() error {
+func (s *Server[T]) Run(ctx context.Context) error {
+	go tools.RunOnContextDone(ctx, func() { s.close() })
 	s.mux = http.NewServeMux()
 	s.setRoutes()
 	s.server.Handler = s.mux
