@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/map/safettl"
 	"github.com/helays/utils/v2/net/ipkit"
+	"github.com/helays/utils/v2/safe/safettl"
 	"github.com/helays/utils/v2/tools"
 	"github.com/malfunkt/iprange"
 	"go4.org/netipx"

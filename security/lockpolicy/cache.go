@@ -3,24 +3,24 @@ package lockpolicy
 import (
 	"time"
 
-	"github.com/helays/utils/v2/map/safettl"
-	"github.com/helays/utils/v2/tools/mutex"
+	"github.com/helays/utils/v2/safe"
+	"github.com/helays/utils/v2/safe/safettl"
 )
 
 // targetCache 锁定目标缓存
 // 缓存中无需锁定次数，锁定次数即升级后的触发次数
 type targetCache struct {
-	policy       *Policy                                                         // 策略
-	triggerCount *safettl.PerKeyTTLMap[string, *mutex.SafeResourceRWMutex[int]]  // 触发次数
-	isLocked     *safettl.PerKeyTTLMap[string, *mutex.SafeResourceRWMutex[bool]] // 是否锁定
+	policy       *Policy                                                    // 策略
+	triggerCount *safettl.PerKeyTTLMap[string, *safe.ResourceRWMutex[int]]  // 触发次数
+	isLocked     *safettl.PerKeyTTLMap[string, *safe.ResourceRWMutex[bool]] // 是否锁定
 
 }
 
 func newTargetCache(policy *Policy) *targetCache {
 	return &targetCache{
 		policy:       policy,
-		triggerCount: safettl.NewPerKeyTTLMapWithInterval[string, *mutex.SafeResourceRWMutex[int]](time.Minute),
-		isLocked:     safettl.NewPerKeyTTLMapWithInterval[string, *mutex.SafeResourceRWMutex[bool]](time.Minute),
+		triggerCount: safettl.NewPerKeyTTLMapWithInterval[string, *safe.ResourceRWMutex[int]](time.Minute),
+		isLocked:     safettl.NewPerKeyTTLMapWithInterval[string, *safe.ResourceRWMutex[bool]](time.Minute),
 	}
 }
 
@@ -37,7 +37,7 @@ func (t *targetCache) GetTriggerCount(key string) int {
 func (t *targetCache) SetTriggerCount(key string) int {
 	c, ok := t.triggerCount.Load(key)
 	if !ok {
-		c = mutex.NewSafeResourceRWMutex[int](0)
+		c = safe.NewResourceRWMutex[int](0)
 		t.triggerCount.StoreWithTTL(key, c, t.policy.WindowTime) // 触发次数缓存，需要有窗口时间
 	}
 	next := c.Read() + 1
@@ -68,11 +68,11 @@ func (t *targetCache) DeleteTriggerCount(key string) {
 
 // SetLock 设置锁定
 func (t *targetCache) SetLock(key string) {
-	lock := mutex.NewSafeResourceRWMutex(true)
+	lock := safe.NewResourceRWMutex(true)
 	t.isLocked.StoreWithTTL(key, lock, t.policy.LockoutTime)
 }
 
 func (t *targetCache) SetLockWithExpire(key string, expire time.Duration) {
-	lock := mutex.NewSafeResourceRWMutex(true)
+	lock := safe.NewResourceRWMutex(true)
 	t.isLocked.StoreWithTTL(key, lock, expire)
 }

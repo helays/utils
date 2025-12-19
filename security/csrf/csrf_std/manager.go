@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/helays/utils/v2/map/safemap"
 	"github.com/helays/utils/v2/net/http/response"
 	"github.com/helays/utils/v2/net/http/session"
+	"github.com/helays/utils/v2/safe"
 	"github.com/helays/utils/v2/security/csrf"
 )
 
 type Std struct {
-	configs           safemap.SyncMap[string, *csrf.Config]
+	configs           *safe.Map[string, *csrf.Config]
 	sessionManager    *session.Manager
 	routeCodeCtxField string // 路由code字段
 }
@@ -20,6 +20,7 @@ func NewStd(sm *session.Manager, routeCodeCtxField string) *Std {
 	s := &Std{
 		sessionManager:    sm,
 		routeCodeCtxField: routeCodeCtxField,
+		configs:           safe.NewMap[string, *csrf.Config](safe.StringHasher{}),
 	}
 
 	return s

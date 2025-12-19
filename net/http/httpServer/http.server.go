@@ -18,14 +18,14 @@ import (
 	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipkit"
 	"github.com/helays/utils/v2/net/ipmatch"
+	"github.com/helays/utils/v2/safe"
 	"github.com/helays/utils/v2/tools"
-	"github.com/helays/utils/v2/tools/mutex"
 	"golang.org/x/net/websocket"
 )
 
 // HttpServerStart 公功 http server 启动函数
 func (h *HttpServer) HttpServerStart(ctx context.Context) {
-	var stop = mutex.NewSafeResourceRWMutex(false)
+	var stop = safe.NewResourceRWMutex(false)
 	go func() {
 		<-ctx.Done()
 		stop.Write(true)

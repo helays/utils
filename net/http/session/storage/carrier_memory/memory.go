@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/map/safettl"
 	"github.com/helays/utils/v2/net/http/session"
+	"github.com/helays/utils/v2/safe/safettl"
 )
 
 type Instance struct {

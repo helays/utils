@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helays/utils/v2/map/safettl"
+	"github.com/helays/utils/v2/safe/safettl"
 )
 
 // IPVersion IP版本类型
