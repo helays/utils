@@ -20,11 +20,11 @@ import (
 )
 
 // noinspection all
-func New(cfg *Config) (*Server[any], error) {
-	return NewGeneric[any](cfg)
+func New(ctx context.Context, cfg *Config) (*Server[any], error) {
+	return NewGeneric[any](ctx, cfg)
 }
 
-func NewGeneric[T any](cfg *Config) (*Server[T], error) {
+func NewGeneric[T any](ctx context.Context, cfg *Config) (*Server[T], error) {
 	s := &Server[T]{
 		opt:      cfg,
 		ipAccess: middleware.NewIPAccessMiddleware(),
@@ -39,7 +39,7 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 		return nil, fmt.Errorf("日志模块初始化失败 %v", err)
 	}
 
-	if err := s.ipAccessInit(); err != nil {
+	if err := s.ipAccessInit(ctx); err != nil {
 		return nil, err
 	}
 	s.httpServer()
@@ -110,7 +110,7 @@ func (s *Server[T]) validParam() error {
 	return nil
 }
 
-func (s *Server[T]) ipAccessInit() error {
+func (s *Server[T]) ipAccessInit(ctx context.Context) error {
 	access := s.opt.Security.IPAccess
 	if !access.Enable {
 		ulogs.Infof("HTTP服务未启用 IP访问控制模块")
@@ -120,21 +120,21 @@ func (s *Server[T]) ipAccessInit() error {
 	ulogs.Infof("开始初始化IP访问控制")
 
 	if access.Allow != nil {
-		if allow, err := ipmatch.NewIPMatcher(access.Allow); err != nil {
+		if allow, err := ipmatch.NewIPMatcher(ctx, access.Allow); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [白名单] 初始化失败 %v", err)
 		} else {
 			s.ipAccess.SetAllow(allow)
 		}
 	}
 	if access.Deny != nil {
-		if deny, err := ipmatch.NewIPMatcher(access.Deny); err != nil {
+		if deny, err := ipmatch.NewIPMatcher(ctx, access.Deny); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [黑名单] 初始化失败 %v", err)
 		} else {
 			s.ipAccess.SetDeny(deny)
 		}
 	}
 	if access.Debug != nil {
-		if dbg, err := ipmatch.NewIPMatcher(access.Debug); err != nil {
+		if dbg, err := ipmatch.NewIPMatcher(ctx, access.Debug); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [调试] 模块初始化失败 %v", err)
 		} else {
 			s.ipAccess.SetDebug(dbg)
@@ -168,7 +168,6 @@ func (s *Server[T]) tls() error {
 }
 
 func (s *Server[T]) close() {
-	s.ipAccess.Close()
 	httpClose.Server(s.server)
 	httpClose.ServerQuick(s.quicH3Server)
 	ulogs.Log("http server已关闭")

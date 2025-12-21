@@ -2,6 +2,7 @@ package ipmatch
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net"
 	"net/netip"
@@ -12,7 +13,7 @@ import (
 
 	"github.com/helays/utils/v2/close/vclose"
 	"github.com/helays/utils/v2/net/ipkit"
-	"github.com/helays/utils/v2/safe/safettl"
+	"github.com/helays/utils/v2/safe"
 	"github.com/helays/utils/v2/tools"
 	"github.com/malfunkt/iprange"
 	"go4.org/netipx"
@@ -37,14 +38,22 @@ import (
 // 当ip totals大于阈值后，应该分别尝试 离散ip+range里面的数量， 获取取其中一部分，尽可能让map存储满。
 // 剩下的range 进行排序，然后采用二分法查询
 
-func NewIPMatcher(config *Config) (*IPMatcher, error) {
+func NewIPMatcher(ctx context.Context, config *Config) (*IPMatcher, error) {
 	m := &IPMatcher{
 		config: config,
 	}
 	ipv4CacheTTL := tools.AutoTimeDuration(m.config.IPv4CacheTTL, time.Second, 30*time.Second)
 	ipv6CacheTTL := tools.AutoTimeDuration(m.config.IPv6CacheTTL, time.Second, 10*time.Second)
-	m.ipv4Cache = safettl.New[uint32, struct{}](ipv4CacheTTL)
-	m.ipv6Cache = safettl.New[[16]byte, struct{}](ipv6CacheTTL)
+	m.ipv4Cache = safe.NewMap[uint32, struct{}](ctx, safe.IntegerHasher[uint32]{}, safe.MapConfig{
+		EnableCleanup: true,
+		ClearInterval: ipv4CacheTTL / 2,
+		TTL:           ipv4CacheTTL,
+	})
+	m.ipv6Cache = safe.NewMap[[16]byte, struct{}](ctx, safe.Array16Hasher{}, safe.MapConfig{
+		EnableCleanup: true,
+		ClearInterval: ipv6CacheTTL / 2,
+		TTL:           ipv6CacheTTL,
+	})
 	m.temp = newIPTemp() // 构建时候的缓存先定义
 	err := m.LoadRule()
 	if err != nil {

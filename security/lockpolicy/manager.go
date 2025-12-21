@@ -1,6 +1,7 @@
 package lockpolicy
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 )
 
 type Manager struct {
+	ctx                 context.Context
 	policyMap           *safe.Map[LockTarget, *Policy]  // 构建按 锁定目标 => 策略映射
 	policies            *safe.ResourceRWMutex[Policies] // 锁定策略配置
 	independentPolicies *safe.ResourceRWMutex[Policies] // 独立策略映射
@@ -17,13 +19,13 @@ type Manager struct {
 }
 
 // NewManager 创建策略管理器
-func NewManager(polices Policies) *Manager {
-	m := &Manager{}
-	m.policyMap = safe.NewMap[LockTarget, *Policy](lockTargetHasher{})
+func NewManager(ctx context.Context, polices Policies) *Manager {
+	m := &Manager{ctx: ctx}
+	m.policyMap = safe.NewMap[LockTarget, *Policy](ctx, lockTargetHasher{})
 	m.policies = safe.NewResourceRWMutex(polices)
 	m.independentPolicies = safe.NewResourceRWMutex(Policies{})
 	m.escalationChains = safe.NewResourceRWMutex(Policies{})
-	m.cache = safe.NewMap[LockTarget, *targetCache](lockTargetHasher{})
+	m.cache = safe.NewMap[LockTarget, *targetCache](ctx, lockTargetHasher{})
 	m.buildPolicy()
 	m.setTargetCache(polices)
 	return m
@@ -42,7 +44,7 @@ func (m *Manager) setTargetCache(polices Policies) {
 	for _, policy := range polices {
 		if policy.Trigger > 0 {
 			// 添加缓存
-			m.cache.Store(policy.Target, newTargetCache(&policy))
+			m.cache.Store(policy.Target, newTargetCache(m.ctx, &policy))
 		}
 	}
 }

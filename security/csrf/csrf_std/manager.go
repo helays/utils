@@ -1,6 +1,7 @@
 package csrf_std
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -16,11 +17,11 @@ type Std struct {
 	routeCodeCtxField string // 路由code字段
 }
 
-func NewStd(sm *session.Manager, routeCodeCtxField string) *Std {
+func NewStd(ctx context.Context, sm *session.Manager, routeCodeCtxField string) *Std {
 	s := &Std{
 		sessionManager:    sm,
 		routeCodeCtxField: routeCodeCtxField,
-		configs:           safe.NewMap[string, *csrf.Config](safe.StringHasher{}),
+		configs:           safe.NewMap[string, *csrf.Config](ctx, safe.StringHasher{}),
 	}
 
 	return s

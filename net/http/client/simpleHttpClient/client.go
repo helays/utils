@@ -11,7 +11,7 @@ import (
 	"github.com/helays/utils/v2/safe"
 )
 
-var cache = safe.NewMap[string, *http.Client](safe.StringHasher{})
+var cache = safe.NewMap[string, *http.Client](context.Background(), safe.StringHasher{})
 
 func NewWithProxy(timeout time.Duration, proxy *cfg_proxy.Proxy) (*http.Client, error) {
 	return initClientHelper(timeout, proxy)
