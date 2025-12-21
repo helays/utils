@@ -1,6 +1,7 @@
 package sonyflakekit
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -56,6 +57,15 @@ func NewIDGenerator() *IDGenerator {
 // GenerateID 生成ID
 func (g *IDGenerator) GenerateID() (int64, error) {
 	return g.sf.NextID()
+}
+
+// noinspection all
+func (g *IDGenerator) MustGenerateID() int64 {
+	id, err := g.sf.NextID()
+	if err != nil {
+		panic(fmt.Errorf("sonyflake生成ID失败: %v", err))
+	}
+	return id
 }
 
 // BatchGenerateID 批量生成ID

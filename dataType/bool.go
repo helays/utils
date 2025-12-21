@@ -2,6 +2,7 @@ package dataType
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/tools"
@@ -12,6 +13,10 @@ import (
 // Bool 注意当使用这个类型时，在定义模型时，默认值需要带上括号。不然pg数据库会报错。
 type Bool struct {
 	bool
+}
+
+func NewBool(b bool) Bool {
+	return Bool{bool: b}
 }
 
 // noinspection all
@@ -95,6 +100,33 @@ func (b *Bool) Equals(b2 Bool) bool {
 	return b.bool == b2.bool
 }
 
-func NewBool(b bool) Bool {
-	return Bool{bool: b}
+func (b Bool) MarshalJSON() ([]byte, error) {
+	return json.Marshal(b.bool)
+}
+
+func (b *Bool) UnmarshalJSON(data []byte) error {
+	var val bool
+	if err := json.Unmarshal(data, &val); err != nil {
+		return err
+	}
+	b.bool = val
+	return nil
+}
+
+func (b Bool) GobEncode() ([]byte, error) {
+	// bool类型可以直接用1个字节表示
+	if b.bool {
+		return []byte{1}, nil
+	}
+	return []byte{0}, nil
+}
+
+func (b *Bool) GobDecode(data []byte) error {
+	if len(data) == 0 {
+		b.bool = false
+		return nil
+	}
+	// 任何非零值都视为 true
+	b.bool = data[0] != 0
+	return nil
 }
