@@ -10,11 +10,13 @@ import (
 )
 
 // Bool 注意当使用这个类型时，在定义模型时，默认值需要带上括号。不然pg数据库会报错。
-type Bool bool
+type Bool struct {
+	bool
+}
 
 // noinspection all
 func (b Bool) Value() (driver.Value, error) {
-	if b {
+	if b.bool {
 		return int64(1), nil
 	}
 	return int64(0), nil
@@ -23,14 +25,14 @@ func (b Bool) Value() (driver.Value, error) {
 // noinspection all
 func (b *Bool) Scan(value any) error {
 	if value == nil {
-		*b = false
+		b.bool = false
 		return nil
 	}
 	ok, e := tools.Any2bool(value)
 	if e != nil {
 		return e
 	}
-	*b = Bool(ok)
+	b.bool = ok
 	return nil
 }
 
@@ -56,17 +58,23 @@ func (Bool) GormDBDataType(db *gorm.DB, _ *schema.Field) string {
 
 // noinspection all
 func (b Bool) Bool() bool {
-	return bool(b)
+	return b.bool
 }
 
 // noinspection all
 func (b Bool) Int() int {
-	if b {
+	if b.bool {
 		return 1
 	}
 	return 0
 }
 
+// Resverse 反转
+// noinspection all
+func (b *Bool) Resverse() {
+	b.bool = !b.bool
+}
+
 func NewBool(b bool) Bool {
-	return Bool(b)
+	return Bool{bool: b}
 }
