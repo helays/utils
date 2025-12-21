@@ -75,6 +75,26 @@ func (b *Bool) Resverse() {
 	b.bool = !b.bool
 }
 
+func (b *Bool) Set(b2 Bool) {
+	b.bool = b2.bool
+}
+
+func (b *Bool) SetBool(b2 bool) {
+	b.bool = b2
+}
+
+func (b *Bool) SetInt(i int) {
+	b.bool = i != 0
+}
+
+func (b *Bool) SetString(s string) {
+	b.bool = s != ""
+}
+
+func (b *Bool) Equals(b2 Bool) bool {
+	return b.bool == b2.bool
+}
+
 func NewBool(b bool) Bool {
 	return Bool{bool: b}
 }
