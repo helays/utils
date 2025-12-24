@@ -1,4 +1,4 @@
-package kafkav2
+package clientconf
 
 import (
 	"database/sql/driver"
@@ -329,7 +329,6 @@ type Consumer struct {
 
 // noinspection all
 type Config struct {
-	Addrs    []string `yaml:"addrs" json:"addrs"` //
 	Admin    Admin    `yaml:"admin" json:"admin"`
 	Net      Net      `yaml:"net" json:"net"`
 	Metadata Metadata `yaml:"metadata" json:"metadata"`

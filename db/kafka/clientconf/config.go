@@ -1,4 +1,4 @@
-package kafkav2
+package clientconf
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	cfg_proxy "github.com/helays/utils/v2/config/cfg-proxy"
 	"github.com/helays/utils/v2/scram"
 	"github.com/helays/utils/v2/tools"
+	"github.com/rcrowley/go-metrics"
 )
 
 // noinspection all
@@ -43,10 +44,8 @@ func (c *Config) ToSarama() (*sarama.Config, error) {
 	}
 	cfg.ClientID = tools.Ternary(c.ClientID != "", c.ClientID, defaultClientID)
 	cfg.ChannelBufferSize = tools.Ternary(c.ChannelBufferSize < 1, 256, c.ChannelBufferSize)
-	cfg.ApiVersionsRequest = true
-	if c.ApiVersionsRequest != "" {
-		cfg.ApiVersionsRequest = c.ApiVersionsRequest == "true"
-	}
+	cfg.ApiVersionsRequest = boolKit(c.ApiVersionsRequest, true)
+
 	cfg.Version = sarama.DefaultVersion
 	if c.Version != "" {
 		var err error
@@ -76,8 +75,7 @@ func (c *Config) toNet(cfg *sarama.Config) error {
 
 	if c.Net.TLS.Enable {
 		var err error
-		cfg.Net.TLS.Config, err = c.Net.TLS.ToTLSConfig()
-		if err != nil {
+		if cfg.Net.TLS.Config, err = c.Net.TLS.ToTLSConfig(); err != nil {
 			return err
 		}
 		cfg.Net.TLS.Enable = true
@@ -102,10 +100,7 @@ func (c *Config) toNet(cfg *sarama.Config) error {
 		cfg.Net.SASL.Version = int16(v)
 	}
 
-	cfg.Net.SASL.Handshake = true
-	if c.Net.SASL.Handshake != "" {
-		cfg.Net.SASL.Handshake = c.Net.SASL.Handshake == "true"
-	}
+	cfg.Net.SASL.Handshake = boolKit(c.Net.SASL.Handshake, true)
 
 	cfg.Net.SASL.AuthIdentity = c.Net.SASL.AuthIdentity
 	cfg.Net.SASL.User = c.Net.SASL.User
@@ -135,18 +130,11 @@ func (c *Config) toMetadata(cfg *sarama.Config) {
 	cfg.Metadata.Retry.Backoff = tools.AutoTimeDuration(c.Metadata.Retry.Backoff, time.Millisecond, 250*time.Millisecond)
 	cfg.Metadata.RefreshFrequency = tools.AutoTimeDuration(c.Metadata.RefreshFrequency, time.Second, 10*time.Minute)
 	cfg.Metadata.Timeout = c.Metadata.Timeout
-	cfg.Metadata.AllowAutoTopicCreation = true
-	if c.Metadata.AllowAutoTopicCreation != "" {
-		cfg.Metadata.AllowAutoTopicCreation = c.Metadata.AllowAutoTopicCreation == "true"
-	}
-	cfg.Metadata.Full = true
-	if c.Metadata.Full != "" {
-		cfg.Metadata.Full = c.Metadata.Full == "true"
-	}
-	cfg.Metadata.SingleFlight = true
-	if c.Metadata.SingleFlight != "" {
-		cfg.Metadata.SingleFlight = c.Metadata.SingleFlight == "true"
-	}
+
+	cfg.Metadata.AllowAutoTopicCreation = boolKit(c.Metadata.AllowAutoTopicCreation, true)
+	cfg.Metadata.Full = boolKit(c.Metadata.Full, true)
+	cfg.Metadata.SingleFlight = boolKit(c.Metadata.SingleFlight, true)
+
 }
 
 // 生产者配置
@@ -217,10 +205,7 @@ func (c *Config) toConsumer(cfg *sarama.Config) error {
 	cfg.Consumer.Group.Rebalance.Retry.Backoff = tools.AutoTimeDuration(c.Consumer.Group.Rebalance.Retry.Backoff, time.Second, 2*time.Second)
 
 	cfg.Consumer.Group.InstanceId = c.Consumer.Group.InstanceId
-	cfg.Consumer.Group.ResetInvalidOffsets = true
-	if c.Consumer.Group.ResetInvalidOffsets != "" {
-		cfg.Consumer.Group.ResetInvalidOffsets = c.Consumer.Group.ResetInvalidOffsets == "true"
-	}
+	cfg.Consumer.Group.ResetInvalidOffsets = boolKit(c.Consumer.Group.ResetInvalidOffsets, true)
 
 	cfg.Consumer.Retry.Backoff = tools.AutoTimeDuration(c.Consumer.Retry.Backoff, time.Second, 2*time.Second)
 
@@ -232,10 +217,7 @@ func (c *Config) toConsumer(cfg *sarama.Config) error {
 	cfg.Consumer.MaxProcessingTime = tools.AutoTimeDuration(c.Consumer.MaxProcessingTime, time.Millisecond, 100*time.Millisecond)
 	cfg.Consumer.Return.Errors = c.Consumer.Return.Errors
 
-	cfg.Consumer.Offsets.AutoCommit.Enable = true
-	if c.Consumer.Offsets.AutoCommit.Enable != "" {
-		cfg.Consumer.Offsets.AutoCommit.Enable = c.Consumer.Offsets.AutoCommit.Enable == "true"
-	}
+	cfg.Consumer.Offsets.AutoCommit.Enable = boolKit(c.Consumer.Offsets.AutoCommit.Enable, true)
 	cfg.Consumer.Offsets.AutoCommit.Interval = tools.AutoTimeDuration(c.Consumer.Offsets.AutoCommit.Interval, time.Second, time.Second)
 
 	cfg.Consumer.Offsets.Initial = sarama.OffsetNewest
@@ -244,11 +226,12 @@ func (c *Config) toConsumer(cfg *sarama.Config) error {
 		if err != nil {
 			return fmt.Errorf("字段%s转int失败：%v", "consumer.offsets.initial", err)
 		}
-		cfg.Consumer.Offsets.Initial = int64(initial)
+		cfg.Consumer.Offsets.Initial = initial
 	}
 	cfg.Consumer.Offsets.Retention = c.Consumer.Offsets.Retention
 	cfg.Consumer.Offsets.Retry.Max = tools.Ternary(c.Consumer.Offsets.Retry.Max < 1, 3, c.Consumer.Offsets.Retry.Max)
 	cfg.Consumer.IsolationLevel = c.Consumer.IsolationLevel
+	cfg.MetricRegistry = metrics.NewRegistry()
 	return nil
 
 }
