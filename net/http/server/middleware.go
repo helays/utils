@@ -25,11 +25,12 @@ func Chain(middlewares ...Middleware) Middleware {
 func (s *Server[T]) middleware(route *routerRule[T]) {
 	var handler http.Handler
 	mid := []Middleware{
+		s.enhancedWriter.Handler,           // 多功能响应处理器
 		s.ipAccess.DenyIpAccess,            // 设置黑名单防火墙
 		s.ipAccess.AllowIpAccess,           // 设置白名单防火墙
 		s.ipAccess.DebugIPAccess,           // debug 模式ip限制
 		cors_std.Cors(s.opt.Security.CORS), // 跨域，这个是配置文件级别的跨域中间件。
-		s.enhancedWriter.Handler,           // 多功能响应处理器
+
 	}
 	mid = append(mid, route.middlewares...)
 

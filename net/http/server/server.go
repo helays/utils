@@ -35,8 +35,13 @@ func NewGeneric[T any](ctx context.Context, cfg *Config) (*Server[T], error) {
 
 	s.enhancedWriter = middleware.NewResponseProcessor()
 	s.enhancedWriter.SetCompressionConfig(s.opt.Compression)
-	if err := s.enhancedWriter.SetLoggerConfig(s.opt.Logger); err != nil {
-		return nil, fmt.Errorf("日志模块初始化失败 %v", err)
+
+	if len(s.opt.Logger.LogLevelConfigs) > 0 {
+		logger, err := middleware.NewZapLogger(&s.opt.Logger)
+		if err != nil {
+			return nil, fmt.Errorf("日志模块初始化失败 %v", err)
+		}
+		s.enhancedWriter.AddLogHandler(logger)
 	}
 
 	if err := s.ipAccessInit(ctx); err != nil {
@@ -219,4 +224,9 @@ func (s *Server[T]) GetRouteDescriptions() []Description[T] {
 
 func (s *Server[T]) GetRoute() *route.Route {
 	return s.route
+}
+
+// AddLogHandler 添加日志处理
+func (s *Server[T]) AddLogHandler(le ...middleware.Logger) {
+	s.enhancedWriter.AddLogHandler(le...)
 }

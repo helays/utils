@@ -25,6 +25,7 @@ type ResponseProcessor struct {
 	compressOpt CompressionConfig
 	loggerOpt   zaploger.Config
 	logger      *zaploger.Logger
+	logEvent    []Logger // 日志事件
 }
 
 func NewResponseProcessor() *ResponseProcessor {
@@ -45,13 +46,13 @@ func (c *ResponseProcessor) SetCompressionConfig(opt CompressionConfig) {
 	}
 }
 
-func (c *ResponseProcessor) SetLoggerConfig(opt zaploger.Config) (err error) {
-	c.loggerOpt = opt
-	if len(c.loggerOpt.LogLevelConfigs) == 0 {
-		return
+// AddLogHandler 追加日志事件处理器
+func (c *ResponseProcessor) AddLogHandler(le ...Logger) {
+	for _, lg := range le {
+		if lg != nil {
+			c.logEvent = append(c.logEvent, lg)
+		}
 	}
-	c.logger, err = zaploger.New(&c.loggerOpt)
-	return
 }
 
 func (c *ResponseProcessor) Handler(next http.Handler) http.Handler {
