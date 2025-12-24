@@ -34,6 +34,10 @@ func (c *ResponseProcessor) metrics(w *writer) {
 
 type StdLogger struct{}
 
+func NewStdLogger() *StdLogger {
+	return &StdLogger{}
+}
+
 func (s *StdLogger) Write(l *Logs) {
 	if l.Status >= http.StatusBadRequest {
 		ulogs.Errorf("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
