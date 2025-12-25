@@ -41,11 +41,11 @@ type ConsumerHandler struct {
 	onMessage  onMessageFunc
 }
 
-func NewConsumerHandler(ctx context.Context, consumer sarama.Consumer, opt ConsumerConfig) (*ConsumerHandler, error) {
+func NewConsumerHandler(ctx context.Context, consumer sarama.Consumer, opt *ConsumerConfig) (*ConsumerHandler, error) {
 	c := &ConsumerHandler{
 		consumer:   consumer,
 		ctx:        ctx,
-		opt:        &opt,
+		opt:        opt,
 		partitions: make(map[int32]context.CancelFunc),
 	}
 
