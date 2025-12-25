@@ -232,9 +232,9 @@ func ContainsAnyHashBest[T any, H comparable](elems []T, targets []T, hashFunc f
 // Ordered 约束，表示可排序的类型
 type Ordered interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
-		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
-		~float32 | ~float64 |
-		~string
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+	~float32 | ~float64 |
+	~string
 }
 
 // SortSlice 对 Ordered 类型的切片进行排序
@@ -448,4 +448,12 @@ func Slice2MapWithHeader(rows any, header []string) map[string]any {
 		tmp[header[i]] = rowsValue.Index(i).Interface()
 	}
 	return tmp
+}
+
+func MapKeys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }

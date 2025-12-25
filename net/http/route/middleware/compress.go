@@ -24,7 +24,6 @@ type CompressionConfig struct {
 type ResponseProcessor struct {
 	compressOpt CompressionConfig
 	loggerOpt   zaploger.Config
-	logger      *zaploger.Logger
 	logEvent    []Logger // 日志事件
 }
 

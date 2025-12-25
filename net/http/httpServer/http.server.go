@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -67,8 +68,13 @@ func (h *HttpServer) initParams(ctx context.Context) {
 		h.serverNameMap[strings.ToLower(dom)] = 0
 	}
 	h.logger = middleware.NewResponseProcessor()
-	err := h.logger.SetLoggerConfig(h.Logger)
-	ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
+	if len(h.Logger.LogLevelConfigs) > 0 {
+		logger, err := middleware.NewZapLogger(&h.Logger)
+		if err != nil {
+			panic(fmt.Errorf("日志模块初始化失败 %v", err))
+		}
+		h.logger.AddLogHandler(logger)
+	}
 	h.iptablesInit(ctx)
 	h.initRouter()
 	h.server = &http.Server{Addr: h.ListenAddr}
