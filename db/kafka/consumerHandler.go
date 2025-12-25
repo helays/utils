@@ -99,8 +99,10 @@ func (c *ConsumerHandler) Run(onMessage onMessageFunc) {
 		return
 	}
 	c.onMessage = onMessage
+	c.refreshPartitions() // 先执行一次
 	tck := time.NewTicker(c.opt.Interval)
 	defer tck.Stop()
+
 	for {
 		select {
 		case <-tck.C:
