@@ -120,18 +120,21 @@ func (m *Map[K, V]) Load(key K) (V, bool) {
 	sd, _, k := m.getShard(key)
 	sd.mu.RLock()
 	defer sd.mu.RUnlock()
-	val, _, ok := m.load(sd, key, k)
+	val, _, ok, _ := m.load(sd, key, k)
 	return val, ok
 }
 
 // load 获取键的值。
 // 这个函数都不会独立使用，基于上级函数，已经做了锁功能。
 // 这个函数内容也已经做了过期数据判断。
-func (m *Map[K, V]) load(sd *shard[K, V], key K, k uint64) (V, *value[K, V], bool) {
-	var (
-		item *value[K, V]
-		ok   bool
-	)
+// val 存储的值
+// item 存储的结构，包含元数据
+// ok 是否有效值
+// existed 仅仅用于判断key是否存在
+// 上级函数在调用这个函数的时候，如果是 RLock,如果值无效但是值存在，就不调用删除函数。
+// Lock,如果不是store相关的，需要调用删除函数。
+func (m *Map[K, V]) load(sd *shard[K, V], key K, k uint64) (val V, item *value[K, V], ok bool, existed bool) {
+
 	if m.useKey {
 		item, ok = sd.keyItems[key]
 	} else {
@@ -139,17 +142,17 @@ func (m *Map[K, V]) load(sd *shard[K, V], key K, k uint64) (V, *value[K, V], boo
 	}
 	var zero V
 	if !ok {
-		return zero, nil, false
+		return zero, nil, false, false
 	}
 	// 时间==0，表示不过期
 	// 过期时间>当前时间，表示未过期
 	if item.expire == 0 || item.expire > time.Now().UnixNano() {
-		return item.val, item, true
+		return item.val, item, true, true
 	}
 	// 这个位置 不能删除，应该由自动清理或者手动删除来操作。对于rw锁，多读是无锁的
 	// 会形成竟态
 	//m.delete(sd, key, k)
-	return zero, nil, false
+	return zero, nil, false, true
 }
 
 // LoadOrStore 获取键的值，如果没有则存储键的值。
@@ -157,7 +160,7 @@ func (m *Map[K, V]) LoadOrStore(key K, val V, duration ...time.Duration) (actual
 	sd, _, k := m.getShard(key)
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
-	item, _, ok := m.load(sd, key, k)
+	item, _, ok, _ := m.load(sd, key, k)
 	if ok {
 		return item, true
 	}
@@ -170,7 +173,7 @@ func (m *Map[K, V]) LoadOrStoreFunc(key K, valueFunc func(k K) (V, error), durat
 	sd, _, k := m.getShard(key)
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
-	item, _, ok := m.load(sd, key, k)
+	item, _, ok, _ := m.load(sd, key, k)
 	if ok {
 		return item, true, nil
 	}
@@ -193,11 +196,13 @@ func (m *Map[K, V]) LoadAndDelete(key K) (V, bool) {
 	sd, _, k := m.getShard(key)
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
-	val, _, ok := m.load(sd, key, k)
+	val, _, ok, existed := m.load(sd, key, k)
+	if existed {
+		m.delete(sd, key, k)
+	}
 	if !ok {
 		return val, false
 	}
-	m.delete(sd, key, k)
 	return val, true
 }
 
@@ -207,8 +212,12 @@ func (m *Map[K, V]) LoadAndDeleteIf(key K, condition func(value V) bool) (V, boo
 	sd, _, k := m.getShard(key)
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
-	val, _, ok := m.load(sd, key, k)
+	val, _, ok, existed := m.load(sd, key, k)
 	if !ok {
+		// 值无效，但是值存在，就删除。
+		if existed {
+			m.delete(sd, key, k)
+		}
 		return val, false
 	}
 	if condition == nil || condition(val) {
@@ -222,8 +231,12 @@ func (m *Map[K, V]) LoadAndRefresh(key K, duration ...time.Duration) (V, bool) {
 	sd, _, k := m.getShard(key)
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
-	val, item, ok := m.load(sd, key, k)
+	val, item, ok, existed := m.load(sd, key, k)
 	if !ok {
+		// 值无效，但是值存在，就删除。
+		if existed {
+			m.delete(sd, key, k)
+		}
 		return val, false
 	}
 	if m.enableCleanup {
@@ -246,7 +259,7 @@ func (m *Map[K, V]) LoadWithExpiry(key K) (V, time.Time, bool) {
 	sd, _, k := m.getShard(key)
 	sd.mu.RLock()
 	defer sd.mu.RUnlock()
-	val, item, ok := m.load(sd, key, k)
+	val, item, ok, _ := m.load(sd, key, k)
 	if !ok {
 		return val, time.Time{}, false
 	}
@@ -262,8 +275,12 @@ func (m *Map[K, V]) Refresh(key K, duration ...time.Duration) bool {
 	sd, _, k := m.getShard(key)
 	sd.mu.Lock()
 	defer sd.mu.Unlock()
-	_, item, ok := m.load(sd, key, k)
+	_, item, ok, existed := m.load(sd, key, k)
 	if !ok {
+		// 值无效，但是值存在，就删除。
+		if existed {
+			m.delete(sd, key, k)
+		}
 		return false
 	}
 	if len(duration) > 0 {
@@ -284,7 +301,7 @@ func (m *Map[K, V]) GetTTL(key K) (time.Duration, bool) {
 	sd, _, k := m.getShard(key)
 	sd.mu.RLock()
 	defer sd.mu.RUnlock()
-	_, item, ok := m.load(sd, key, k)
+	_, item, ok, _ := m.load(sd, key, k)
 	if !ok {
 		return 0, false
 	}
@@ -299,7 +316,7 @@ func (m *Map[K, V]) IsExpired(key K) bool {
 	sd, _, k := m.getShard(key)
 	sd.mu.RLock()
 	defer sd.mu.RUnlock()
-	_, item, ok := m.load(sd, key, k)
+	_, item, ok, _ := m.load(sd, key, k)
 	if !ok {
 		return false
 	}
@@ -313,7 +330,7 @@ func (m *Map[K, V]) GetHeartbeat(key K) (time.Time, bool) {
 	sd, _, k := m.getShard(key)
 	sd.mu.RLock()
 	defer sd.mu.RUnlock()
-	_, item, ok := m.load(sd, key, k)
+	_, item, ok, _ := m.load(sd, key, k)
 	if !ok {
 		return time.Time{}, false
 	}
