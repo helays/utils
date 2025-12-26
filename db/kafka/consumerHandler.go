@@ -146,7 +146,6 @@ func (c *ConsumerHandler) refreshPartitions() {
 			go func(ctx context.Context, partition int32) {
 				// 这个 goroutine 退出，就是说明分区消费者失败已经达到最大次数了。
 				// 然后就应该删除当前分区的消费者数据，然后由上层Run里面的定时器，重新开始消费当前分区。
-
 				defer func() {
 					c.mu.Lock()
 					defer c.mu.Unlock()
@@ -160,15 +159,20 @@ func (c *ConsumerHandler) refreshPartitions() {
 					default:
 						// ctx partition 已经通过闭包函数的参数传递进来，还有共享问题么？
 						// 这个函数在正常消费过程中，理论上不会退出。
-						if err = c.partitionConsumer(ctx, partition); err != nil {
+						partitionErr := c.partitionConsumer(ctx, partition)
+						if partitionErr == nil {
+							return
+						}
+						if partitionErr != nil {
 							// 判断是否是上下文取消引起的报错，这种就退出不处理了。
-							if errors.Is(err, context.Canceled) {
+							if errors.Is(partitionErr, context.Canceled) {
 								return
 							}
 							time.Sleep(b.Next())
 						}
 					}
 				}
+
 			}(ctx, partition)
 
 		}
@@ -209,15 +213,14 @@ func (c *ConsumerHandler) partitionConsumer(ctx context.Context, partition int32
 		case message := <-pc.Messages():
 			b.Reset() // 正常消费后，错误避让时间重置
 			if message == nil {
-				// 这里故意返回这个报错，让上层函数知道退出重试循环。
-				return context.Canceled
+				// 这个一般是通道关闭时候触发的
+				return nil
 			}
 			c.onMessage(message)
 		case _err, ok := <-pc.Errors():
 			if !ok {
-				// 通道正常关闭，返回这个报错，让上层函数能识别到退出原因。
-				// 故意用这个错误来让上层函数退出。
-				return context.Canceled
+				// 这个一般是通道关闭时候触发的
+				return nil
 			}
 			// 这个 判断 是否 nil 由必要么？
 			if _err == nil {
