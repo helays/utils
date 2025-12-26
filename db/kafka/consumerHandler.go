@@ -210,23 +210,16 @@ func (c *ConsumerHandler) partitionConsumer(ctx context.Context, partition int32
 
 	for {
 		select {
-		case message := <-pc.Messages():
-			b.Reset() // 正常消费后，错误避让时间重置
-			if message == nil {
-				// 这个一般是通道关闭时候触发的
-				return nil
+		case message, ok := <-pc.Messages():
+			if !ok {
+				return nil // 通道关闭，退出循环
 			}
+			b.Reset() // 正常消费后，错误避让时间重置
 			c.onMessage(message)
 		case _err, ok := <-pc.Errors():
 			if !ok {
 				// 这个一般是通道关闭时候触发的
 				return nil
-			}
-			// 这个 判断 是否 nil 由必要么？
-			if _err == nil {
-				ulogs.Warnf("Kafka 消费者错误 err is nil [topic:%s, partition:%d]", topic, partition)
-				time.Sleep(b.Next())
-				continue
 			}
 			err = _err.Unwrap()
 			ulogs.Errorf("Kafka 消费者错误 [topic:%s, partition:%d] %v", topic, partition, err)
