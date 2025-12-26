@@ -146,7 +146,9 @@ func (m *Map[K, V]) load(sd *shard[K, V], key K, k uint64) (V, *value[K, V], boo
 	if item.expire == 0 || item.expire > time.Now().UnixNano() {
 		return item.val, item, true
 	}
-	m.delete(sd, key, k)
+	// 这个位置 不能删除，应该由自动清理或者手动删除来操作。对于rw锁，多读是无锁的
+	// 会形成竟态
+	//m.delete(sd, key, k)
 	return zero, nil, false
 }
 
