@@ -8,3 +8,8 @@ type resp struct {
 	Err   string `json:"err,omitempty"`
 	AddOn any    `json:"add_on,omitempty"`
 }
+
+type DataList[T any] struct {
+	List  []*T  `json:"list"`
+	Total int64 `json:"total"`
+}

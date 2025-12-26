@@ -3,14 +3,17 @@ package kafka
 import (
 	"database/sql/driver"
 	"errors"
+	"time"
+
 	"github.com/IBM/sarama"
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/dataType"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"time"
 )
 
+// KafkaMessageTypeEnum
+// noinspection all
 var KafkaMessageTypeEnum = map[string]string{
 	sarama.SASLTypePlaintext:   sarama.SASLTypePlaintext,
 	sarama.SASLTypeSCRAMSHA256: sarama.SASLTypeSCRAMSHA256,
@@ -19,6 +22,7 @@ var KafkaMessageTypeEnum = map[string]string{
 	sarama.SASLTypeOAuth:       sarama.SASLTypeOAuth,
 }
 
+// noinspection all
 type KafkaConfig struct {
 	Addrs       []string      `yaml:"addrs" json:"addrs" ini:"addrs,omitempty"`
 	Version     string        `yaml:"version" json:"version" ini:"version"` // kafka版本
@@ -44,54 +48,61 @@ type ProducerMessage struct {
 	Role   string            `json:"role" yaml:"role" ini:"role"` // 同步生产者 或者异步生产者
 }
 
-func (this KafkaConfig) Value() (driver.Value, error) {
-	return dataType.DriverValueWithJson(this)
+// noinspection all
+func (kc KafkaConfig) Value() (driver.Value, error) {
+	return dataType.DriverValueWithJson(kc)
 }
 
-func (this *KafkaConfig) Scan(val interface{}) error {
-	return dataType.DriverScanWithJson(val, this)
+// noinspection all
+func (kc *KafkaConfig) Scan(val interface{}) error {
+	return dataType.DriverScanWithJson(val, kc)
 }
 
-func (this KafkaConfig) GormDataType() string {
-	return "custom_kafka_config"
+// noinspection all
+func (kc KafkaConfig) GormDataType() string {
+	return "json"
 }
 
+// noinspection all
 func (KafkaConfig) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return dataType.JsonDbDataType(db, field)
 }
 
-func (this *KafkaConfig) Valid() error {
-	if len(this.Addrs) < 1 {
+// noinspection all
+func (kc *KafkaConfig) Valid() error {
+	if len(kc.Addrs) < 1 {
 		return errors.New("kafka地址不能为空")
 	}
-	if this.Sasl {
-		if _, ok := KafkaMessageTypeEnum[this.Mechanism]; !ok {
+	if kc.Sasl {
+		if _, ok := KafkaMessageTypeEnum[kc.Mechanism]; !ok {
 			return errors.New("sasl机制错误")
 		}
-		if this.User == "" {
+		if kc.User == "" {
 			return errors.New("sasl用户名不能为空")
 		}
-		if this.Password == "" {
+		if kc.Password == "" {
 			return errors.New("sasl密码不能为空")
 		}
 	}
 	return nil
 }
 
-func (this *KafkaConfig) RemovePasswd() {
-	this.Password = ""
+// noinspection all
+func (kc *KafkaConfig) RemovePasswd() {
+	kc.Password = ""
 }
 
-func (this *KafkaConfig) SetInfo(args ...any) {
+// noinspection all
+func (kc *KafkaConfig) SetInfo(args ...any) {
 	if len(args) != 2 {
 		return
 	}
 	switch args[0].(string) {
 	case config.ClientInfoHost:
-		this.Addrs = args[1].([]string)
+		kc.Addrs = args[1].([]string)
 	case config.ClientInfoUser:
-		this.User = args[1].(string)
+		kc.User = args[1].(string)
 	case config.ClientInfoPasswd:
-		this.Password = args[1].(string)
+		kc.Password = args[1].(string)
 	}
 }

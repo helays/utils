@@ -7,6 +7,7 @@ import (
 )
 
 // Map 是带有超时功能的泛型安全 Map
+// Deprecated: 弃用，最新采用 safe.Map
 type Map[K comparable, V any] struct {
 	mu        sync.Map
 	ttl       time.Duration
@@ -14,6 +15,7 @@ type Map[K comparable, V any] struct {
 }
 
 // New 创建一个带有 TTL 的安全 Map
+// Deprecated: 弃用，最新采用 safe.Map
 func New[K comparable, V any](ttl time.Duration) *Map[K, V] {
 	m := &Map[K, V]{
 		ttl:       ttl,

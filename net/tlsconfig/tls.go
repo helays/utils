@@ -1,4 +1,4 @@
-package server
+package tlsconfig
 
 import (
 	"crypto/tls"
@@ -194,7 +194,7 @@ func (t *TLSConfig) ToTLSConfig() (*tls.Config, error) {
 		Renegotiation:               t.Renegotiation,
 	}
 
-	// 解析TLS版本
+	// 解析 TLS 版本
 	if t.MinVersion != "" {
 		minVersion, err := ParseTLSVersion(t.MinVersion)
 		if err != nil {

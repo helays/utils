@@ -46,3 +46,19 @@ func AutoDetectTimestampString(timestampStr string) (time.Time, error) {
 		return time.Unix(seconds, nanos), nil
 	}
 }
+
+// AdjustTimezoneIfNeeded 检查时区，如果不是东八区则调整时区但保持时间值不变
+func AdjustTimezoneIfNeeded(t time.Time) time.Time {
+	// 如果已经是本地时区，直接返回
+	if t.Location() == time.Local {
+		return t
+	}
+
+	// 对于UTC时间，转换为本地时间但保持时间值不变
+	// 使用相同的年月日时分秒，但时区改为本地
+	year, month, day := t.Date()
+	hour, m, sec := t.Clock()
+	nsec := t.Nanosecond()
+
+	return time.Date(year, month, day, hour, m, sec, nsec, time.Local)
+}

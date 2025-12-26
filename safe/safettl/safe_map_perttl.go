@@ -9,6 +9,7 @@ import (
 )
 
 // PerKeyTTLMap 是支持每个键单独 TTL 的泛型安全 Map
+// Deprecated: 弃用，最新采用 safe.Map
 type PerKeyTTLMap[K comparable, V any] struct {
 	mu              sync.Map
 	closeChan       chan struct{}
@@ -16,6 +17,7 @@ type PerKeyTTLMap[K comparable, V any] struct {
 }
 
 // NewPerKeyTTLMap 创建一个支持单独 TTL 的安全 Map
+// Deprecated: 弃用，最新采用 safe.Map
 func NewPerKeyTTLMap[K comparable, V any]() *PerKeyTTLMap[K, V] {
 	m := &PerKeyTTLMap[K, V]{
 		closeChan:       make(chan struct{}),
@@ -28,6 +30,7 @@ func NewPerKeyTTLMap[K comparable, V any]() *PerKeyTTLMap[K, V] {
 }
 
 // NewPerKeyTTLMapWithInterval 创建一个支持单独 TTL 的安全 Map，可指定清理间隔
+// Deprecated: 弃用，最新采用 safe.Map
 func NewPerKeyTTLMapWithInterval[K comparable, V any](cleanupInterval time.Duration) *PerKeyTTLMap[K, V] {
 	// 确保清理间隔在合理范围内
 	cleanupInterval = tools.AutoTimeDuration(cleanupInterval, time.Second, time.Second) // 绝对最小1秒

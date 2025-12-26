@@ -3,21 +3,27 @@ package routecache
 import (
 	"github.com/helays/utils/v2/net/http/route"
 	"github.com/helays/utils/v2/net/http/route/middleware/routecache/tree"
+	"github.com/helays/utils/v2/tools"
 )
 
 // AddRoute 添加路由
 func (r *RouteCache[T]) AddRoute(t route.RouteType, method string, pattern string, handle T) error {
+	// 这里需要将pattern里面的{field}转换成:field
+	np, err := tools.ToHttpRouterSyntax(pattern)
+	if err != nil {
+		return err
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if t == route.Static {
-		path := method + pattern
+		path := method + np
 		r.staticRoute[path] = handle
 		return nil
 	}
 	if r.radixTree[method] == nil {
 		r.radixTree[method] = tree.NewRadixTree[T]()
 	}
-	return r.radixTree[method].AddRoute(pattern, handle)
+	return r.radixTree[method].AddRoute(np, handle)
 }
 
 func (r *RouteCache[T]) Match(method, path string) (T, bool) {

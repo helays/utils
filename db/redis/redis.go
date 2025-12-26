@@ -52,6 +52,8 @@ type MaintNotificationsConfig struct {
 }
 
 // NewUniversalClient 创建一个通用的 Redis 客户端
+// 注意，这个通用客户端，不适用通过上下文关闭，系统退出的时候 资源关闭有先后顺序。redis应该延后关闭。
+// 所以这里就由业务上来进行关闭操作。
 func (r Rediscfg) NewUniversalClient() (redis.UniversalClient, error) {
 	c := redis.UniversalOptions{
 		Addrs:            r.Addrs,

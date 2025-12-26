@@ -2,17 +2,20 @@ package kafka
 
 import (
 	"context"
+	"time"
+
 	"github.com/IBM/sarama"
 	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/helays/utils/v2/tools/backoff"
-	"time"
 )
 
+// ConsumerGroupHander 消费者组处理器
+// noinspection all
 type ConsumerGroupHander struct {
 	Msg chan *sarama.ConsumerMessage
 }
 
-func (this *ConsumerGroupHander) Setup(session sarama.ConsumerGroupSession) error {
+func (h *ConsumerGroupHander) Setup(session sarama.ConsumerGroupSession) error {
 	return nil
 }
 

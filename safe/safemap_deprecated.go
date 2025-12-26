@@ -1,4 +1,4 @@
-package safemap
+package safe
 
 import (
 	"strings"
@@ -6,6 +6,7 @@ import (
 )
 
 // SyncMap 是 sync.Map 的泛型包装器。
+// Deprecated: 弃用，最新采用 safe.Map
 type SyncMap[K comparable, V any] struct {
 	mu sync.Map
 }

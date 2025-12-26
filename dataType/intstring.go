@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/gob"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -28,6 +29,17 @@ func NewIntString[T constraints.Integer](v T) IntString[T] {
 		jsonAsString: true,
 		valid:        true,
 	}
+}
+
+func StringToIntString[T constraints.Integer](v string) (IntString[T], error) {
+	if v == "" {
+		return ZeroIntString[T](), config.ErrInvalidParam
+	}
+	dst, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return ZeroIntString[T](), err
+	}
+	return NewIntString[T](T(dst)), nil
 }
 
 func NewIntStringAsNumber[T constraints.Integer](v T) IntString[T] {

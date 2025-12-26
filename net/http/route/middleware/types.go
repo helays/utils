@@ -1,5 +1,7 @@
 package middleware
 
+import "time"
+
 const DebugCtxKey = "route-debug"
 
 // CompressionAlgorithm 压缩算法类型
@@ -39,3 +41,20 @@ var excludeContentTypes = map[string]struct{}{
 	"application/x-font-woff": {},
 	// 添加更多需要排除的压缩类型
 }
+
+type (
+	// Logs 日志内容结构体
+	Logs struct {
+		Status      int           // 响应状态码
+		Ip          string        // 请求 IP
+		Method      string        // 请求方法
+		Uri         string        // 请求 URI
+		ContentSize int64         // 响应内容大小
+		UserAgent   string        // 用户代理
+		Elapsed     time.Duration // 响应耗时,微秒级别
+	}
+	// Logger 日志接口
+	Logger interface {
+		Write(l *Logs)
+	}
+)

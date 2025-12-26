@@ -5,17 +5,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/map/safettl"
 	"github.com/helays/utils/v2/net/http/session"
+	"github.com/helays/utils/v2/safe"
 )
 
 type Instance struct {
-	storage *safettl.PerKeyTTLMap[string, *session.Session]
+	storage *safe.Map[string, *session.Session]
 }
 
-func New() *Instance {
+func New(ctx context.Context) *Instance {
 	i := &Instance{}
-	i.storage = safettl.NewPerKeyTTLMapWithInterval[string, *session.Session](time.Minute) // session 回收策略不需要太高，1分钟
+	i.storage = safe.NewMap[string, *session.Session](ctx, safe.StringHasher{}, safe.MapConfig{
+		EnableCleanup: true,
+		ClearInterval: time.Minute / 2,
+		TTL:           time.Minute,
+	}) // session 回收策略不需要太高，1分钟
 	return i
 }
 
@@ -28,7 +32,7 @@ func (i *Instance) uniqueId(id, name string) string {
 }
 
 func (i *Instance) Save(s *session.Session) error {
-	i.storage.StoreWithTTL(i.uniqueId(s.Id, s.Name), s, s.Duration)
+	i.storage.Store(i.uniqueId(s.Id, s.Name), s, s.Duration)
 	return nil
 }
 

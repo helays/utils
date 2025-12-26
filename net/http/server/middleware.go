@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/helays/utils/v2/close/httpClose"
 	"github.com/helays/utils/v2/close/vclose"
 	"github.com/helays/utils/v2/security/cors/cors_std"
+	"github.com/helays/utils/v2/tools"
 	"golang.org/x/net/websocket"
 )
 
@@ -23,11 +25,12 @@ func Chain(middlewares ...Middleware) Middleware {
 func (s *Server[T]) middleware(route *routerRule[T]) {
 	var handler http.Handler
 	mid := []Middleware{
+		s.enhancedWriter.Handler,           // 多功能响应处理器
 		s.ipAccess.DenyIpAccess,            // 设置黑名单防火墙
 		s.ipAccess.AllowIpAccess,           // 设置白名单防火墙
 		s.ipAccess.DebugIPAccess,           // debug 模式ip限制
 		cors_std.Cors(s.opt.Security.CORS), // 跨域，这个是配置文件级别的跨域中间件。
-		s.enhancedWriter.Handler,           // 多功能响应处理器
+
 	}
 	mid = append(mid, route.middlewares...)
 
@@ -39,7 +42,7 @@ func (s *Server[T]) middleware(route *routerRule[T]) {
 	needSetCode := desc.CodeKey != "" && desc.Code != ""
 	codeKey := desc.CodeKey
 	codeValue := desc.Code
-	
+
 	// 最终的处理函数
 	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer httpClose.CloseReq(r)
@@ -50,9 +53,14 @@ func (s *Server[T]) middleware(route *routerRule[T]) {
 		w.Header().Set("server", Version)
 		handler.ServeHTTP(w, r)
 	})
-	path := route.path
+
+	path, err := tools.ToBraceSyntax(route.path)
+	if err != nil {
+		panic(fmt.Errorf("路由 %s 转换失败: %v", route.path, err))
+	}
+
 	if route.method != "" {
-		path = route.method + " " + route.path
+		path = route.method + " " + path
 	}
 	s.mux.Handle(path, finalHandler)
 }

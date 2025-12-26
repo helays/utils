@@ -1,28 +1,30 @@
 package kafka
 
 import (
+	"time"
+
 	"github.com/IBM/sarama"
 	"github.com/helays/utils/v2/scram"
 	"github.com/helays/utils/v2/tools"
-	"time"
 )
 
-// 设置kafka
-func (this *KafkaConfig) setConfig() (kafkaCfg *sarama.Config, err error) {
+// 设置 kafka
+// noinspection all
+func (kc *KafkaConfig) setConfig() (kafkaCfg *sarama.Config, err error) {
 	kafkaCfg = sarama.NewConfig()
 	kafkaCfg.Producer.Return.Successes = true
 	kafkaCfg.Producer.Return.Errors = true
-	if this.Version != "" {
-		kafkaCfg.Version, err = sarama.ParseKafkaVersion(this.Version)
+	if kc.Version != "" {
+		kafkaCfg.Version, err = sarama.ParseKafkaVersion(kc.Version)
 	}
-	if this.Sasl {
+	if kc.Sasl {
 		kafkaCfg.Net.SASL.Enable = true
-		kafkaCfg.Net.SASL.User = this.User
-		kafkaCfg.Net.SASL.Password = this.Password
+		kafkaCfg.Net.SASL.User = kc.User
+		kafkaCfg.Net.SASL.Password = kc.Password
 		kafkaCfg.Net.SASL.Handshake = true
-		if this.Mechanism != "" {
-			kafkaCfg.Net.SASL.Mechanism = sarama.SASLMechanism(this.Mechanism)
-			switch this.Mechanism {
+		if kc.Mechanism != "" {
+			kafkaCfg.Net.SASL.Mechanism = sarama.SASLMechanism(kc.Mechanism)
+			switch kc.Mechanism {
 			case sarama.SASLTypeSCRAMSHA256:
 				kafkaCfg.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &scram.XDGSCRAMClient{HashGeneratorFcn: scram.SHA256} }
 			case sarama.SASLTypeSCRAMSHA512:
@@ -35,45 +37,49 @@ func (this *KafkaConfig) setConfig() (kafkaCfg *sarama.Config, err error) {
 }
 
 // 消费者配置
-func (this *KafkaConfig) consumerClientCfg() (*sarama.Config, error) {
-	kafkaCfg, err := this.setConfig()
+// noinspection all
+func (kc *KafkaConfig) consumerClientCfg() (*sarama.Config, error) {
+	kafkaCfg, err := kc.setConfig()
 	if err != nil {
 		return nil, err
 	}
-	kafkaCfg.Consumer.Offsets.Initial = tools.Ternary(this.Offset > -1 || this.Offset < -2, sarama.OffsetNewest, this.Offset)
+	kafkaCfg.Consumer.Offsets.Initial = tools.Ternary(kc.Offset > -1 || kc.Offset < -2, sarama.OffsetNewest, kc.Offset)
 	kafkaCfg.Consumer.Return.Errors = true
 	return kafkaCfg, nil
 }
 
 // NewConsumerClient 创建消费者客户端
-func (this *KafkaConfig) NewConsumerClient() (sarama.Consumer, error) {
-	kafkaCfg, err := this.consumerClientCfg()
+// noinspection all
+func (kc *KafkaConfig) NewConsumerClient() (sarama.Consumer, error) {
+	kafkaCfg, err := kc.consumerClientCfg()
 	if err != nil {
 		return nil, err
 	}
-	return sarama.NewConsumer(this.Addrs, kafkaCfg)
+	return sarama.NewConsumer(kc.Addrs, kafkaCfg)
 }
 
 // NewConsumerGroupClient 创建消费者组客户端
-func (this *KafkaConfig) NewConsumerGroupClient() (sarama.ConsumerGroup, error) {
-	kafkaCfg, err := this.consumerClientCfg()
+// noinspection all
+func (kc *KafkaConfig) NewConsumerGroupClient() (sarama.ConsumerGroup, error) {
+	kafkaCfg, err := kc.consumerClientCfg()
 	if err != nil {
 		return nil, err
 	}
-	return sarama.NewConsumerGroup(this.Addrs, this.GroupName, kafkaCfg)
+	return sarama.NewConsumerGroup(kc.Addrs, kc.GroupName, kafkaCfg)
 }
 
 // 生产者配置文件
-func (this *KafkaConfig) producerClientConfig() (*sarama.Config, error) {
-	kafkaCfg, err := this.setConfig()
+// noinspection all
+func (kc *KafkaConfig) producerClientConfig() (*sarama.Config, error) {
+	kafkaCfg, err := kc.setConfig()
 	if err != nil {
 		return nil, err
 	}
 	kafkaCfg.Producer.Return.Successes = true
 	kafkaCfg.Producer.Return.Errors = true
-	kafkaCfg.Producer.RequiredAcks = sarama.WaitForAll                               // 等待所有同步副本确认
-	kafkaCfg.Producer.Retry.Max = tools.Ternary(this.MaxRetry > 0, this.MaxRetry, 3) // 最大重试3次
-	to := tools.AutoTimeDuration(this.Timeout, time.Second)
+	kafkaCfg.Producer.RequiredAcks = sarama.WaitForAll                           // 等待所有同步副本确认
+	kafkaCfg.Producer.Retry.Max = tools.Ternary(kc.MaxRetry > 0, kc.MaxRetry, 3) // 最大重试3次
+	to := tools.AutoTimeDuration(kc.Timeout, time.Second)
 	if to > 0 {
 		kafkaCfg.Producer.Timeout = to
 	}
@@ -82,19 +88,21 @@ func (this *KafkaConfig) producerClientConfig() (*sarama.Config, error) {
 }
 
 // NewProducerSyncProducer 创建同步生产者客户端
-func (this *KafkaConfig) NewProducerSyncProducer() (sarama.SyncProducer, error) {
-	kafkaCfg, err := this.producerClientConfig()
+// noinspection all
+func (kc *KafkaConfig) NewProducerSyncProducer() (sarama.SyncProducer, error) {
+	kafkaCfg, err := kc.producerClientConfig()
 	if err != nil {
 		return nil, err
 	}
-	return sarama.NewSyncProducer(this.Addrs, kafkaCfg)
+	return sarama.NewSyncProducer(kc.Addrs, kafkaCfg)
 }
 
 // NewProducerAsyncProducer 创建异步生产者客户端
-func (this *KafkaConfig) NewProducerAsyncProducer() (sarama.AsyncProducer, error) {
-	kafkaCfg, err := this.producerClientConfig()
+// noinspection all
+func (kc *KafkaConfig) NewProducerAsyncProducer() (sarama.AsyncProducer, error) {
+	kafkaCfg, err := kc.producerClientConfig()
 	if err != nil {
 		return nil, err
 	}
-	return sarama.NewAsyncProducer(this.Addrs, kafkaCfg)
+	return sarama.NewAsyncProducer(kc.Addrs, kafkaCfg)
 }

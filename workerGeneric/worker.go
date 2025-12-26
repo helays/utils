@@ -13,11 +13,9 @@ type Job[T any] struct {
 type worker[T any] struct {
 	WorkerPool chan chan Job[T]
 	JobChannel chan Job[T]
-	ctx        context.Context
-	cancel     context.CancelFunc
 }
 
-func (w worker[T]) start() {
+func (w worker[T]) start(ctx context.Context) {
 	go func() {
 		for {
 			select {
@@ -26,7 +24,7 @@ func (w worker[T]) start() {
 				job := <-w.JobChannel
 				// 接收到工作请求
 				job.Func(job.Params)
-			case <-w.ctx.Done():
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -39,18 +37,20 @@ type StartWorker[T any] struct {
 	MaxSize    int `ini:"max_size"`
 	WorkerPool chan chan Job[T]
 	workers    []*worker[T]
+	ctx        context.Context
+	cancel     context.CancelFunc
 }
 
 // Init 初始化工作池
 func (s *StartWorker[T]) Init() {
+	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.workers = make([]*worker[T], s.MaxSize)
 	for i := 0; i < s.MaxSize; i++ {
 		w := &worker[T]{
 			WorkerPool: s.WorkerPool,
 			JobChannel: make(chan Job[T]),
 		}
-		w.ctx, w.cancel = context.WithCancel(context.Background())
-		w.start()
+		w.start(s.ctx)
 		s.workers[i] = w
 	}
 }
@@ -63,8 +63,6 @@ func (s *StartWorker[T]) Run(j *Job[T]) {
 
 // Close 关闭所有worker
 func (s *StartWorker[T]) Close() error {
-	for _, w := range s.workers {
-		w.cancel()
-	}
+	s.cancel()
 	return nil
 }

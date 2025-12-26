@@ -1,13 +1,14 @@
 package userDb
 
 import (
+	"context"
 	"reflect"
 
-	"github.com/helays/utils/v2/map/safemap"
+	"github.com/helays/utils/v2/safe"
 	"github.com/helays/utils/v2/tools"
 )
 
-var modelFieldsCache = &safemap.SyncMap[string, *modelFieldTypes]{}
+var modelFieldsCache = safe.NewMap[string, *modelFieldTypes](context.Background(), safe.StringHasher{})
 
 type fieldTypes struct {
 	jsonTagName string
@@ -32,7 +33,7 @@ func getModelFields(model any, alias string) *modelFieldTypes {
 		return nil
 	}
 
-	modelFields, _ := modelFieldsCache.LoadOrStoreFunc(structName, func(_ string) (*modelFieldTypes, bool) {
+	modelFields, _, _ := modelFieldsCache.LoadOrStoreFunc(structName, func(_ string) (*modelFieldTypes, error) {
 		v := reflect.ValueOf(model)
 		_modelFields := autoGetStructFieldJsonTag(mt, v)
 		_modelFields.tableName = alias
@@ -44,7 +45,7 @@ func getModelFields(model any, alias string) *modelFieldTypes {
 				_modelFields.tableName = tools.SnakeString(structName)
 			}
 		}
-		return &_modelFields, true
+		return &_modelFields, nil
 	})
 	return modelFields
 }

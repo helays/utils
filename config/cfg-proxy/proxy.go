@@ -15,9 +15,9 @@ type ProxyTypes string
 
 const (
 	ProxyNone    ProxyTypes = "none"    // 无代理
-	ProxyHttp    ProxyTypes = "http"    // http代理
-	ProxyHttps   ProxyTypes = "https"   // https代理
-	ProxySocks5  ProxyTypes = "socks5"  // socks代理
+	ProxyHttp    ProxyTypes = "http"    // http 代理
+	ProxyHttps   ProxyTypes = "https"   // https 代理
+	ProxySocks5  ProxyTypes = "socks5"  // socks 代理
 	ProxyUnknown ProxyTypes = "unknown" // 无效的代理类型
 )
 

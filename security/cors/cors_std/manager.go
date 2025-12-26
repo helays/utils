@@ -1,19 +1,22 @@
 package cors_std
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/helays/utils/v2/map/safemap"
+	"github.com/helays/utils/v2/safe"
 	"github.com/helays/utils/v2/security/cors"
 )
 
 type StdCORS struct {
-	configs           safemap.SyncMap[string, *cors.Config]
+	configs           *safe.Map[string, *cors.Config]
 	routeCodeCtxField string // 路由code字段
 }
 
-func New(routeCodeCtxField string) *StdCORS {
-	return &StdCORS{routeCodeCtxField: routeCodeCtxField}
+func New(ctx context.Context, routeCodeCtxField string) *StdCORS {
+	s := &StdCORS{routeCodeCtxField: routeCodeCtxField}
+	s.configs = safe.NewMap[string, *cors.Config](ctx, safe.StringHasher{})
+	return s
 }
 
 func (s *StdCORS) SetConfig(pattern string, config *cors.Config) {

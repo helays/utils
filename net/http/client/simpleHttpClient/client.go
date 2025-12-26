@@ -8,10 +8,10 @@ import (
 	"time"
 
 	cfg_proxy "github.com/helays/utils/v2/config/cfg-proxy"
-	"github.com/helays/utils/v2/map/safemap"
+	"github.com/helays/utils/v2/safe"
 )
 
-var cache = safemap.SyncMap[string, *http.Client]{}
+var cache = safe.NewMap[string, *http.Client](context.Background(), safe.StringHasher{})
 
 func NewWithProxy(timeout time.Duration, proxy *cfg_proxy.Proxy) (*http.Client, error) {
 	return initClientHelper(timeout, proxy)

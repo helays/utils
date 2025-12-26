@@ -8,6 +8,7 @@ import (
 	"github.com/helays/utils/v2/net/http/route"
 	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipmatch"
+	"github.com/helays/utils/v2/net/tlsconfig"
 	"github.com/helays/utils/v2/security/cors"
 	quicHttp3 "github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/websocket"
@@ -26,7 +27,7 @@ type Config struct {
 	MaxHeaderBytes               int           `json:"max_header_bytes" yaml:"max_header_bytes"`                               // 服务器解析请求头时读取的最大字节数（包括请求行），如果为零，使用 DefaultMaxHeaderBytes（1MB）
 	ServerName                   []string      `json:"server_name" yaml:"server_name"`                                         // 绑定域名
 
-	TLS TLSConfig `json:"tls" yaml:"tls"` // TLS 配置
+	TLS tlsconfig.TLSConfig `json:"tls" yaml:"tls"` // TLS 配置
 
 	EnableQuickH3      bool              `json:"enable_quick_h3" yaml:"enable_quick_h3"`         // 启用 QUIC HTTP/3
 	EnableDatagrams    bool              `json:"enable_datagrams" yaml:"enable_datagrams"`       // 启用 HTTP/3 数据报支持（RFC 9297）

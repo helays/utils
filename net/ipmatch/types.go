@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helays/utils/v2/map/safettl"
+	"github.com/helays/utils/v2/safe"
 )
 
 // IPVersion IP版本类型
@@ -48,8 +48,8 @@ type IPMatcher struct {
 	mu sync.RWMutex // 读写锁，当启用动态添加规则时，这个应该使用
 
 	// 用于二分查询中的加速
-	ipv4Cache *safettl.Map[uint32, struct{}]   // IPv4缓存
-	ipv6Cache *safettl.Map[[16]byte, struct{}] // IPv6缓存
+	ipv4Cache *safe.Map[uint32, struct{}]   // IPv4缓存
+	ipv6Cache *safe.Map[[16]byte, struct{}] // IPv6缓存
 
 	// 正式存储
 	storage *ipStorage
@@ -100,9 +100,4 @@ func newIPTemp() *ipTemp {
 
 func (m *IPMatcher) clearTemp() {
 	m.temp = nil
-}
-
-func (m *IPMatcher) Close() {
-	m.ipv4Cache.Close()
-	m.ipv6Cache.Close()
 }

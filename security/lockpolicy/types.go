@@ -3,6 +3,8 @@ package lockpolicy
 import (
 	"sort"
 	"time"
+
+	"github.com/cespare/xxhash/v2"
 )
 
 // LockTarget 锁目标
@@ -17,6 +19,13 @@ const (
 	LockTargetIP      LockTarget = "ip"      // IP层锁定
 	LockTargetUser    LockTarget = "user"    // 用户层锁定
 )
+
+// 为 LockTarget 专门创建的 Hasher
+type lockTargetHasher struct{}
+
+func (h lockTargetHasher) Hash(key LockTarget) uint64 {
+	return xxhash.Sum64String(string(key))
+}
 
 // Policy 单条锁定策略
 type Policy struct {
