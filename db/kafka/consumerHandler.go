@@ -105,13 +105,13 @@ func (c *ConsumerHandler) Run(onMessage onMessageFunc) {
 
 	for {
 		select {
-		case <-tck.C:
-			c.refreshPartitions()
 		case <-c.ctx.Done():
 			c.mu.Lock()
 			c.closePartitions()
 			c.mu.Unlock()
 			return
+		case <-tck.C:
+			c.refreshPartitions()
 		}
 	}
 }
@@ -210,6 +210,8 @@ func (c *ConsumerHandler) partitionConsumer(ctx context.Context, partition int32
 
 	for {
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case message, ok := <-pc.Messages():
 			if !ok {
 				return nil // 通道关闭，退出循环
@@ -228,8 +230,6 @@ func (c *ConsumerHandler) partitionConsumer(ctx context.Context, partition int32
 				// 这两种问题，就突出当前，由上层函数决定是否要继续重试。
 				return err
 			}
-		case <-ctx.Done():
-			return ctx.Err()
 
 		}
 	}
