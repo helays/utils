@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -229,4 +230,9 @@ func (s *Server[T]) GetRoute() *route.Route {
 // AddLogHandler 添加日志处理
 func (s *Server[T]) AddLogHandler(le ...middleware.Logger) {
 	s.enhancedWriter.AddLogHandler(le...)
+}
+
+func (s *Server[T]) TLS() *tls.Config {
+	
+	return s.server.TLSConfig
 }
