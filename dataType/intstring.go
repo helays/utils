@@ -189,6 +189,12 @@ func (i *IntString[T]) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// UnmarshalText 实现 TextMarshaler 接口
+// noinspection all
+func (i *IntString[T]) UnmarshalText(text []byte) error {
+	return i.UnmarshalJSON(text)
+}
+
 // noinspection all
 func (i *IntString[T]) SetValue(v T) {
 	i.value = v
