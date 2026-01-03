@@ -150,6 +150,10 @@ func (i *IntString[T]) SetJsonAsString(asString bool) {
 	i.jsonAsString = asString
 }
 
+func (i IntString[T]) GetJsonAsString() bool {
+	return i.jsonAsString
+}
+
 // noinspection all
 func (i IntString[T]) MarshalJSON() ([]byte, error) {
 	if !i.valid {
@@ -190,9 +194,15 @@ func (i *IntString[T]) UnmarshalJSON(data []byte) error {
 }
 
 // UnmarshalText 实现 TextMarshaler 接口
+// 这个主要是从query参数中进行提取，所以这里统一处理为字符串
 // noinspection all
 func (i *IntString[T]) UnmarshalText(text []byte) error {
-	return i.UnmarshalJSON(text)
+	err := i.UnmarshalJSON(text)
+	if err != nil {
+		return err
+	}
+	i.jsonAsString = true
+	return nil
 }
 
 // noinspection all
@@ -296,4 +306,8 @@ func (i *IntString[T]) GobDecode(data []byte) error {
 	i.valid = temp.Valid
 
 	return nil
+}
+
+func (i *IntString[T]) GetValid() bool {
+	return i.valid
 }

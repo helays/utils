@@ -20,7 +20,7 @@ type TreeNode[M any, S any] interface {
 }
 
 // ListToTree 列表转树
-func ListToTree[L ListItem[T, S, L], T comparable, S TreeNode[L, S]](src []L) []S {
+func ListToTree[L ListItem[T, S, L], T comparable, S TreeNode[L, S]](src []L, startNode ...T) []S {
 	var (
 		result []S
 		n      = len(src)
@@ -40,6 +40,9 @@ func ListToTree[L ListItem[T, S, L], T comparable, S TreeNode[L, S]](src []L) []
 	var tempNode S
 	//对每个根节点分别构建数
 	var zeroID T
+	if len(startNode) > 0 {
+		zeroID = startNode[0]
+	}
 	for _, rootId := range children[zeroID] {
 		level := 1
 		rootData := idToSrc[rootId]
