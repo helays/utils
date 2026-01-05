@@ -123,14 +123,17 @@ type Rangeable[Idx comparable, V any, C comparable] interface {
 // dst: 目标数据
 // 返回值:
 // inSrc: 目标数据中不存在的元素
-// common: 两个Rangeable中都存在的元素
+// common: 两个Rangeable中都存在的元素,[2]V 第一个是src中的，第二个是dst中的
 // inDst: 源数据中不存在的元素
 // noinspection all
-func DiffRangeable[Idx comparable, V any, C comparable](src, dst Rangeable[Idx, V, C]) (inSrc, common, inDst []V) {
+func DiffRangeable[Idx comparable, V any, C comparable](src, dst Rangeable[Idx, V, C]) (inSrc []V, common [][2]V, inDst []V) {
 	elementMap := make(map[C]int8, src.Len()+dst.Len())
+	srcMap := make(map[C]V, src.Len())
 	// 遍历源数据,标记成1
 	src.Range(func(_ Idx, v V) {
-		elementMap[src.ExtractKey(v)] = 1
+		val := src.ExtractKey(v)
+		elementMap[val] = 1
+		srcMap[val] = v
 	})
 	// 遍历目标数据
 	dst.Range(func(_ Idx, v V) {
@@ -139,7 +142,7 @@ func DiffRangeable[Idx comparable, V any, C comparable](src, dst Rangeable[Idx, 
 			// 原数组中存在的
 			if status == 1 {
 				elementMap[val] = 3 // 标记共同存在
-				common = append(common, v)
+				common = append(common, [2]V{srcMap[val], v})
 			}
 		} else {
 			elementMap[val] = 2
