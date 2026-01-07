@@ -34,15 +34,7 @@ func (i *IPAccessMiddleware) SetDebug(debugIPMatch *ipmatch.IPMatcher) {
 }
 
 func (i *IPAccessMiddleware) Close() {
-	if i.allowIPMatch != nil {
-		i.allowIPMatch.Close()
-	}
-	if i.denyIPMatch != nil {
-		i.denyIPMatch.Close()
-	}
-	if i.debugIPMatch != nil {
-		i.debugIPMatch.Close()
-	}
+
 }
 
 func (i *IPAccessMiddleware) DenyIpAccess(next http.Handler) http.Handler {

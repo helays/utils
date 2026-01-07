@@ -1,28 +1,31 @@
 package lockpolicy
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/helays/utils/v2/map/safemap"
+	"github.com/helays/utils/v2/safe"
 	"github.com/helays/utils/v2/tools"
-	"github.com/helays/utils/v2/tools/mutex"
 )
 
 type Manager struct {
-	policyMap           safemap.SyncMap[LockTarget, *Policy] // 构建按 锁定目标 => 策略映射
-	policies            *mutex.SafeResourceRWMutex[Policies] // 锁定策略配置
-	independentPolicies *mutex.SafeResourceRWMutex[Policies] // 独立策略映射
-	escalationChains    *mutex.SafeResourceRWMutex[Policies] // 升级链映射
-	cache               safemap.SyncMap[LockTarget, *targetCache]
+	ctx                 context.Context
+	policyMap           *safe.Map[LockTarget, *Policy]  // 构建按 锁定目标 => 策略映射
+	policies            *safe.ResourceRWMutex[Policies] // 锁定策略配置
+	independentPolicies *safe.ResourceRWMutex[Policies] // 独立策略映射
+	escalationChains    *safe.ResourceRWMutex[Policies] // 升级链映射
+	cache               *safe.Map[LockTarget, *targetCache]
 }
 
 // NewManager 创建策略管理器
-func NewManager(polices Policies) *Manager {
-	m := &Manager{}
-	m.policies = mutex.NewSafeResourceRWMutex(polices)
-	m.independentPolicies = mutex.NewSafeResourceRWMutex(Policies{})
-	m.escalationChains = mutex.NewSafeResourceRWMutex(Policies{})
+func NewManager(ctx context.Context, polices Policies) *Manager {
+	m := &Manager{ctx: ctx}
+	m.policyMap = safe.NewMap[LockTarget, *Policy](ctx, lockTargetHasher{})
+	m.policies = safe.NewResourceRWMutex(polices)
+	m.independentPolicies = safe.NewResourceRWMutex(Policies{})
+	m.escalationChains = safe.NewResourceRWMutex(Policies{})
+	m.cache = safe.NewMap[LockTarget, *targetCache](ctx, lockTargetHasher{})
 	m.buildPolicy()
 	m.setTargetCache(polices)
 	return m
@@ -41,7 +44,7 @@ func (m *Manager) setTargetCache(polices Policies) {
 	for _, policy := range polices {
 		if policy.Trigger > 0 {
 			// 添加缓存
-			m.cache.Store(policy.Target, newTargetCache(&policy))
+			m.cache.Store(policy.Target, newTargetCache(m.ctx, &policy))
 		}
 	}
 }

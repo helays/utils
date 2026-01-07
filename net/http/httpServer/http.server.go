@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -18,21 +19,21 @@ import (
 	"github.com/helays/utils/v2/net/http/route/middleware"
 	"github.com/helays/utils/v2/net/ipkit"
 	"github.com/helays/utils/v2/net/ipmatch"
+	"github.com/helays/utils/v2/safe"
 	"github.com/helays/utils/v2/tools"
-	"github.com/helays/utils/v2/tools/mutex"
 	"golang.org/x/net/websocket"
 )
 
 // HttpServerStart 公功 http server 启动函数
 func (h *HttpServer) HttpServerStart(ctx context.Context) {
-	var stop = mutex.NewSafeResourceRWMutex(false)
+	var stop = safe.NewResourceRWMutex(false)
 	go func() {
 		<-ctx.Done()
 		stop.Write(true)
 		h.close()
 	}()
 	for {
-		h.initParams()      // 初始化参数
+		h.initParams(ctx)   // 初始化参数
 		go h.hotUpdate(ctx) // 启用热更新检测模块
 		var err error
 		ulogs.Log("启动Http(s) Server", h.ListenAddr)
@@ -56,29 +57,25 @@ func (h *HttpServer) HttpServerStart(ctx context.Context) {
 }
 
 func (h *HttpServer) close() {
-	if h.denyIPMatch != nil {
-		h.denyIPMatch.Close()
-	}
-	if h.debugIPMatch != nil {
-		h.debugIPMatch.Close()
-	}
-	if h.allowIPMatch != nil {
-		h.allowIPMatch.Close()
-	}
 	httpClose.Server(h.server)
 	ulogs.Log("http server已关闭")
 }
 
-func (h *HttpServer) initParams() {
+func (h *HttpServer) initParams(ctx context.Context) {
 	mime.InitMimeTypes()
 	h.serverNameMap = make(map[string]byte)
 	for _, dom := range h.ServerName {
 		h.serverNameMap[strings.ToLower(dom)] = 0
 	}
 	h.logger = middleware.NewResponseProcessor()
-	err := h.logger.SetLoggerConfig(h.Logger)
-	ulogs.DieCheckerr(err, "http server 日志模块初始化失败")
-	h.iptablesInit()
+	if len(h.Logger.LogLevelConfigs) > 0 {
+		logger, err := middleware.NewZapLogger(&h.Logger)
+		if err != nil {
+			panic(fmt.Errorf("日志模块初始化失败 %v", err))
+		}
+		h.logger.AddLogHandler(logger)
+	}
+	h.iptablesInit(ctx)
 	h.initRouter()
 	h.server = &http.Server{Addr: h.ListenAddr}
 	if h.EnableGzip {
@@ -114,7 +111,7 @@ func (h *HttpServer) initParams() {
 }
 
 // ip 黑白名单初始化
-func (h *HttpServer) iptablesInit() {
+func (h *HttpServer) iptablesInit(ctx context.Context) {
 	now := time.Now()
 	ulogs.Infof("开始初始化http server IP防火墙")
 	defer ulogs.Infof("http server IP防火墙初始化完成，耗时：%v", time.Since(now))
@@ -123,7 +120,7 @@ func (h *HttpServer) iptablesInit() {
 	}
 	var err error
 	if h.Security.IPAccess.Allow != nil || len(h.Allowip) > 0 {
-		h.allowIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Allow)
+		h.allowIPMatch, err = ipmatch.NewIPMatcher(ctx, h.Security.IPAccess.Allow)
 		ulogs.DieCheckerr(err, "http server ip白名单初始化失败")
 		for _, ip := range h.Allowip {
 			if ipkit.ISIPv4OrIPv6(ip) == "ipv4" {
@@ -137,7 +134,7 @@ func (h *HttpServer) iptablesInit() {
 	}
 
 	if h.Security.IPAccess.Deny != nil || len(h.Denyip) > 0 {
-		h.denyIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Deny)
+		h.denyIPMatch, err = ipmatch.NewIPMatcher(ctx, h.Security.IPAccess.Deny)
 		ulogs.DieCheckerr(err, "http server ip黑名单初始化失败")
 		for _, ip := range h.Denyip {
 			if ipkit.ISIPv4OrIPv6(ip) == "ipv4" {
@@ -150,7 +147,7 @@ func (h *HttpServer) iptablesInit() {
 		h.denyIPMatch.Build()
 	}
 	if h.Security.IPAccess.Debug != nil {
-		h.debugIPMatch, err = ipmatch.NewIPMatcher(h.Security.IPAccess.Debug)
+		h.debugIPMatch, err = ipmatch.NewIPMatcher(ctx, h.Security.IPAccess.Debug)
 		ulogs.DieCheckerr(err, "http server ip调试名单初始化失败")
 		h.debugIPMatch.Build()
 	}

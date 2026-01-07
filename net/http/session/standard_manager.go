@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -21,7 +22,7 @@ func (m *Manager) cookieName() string {
 	return prefix + m.options.Cookie.Name
 }
 
-// 获取sessionId
+// 获取 sessionId
 func (m *Manager) getSessionId(w http.ResponseWriter, r *http.Request, sessionId ...string) (string, error) {
 	var sid string
 	switch m.options.Carrier {
@@ -92,7 +93,9 @@ func (m *Manager) getSession(sessionId string, name string) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	if time.Time(sv.ExpireTime).Before(time.Now()) {
+	sv.ExpireTime.AdjustTimezoneIfNeeded()
+	// 这里时区存在问题，数据库存储的是无时区的时间，所以这里需要硬转一次时区，但是要保证时间数字不变。
+	if sv.ExpireTime.Before(time.Now()) {
 		_ = m.storage.Delete(sessionId, name)
 		return nil, ErrNotFound
 	}
@@ -150,11 +153,43 @@ func (m *Manager) GetUp(w http.ResponseWriter, r *http.Request, name string, dst
 	if err != nil {
 		return err
 	}
-	sv.ExpireTime = dataType.CustomTime(time.Now().Add(sv.Duration))
+
+	sv.ExpireTime = dataType.NewCustomTime(time.Now().Add(sv.Duration))
 	if err = m.storage.Save(sv); err != nil {
 		return err
 	}
 	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
+	return nil
+}
+
+// GetUpByRemainRatio 根据剩余时间占比自动续期
+// ratio: 0.0-1.0 之间的值，表示触发续期的剩余时间占比
+// 例如：session总时长15天，ratio=0.2，当剩余时间少于3天（15*0.2）时触发续期
+func (m *Manager) GetUpByRemainRatio(w http.ResponseWriter, r *http.Request, name string, dst any, ratio float64, callbacks ...Callback) error {
+	if ratio <= 0 || ratio >= 1 {
+		return fmt.Errorf("ratio 必须介于0-1之间")
+	}
+	sessionId, err := m.getSessionId(w, r)
+	if err != nil {
+		return err
+	}
+	v := reflect.ValueOf(dst)
+	if v.Kind() != reflect.Ptr || v.IsNil() {
+		return ErrNotPointer
+	}
+	sv, err := m.getSession(sessionId, name)
+	if err != nil {
+		return err
+	}
+	v.Elem().Set(reflect.ValueOf(sv.Values.Val))
+	// 计算当前剩余时间占总时长的比例
+	remaining := sv.ExpireTime.Sub(time.Now())
+	totalDuration := sv.Duration
+	// 当剩余时间占比小于等于设定的ratio 时触发续期
+	if float64(remaining) <= float64(totalDuration)*ratio {
+		return m.extendSession(sv, callbacks...)
+	}
+
 	return nil
 }
 
@@ -212,12 +247,12 @@ func (m *Manager) GetUpByDuration(w http.ResponseWriter, r *http.Request, name s
 	return nil
 }
 
-// 延长session有效期
+// 延长session 有效期
 func (m *Manager) extendSession(sv *Session, callbacks ...Callback) error {
-	sv.ExpireTime = dataType.CustomTime(time.Now().Add(sv.Duration))
+	sv.ExpireTime = dataType.NewCustomTime(time.Now().Add(sv.Duration))
 	for _, cb := range callbacks {
 		if cb.BeforeRenew != nil {
-			if err := cb.BeforeRenew(sv.ExpireTime, sv.Values.Val); err != nil {
+			if err := cb.BeforeRenew(sv.Id, sv.ExpireTime, sv.Values.Val); err != nil {
 				return err
 			}
 		}
@@ -227,7 +262,7 @@ func (m *Manager) extendSession(sv *Session, callbacks ...Callback) error {
 	}
 	for _, cb := range callbacks {
 		if cb.AfterRenew != nil {
-			if err := cb.AfterRenew(sv.ExpireTime, sv.Values.Val); err != nil {
+			if err := cb.AfterRenew(sv.Id, sv.ExpireTime, sv.Values.Val); err != nil {
 				return err
 			}
 		}
@@ -272,7 +307,7 @@ func (m *Manager) SetVal(value *Value) error {
 		CreateTime: dataType.NewCustomTime(now),
 		Duration:   tools.Ternary(value.TTL > 0, value.TTL, ExpireTime),
 	}
-	sv.ExpireTime = dataType.CustomTime(now.Add(sv.Duration)) // 设置过期时间
+	sv.ExpireTime = dataType.NewCustomTime(now.Add(sv.Duration)) // 设置过期时间
 	return m.storage.Save(&sv)
 }
 

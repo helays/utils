@@ -76,7 +76,7 @@ func (i *Instance) expireCheck(sessionFile string) {
 		ulogs.Errorf("session文件[%s]解析失败 %v", sessionFile, err)
 		return
 	}
-	if time.Time(s.ExpireTime).Before(time.Now()) {
+	if s.ExpireTime.Before(time.Now()) {
 		i.del(sessionFile)
 	}
 }
@@ -106,7 +106,7 @@ func (i *Instance) Get(sessionId, name string) (*session.Session, error) {
 	if err = gob.NewDecoder(f).Decode(s); err != nil {
 		return nil, err
 	}
-	if time.Time(s.ExpireTime).Before(time.Now()) {
+	if s.ExpireTime.Before(time.Now()) {
 		i.del(sessionFile)
 		return nil, session.ErrNotFound
 	}

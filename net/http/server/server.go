@@ -1,6 +1,9 @@
 package server
 
 import (
+	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -18,11 +21,11 @@ import (
 )
 
 // noinspection all
-func New(cfg *Config) (*Server[any], error) {
-	return NewGeneric[any](cfg)
+func New(ctx context.Context, cfg *Config) (*Server[any], error) {
+	return NewGeneric[any](ctx, cfg)
 }
 
-func NewGeneric[T any](cfg *Config) (*Server[T], error) {
+func NewGeneric[T any](ctx context.Context, cfg *Config) (*Server[T], error) {
 	s := &Server[T]{
 		opt:      cfg,
 		ipAccess: middleware.NewIPAccessMiddleware(),
@@ -33,11 +36,16 @@ func NewGeneric[T any](cfg *Config) (*Server[T], error) {
 
 	s.enhancedWriter = middleware.NewResponseProcessor()
 	s.enhancedWriter.SetCompressionConfig(s.opt.Compression)
-	if err := s.enhancedWriter.SetLoggerConfig(s.opt.Logger); err != nil {
-		return nil, fmt.Errorf("日志模块初始化失败 %v", err)
+
+	if len(s.opt.Logger.LogLevelConfigs) > 0 {
+		logger, err := middleware.NewZapLogger(&s.opt.Logger)
+		if err != nil {
+			return nil, fmt.Errorf("日志模块初始化失败 %v", err)
+		}
+		s.enhancedWriter.AddLogHandler(logger)
 	}
 
-	if err := s.ipAccessInit(); err != nil {
+	if err := s.ipAccessInit(ctx); err != nil {
 		return nil, err
 	}
 	s.httpServer()
@@ -108,7 +116,7 @@ func (s *Server[T]) validParam() error {
 	return nil
 }
 
-func (s *Server[T]) ipAccessInit() error {
+func (s *Server[T]) ipAccessInit(ctx context.Context) error {
 	access := s.opt.Security.IPAccess
 	if !access.Enable {
 		ulogs.Infof("HTTP服务未启用 IP访问控制模块")
@@ -118,21 +126,21 @@ func (s *Server[T]) ipAccessInit() error {
 	ulogs.Infof("开始初始化IP访问控制")
 
 	if access.Allow != nil {
-		if allow, err := ipmatch.NewIPMatcher(access.Allow); err != nil {
+		if allow, err := ipmatch.NewIPMatcher(ctx, access.Allow); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [白名单] 初始化失败 %v", err)
 		} else {
 			s.ipAccess.SetAllow(allow)
 		}
 	}
 	if access.Deny != nil {
-		if deny, err := ipmatch.NewIPMatcher(access.Deny); err != nil {
+		if deny, err := ipmatch.NewIPMatcher(ctx, access.Deny); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [黑名单] 初始化失败 %v", err)
 		} else {
 			s.ipAccess.SetDeny(deny)
 		}
 	}
 	if access.Debug != nil {
-		if dbg, err := ipmatch.NewIPMatcher(access.Debug); err != nil {
+		if dbg, err := ipmatch.NewIPMatcher(ctx, access.Debug); err != nil {
 			return fmt.Errorf("HTTP服务IP访问控制模块 [调试] 模块初始化失败 %v", err)
 		} else {
 			s.ipAccess.SetDebug(dbg)
@@ -165,15 +173,15 @@ func (s *Server[T]) tls() error {
 	return nil
 }
 
-func (s *Server[T]) Close() {
-	s.ipAccess.Close()
+func (s *Server[T]) close() {
 	httpClose.Server(s.server)
 	httpClose.ServerQuick(s.quicH3Server)
 	ulogs.Log("http server已关闭")
 }
 
 // Run 启动服务
-func (s *Server[T]) Run() error {
+func (s *Server[T]) Run(ctx context.Context) error {
+	go tools.RunOnContextDone(ctx, func() { s.close() })
 	s.mux = http.NewServeMux()
 	s.setRoutes()
 	s.server.Handler = s.mux
@@ -181,8 +189,9 @@ func (s *Server[T]) Run() error {
 	if s.quicH3Server != nil {
 		s.quicH3Server.Handler = s.mux
 		go func() {
+			ulogs.Log("启动quic http3服务", s.opt.Addr)
 			err := s.quicH3Server.ListenAndServe()
-			if err != nil {
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
 				panic(fmt.Errorf("quic http3服务启动失败：%s", err))
 			}
 		}()
@@ -190,10 +199,18 @@ func (s *Server[T]) Run() error {
 
 	if s.opt.TLS.Enable {
 		ulogs.Log("启动https server", s.opt.Addr)
-		return s.server.ListenAndServeTLS("", "")
+		err := s.server.ListenAndServeTLS("", "")
+		if err == nil || errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return fmt.Errorf("https服务启动失败：%s", err)
 	}
 	ulogs.Log("启动http server", s.opt.Addr)
-	return s.server.ListenAndServe()
+	err := s.server.ListenAndServe()
+	if err == nil || errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return fmt.Errorf("http服务启动失败：%s", err)
 }
 
 func (s *Server[T]) GetRouteDescriptions() []Description[T] {
@@ -208,4 +225,14 @@ func (s *Server[T]) GetRouteDescriptions() []Description[T] {
 
 func (s *Server[T]) GetRoute() *route.Route {
 	return s.route
+}
+
+// AddLogHandler 添加日志处理
+func (s *Server[T]) AddLogHandler(le ...middleware.Logger) {
+	s.enhancedWriter.AddLogHandler(le...)
+}
+
+func (s *Server[T]) TLS() *tls.Config {
+	
+	return s.server.TLSConfig
 }

@@ -126,7 +126,10 @@ type TableBaseModelAutoIncrement struct {
 	UpdateBy   dataType.IntString[int64] `json:"update_by,omitempty" gorm:"comment:更新人ID" form:"update_by"`
 }
 
+// TableBaseModelFull 带全字段的通用表结构
+// 包含主键、创建人信息、创建时间、更新时间、更新人信息
 type TableBaseModelFull struct {
+	// 注意，这个ID字段不是自增的，
 	Id dataType.IntString[int64] `json:"id,omitempty" gorm:"primaryKey;autoIncrement:false;comment:行ID" form:"id"`
 
 	CreateTime *dataType.CustomTime      `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
@@ -135,6 +138,16 @@ type TableBaseModelFull struct {
 	UpdateBy   dataType.IntString[int64] `json:"update_by,omitempty" gorm:"comment:更新人ID" form:"update_by"`
 }
 
+// TableBaseModel 带创建人信息、创建时间、的通用表结构
+type TableBaseModel struct {
+	// 注意，这个ID字段不是自增的，
+	Id dataType.IntString[int64] `json:"id,omitempty" gorm:"primaryKey;autoIncrement:false;comment:行ID" form:"id"`
+
+	CreateTime *dataType.CustomTime      `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
+	CreateBy   dataType.IntString[int64] `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`
+}
+
+// SoftDeleteModel 带软删除的通用表结构
 type SoftDeleteModel struct {
 	IsDeleted   dataType.Bool             `json:"is_deleted,omitempty" gorm:"not null;index;default:(0);comment:软删除标记 0 正常 1 删除" form:"is_deleted"`
 	DeletedBy   dataType.IntString[int64] `json:"deleted_by,omitempty" gorm:"comment:删除人ID" form:"deleted_by"`

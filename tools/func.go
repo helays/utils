@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/helays/utils/v2/config"
+	"golang.org/x/exp/constraints"
 )
 
 // PadRight 在字符串后面补齐固定字符，并达到n个长度
@@ -212,4 +213,13 @@ func AutoTimeDuration(input time.Duration, unit time.Duration, dValue ...time.Du
 		return input * unit
 	}
 	return input
+}
+
+// IsPowerOfTwo 位运算 - 最简洁高效
+// 检测输入数字是否是2的幂
+func IsPowerOfTwo[T constraints.Integer](n T) bool {
+	if n <= 0 {
+		return false
+	}
+	return (n & (n - 1)) == 0
 }

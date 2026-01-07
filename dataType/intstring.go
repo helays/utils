@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/gob"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -28,6 +29,17 @@ func NewIntString[T constraints.Integer](v T) IntString[T] {
 		jsonAsString: true,
 		valid:        true,
 	}
+}
+
+func StringToIntString[T constraints.Integer](v string) (IntString[T], error) {
+	if v == "" {
+		return ZeroIntString[T](), config.ErrInvalidParam
+	}
+	dst, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return ZeroIntString[T](), err
+	}
+	return NewIntString[T](T(dst)), nil
 }
 
 func NewIntStringAsNumber[T constraints.Integer](v T) IntString[T] {
@@ -138,6 +150,10 @@ func (i *IntString[T]) SetJsonAsString(asString bool) {
 	i.jsonAsString = asString
 }
 
+func (i IntString[T]) GetJsonAsString() bool {
+	return i.jsonAsString
+}
+
 // noinspection all
 func (i IntString[T]) MarshalJSON() ([]byte, error) {
 	if !i.valid {
@@ -174,6 +190,18 @@ func (i *IntString[T]) UnmarshalJSON(data []byte) error {
 	}
 	i.valid = true
 	i.value = T(dst)
+	return nil
+}
+
+// UnmarshalText 实现 TextMarshaler 接口
+// 这个主要是从query参数中进行提取，所以这里统一处理为字符串
+// noinspection all
+func (i *IntString[T]) UnmarshalText(text []byte) error {
+	err := i.UnmarshalJSON(text)
+	if err != nil {
+		return err
+	}
+	i.jsonAsString = true
 	return nil
 }
 
@@ -278,4 +306,8 @@ func (i *IntString[T]) GobDecode(data []byte) error {
 	i.valid = temp.Valid
 
 	return nil
+}
+
+func (i *IntString[T]) GetValid() bool {
+	return i.valid
 }
