@@ -148,7 +148,7 @@ func (e *Export) setFileHeader(et exportkit.ExportType, columns []string) error 
 	case exportkit.ExportTypeCsv:
 		return e.cw.Write(columns)
 	case exportkit.ExportTypeExcel:
-		return e.sw.SetRow("A1", tools.StrSlice2AnySlice(columns))
+		return e.sw.SetRow("A1", tools.SliceToAny(columns))
 	default:
 		return exportkit.ErrExportTypeNotSupport
 	}

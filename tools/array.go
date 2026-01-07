@@ -355,12 +355,14 @@ func Str2StrSlice(values string) ([]string, error) {
 	return slice, nil
 }
 
-func StrSlice2AnySlice(inp []string) []any {
-	var out []any
-	for _, v := range inp {
-		out = append(out, v)
+// SliceToAny 泛型版本，适用于各种切片类型
+// 将指定类型的切片转成[]any
+func SliceToAny[T any](slice []T) []any {
+	result := make([]any, len(slice))
+	for i := range slice {
+		result[i] = slice[i]
 	}
-	return out
+	return result
 }
 
 func AnySlice2StrSlice(slice []any) []string {

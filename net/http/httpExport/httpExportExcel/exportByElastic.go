@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/helays/utils/v2/db/elastic/elasticModel"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/db/elastic/elasticModel"
 
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/excelTools"
@@ -105,7 +106,7 @@ func (e *ElasticsearchExport) writeHeader(columnNames []string, streamWriter *ex
 	}
 
 	if e.FileType == config.ExportFileTypeExcel {
-		if err := streamWriter.SetRow("A1", tools.StrSlice2AnySlice(columnNames)); err != nil {
+		if err := streamWriter.SetRow("A1", tools.SliceToAny(columnNames)); err != nil {
 			return fmt.Errorf("导出excel失败，表头写入失败: %w", err)
 		}
 	} else if e.FileType == config.ExportFileTypeCsv {
