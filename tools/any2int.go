@@ -220,12 +220,8 @@ func parseWithBase[T constraints.Integer](v string, base int) (T, error) {
 			return zero, err
 		}
 		// 检查是否超出 int 范围
-		if val > int64(^uint(0)>>1) || val < -int64(^uint(0)>>1)-1 {
-			return zero, &strconv.NumError{
-				Func: "ParseInt",
-				Num:  v,
-				Err:  strconv.ErrRange,
-			}
+		if val > math.MaxInt64 || val < math.MinInt64 {
+			return zero, strconv.ErrRange
 		}
 		return T(val), nil
 
