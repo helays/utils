@@ -75,7 +75,7 @@ func (i *IntString[T]) Scan(val any) error {
 		return nil
 	}
 	i.valid = true
-	v, err := tools.Any2int(val)
+	v, err := tools.Any2Int[T](val)
 	if err != nil {
 		return err
 	}
@@ -184,7 +184,7 @@ func (i *IntString[T]) UnmarshalJSON(data []byte) error {
 		i.jsonAsString = true
 	}
 
-	dst, err := tools.Any2int(ds)
+	dst, err := tools.Any2Int[T](ds)
 	if err != nil {
 		return err
 	}

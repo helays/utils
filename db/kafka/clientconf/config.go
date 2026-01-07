@@ -93,11 +93,11 @@ func (c *Config) toNet(cfg *sarama.Config) error {
 
 	cfg.Net.SASL.Version = sarama.SASLHandshakeV1
 	if c.Net.SASL.Version != "" {
-		v, err := tools.Any2int(c.Net.SASL.Version)
+		v, err := tools.Any2Int[int16](c.Net.SASL.Version)
 		if err != nil {
 			return fmt.Errorf("字段%s转int失败：%v", "sasl.version", err)
 		}
-		cfg.Net.SASL.Version = int16(v)
+		cfg.Net.SASL.Version = v
 	}
 
 	cfg.Net.SASL.Handshake = boolKit(c.Net.SASL.Handshake, true)
@@ -147,11 +147,11 @@ func (c *Config) toProducer(cfg *sarama.Config) error {
 	cfg.Producer.Compression = c.Producer.Compression
 	cfg.Producer.CompressionLevel = sarama.CompressionLevelDefault
 	if c.Producer.CompressionLevel != "" {
-		level, err := tools.Any2int(c.Producer.CompressionLevel)
+		level, err := tools.Any2Int[int](c.Producer.CompressionLevel)
 		if err != nil {
 			return fmt.Errorf("字段%s转int失败：%v", "producer.compression_level", err)
 		}
-		cfg.Producer.CompressionLevel = int(level)
+		cfg.Producer.CompressionLevel = level
 	}
 	cfg.Producer.Idempotent = c.Producer.Idempotent
 
@@ -222,7 +222,7 @@ func (c *Config) toConsumer(cfg *sarama.Config) error {
 
 	cfg.Consumer.Offsets.Initial = sarama.OffsetNewest
 	if c.Consumer.Offsets.Initial != "" {
-		initial, err := tools.Any2int(c.Consumer.Offsets.Initial)
+		initial, err := tools.Any2Int[int64](c.Consumer.Offsets.Initial)
 		if err != nil {
 			return fmt.Errorf("字段%s转int失败：%v", "consumer.offsets.initial", err)
 		}

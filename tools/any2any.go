@@ -65,7 +65,7 @@ func Map2Struct(dst any, src map[string]any, customConvert map[string]func(dst a
 			}
 			fieldVal.SetString(fmt.Sprintf("%v", value))
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			_tv, err := Any2int(value)
+			_tv, err := Any2Int[int64](value)
 			if err != nil {
 				return fmt.Errorf("字段%s转int失败：%v", jsonTag, err)
 			}
@@ -168,6 +168,7 @@ func MustAny2int(_v any) int64 {
 }
 
 // Any2int 尝试将任意类型转换为 int
+// Deprecated: 请使用 Any2Int
 func Any2int(_v any) (int64, error) {
 	switch v := _v.(type) {
 	case nil:
@@ -217,6 +218,8 @@ func Any2int(_v any) (int64, error) {
 	}
 }
 
+// String2Int64 将字符串转换为 int64
+// Deprecated: 请使用 String2Int
 func String2Int64(v string) (int64, error) {
 	v = TrimStringHelper(v)
 	if v == "" || v == "null" || v == "nil" || v == "undefined" {
