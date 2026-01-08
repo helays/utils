@@ -93,11 +93,11 @@ func DriverScanWithInt[T constraints.Integer](val any, dst *T) error {
 		*dst = *new(T)
 		return nil
 	}
-	v, err := tools.Any2int(val)
+	v, err := tools.Any2Int[T](val)
 	if err != nil {
 		return err
 	}
-	*dst = T(v)
+	*dst = v
 	return nil
 
 }

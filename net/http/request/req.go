@@ -13,11 +13,11 @@ func GetHeaderValueFormatInt(header http.Header, fields ...string) (map[string]i
 	resp := make(map[string]int)
 	for _, field := range fields {
 		_v := header.Get(field)
-		v, err := tools.Any2int(_v)
+		v, err := tools.Any2Int[int](_v)
 		if err != nil {
 			return nil, fmt.Errorf("不合法的字段[%s]值 %s %v", field, _v, err)
 		}
-		resp[field] = int(v)
+		resp[field] = v
 	}
 	return resp, nil
 }
@@ -34,9 +34,9 @@ func GetQueryValueFromQuery2Int(qs url.Values, fields string, defaultValue ...in
 		}
 		return 0, false
 	}
-	_v, err := tools.Any2int(val)
+	_v, err := tools.Any2Int[int](val)
 	if err != nil {
 		return 0, true
 	}
-	return int(_v), true
+	return _v, true
 }

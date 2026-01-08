@@ -1,9 +1,10 @@
 package template_engine
 
 import (
-	"github.com/helays/utils/v2/tools"
 	"html/template"
 	"time"
+
+	"github.com/helays/utils/v2/tools"
 )
 
 func builtinFuncMap() template.FuncMap {
@@ -43,8 +44,7 @@ func builtinFuncMap() template.FuncMap {
 			return tools.Any2string(v)
 		},
 		"toInt": func(v any) int64 {
-			n, _ := tools.Any2int(v)
-			return n
+			return tools.MustAny2int[int64](v)
 		},
 		"toFloat": func(v any) float64 {
 			n, _ := tools.Any2float64(v)

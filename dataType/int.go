@@ -30,7 +30,7 @@ func (b *Byte) Scan(value any) error {
 	case int:
 		*b = Byte(t)
 	default:
-		v, err := tools.Any2int(value)
+		v, err := tools.Any2Int[Byte](value)
 		if err != nil {
 			return err
 		}
