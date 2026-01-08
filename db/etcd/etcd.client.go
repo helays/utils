@@ -2,10 +2,11 @@ package etcd
 
 import (
 	"context"
+	"time"
+
 	tlsconfig "github.com/helays/utils/v2/crypto/tls.config"
 	"github.com/helays/utils/v2/tools"
 	"go.etcd.io/etcd/client/v3"
-	"time"
 )
 
 type Config struct {
@@ -28,33 +29,33 @@ type Config struct {
 }
 
 // NewClient 创建etcd客户端
-func (this Config) NewClient(ctx context.Context) (*clientv3.Client, error) {
-	c := clientv3.Config{
-		Endpoints:             this.Endpoints,
-		AutoSyncInterval:      tools.AutoTimeDuration(this.AutoSyncInterval, time.Second),
-		DialTimeout:           tools.AutoTimeDuration(this.DialTimeout, time.Second, 10*time.Second),
-		DialKeepAliveTime:     tools.AutoTimeDuration(this.DialKeepAliveTime, time.Second),
-		DialKeepAliveTimeout:  tools.AutoTimeDuration(this.DialKeepAliveTimeout, time.Second),
-		MaxCallSendMsgSize:    this.MaxCallSendMsgSize,
-		MaxCallRecvMsgSize:    this.MaxCallRecvMsgSize,
-		Username:              this.Username,
-		Password:              this.Password,
-		RejectOldCluster:      this.RejectOldCluster,
+func (c *Config) NewClient(ctx context.Context) (*clientv3.Client, error) {
+	cfg := clientv3.Config{
+		Endpoints:             c.Endpoints,
+		AutoSyncInterval:      tools.AutoTimeDuration(c.AutoSyncInterval, time.Second),
+		DialTimeout:           tools.AutoTimeDuration(c.DialTimeout, time.Second, 10*time.Second),
+		DialKeepAliveTime:     tools.AutoTimeDuration(c.DialKeepAliveTime, time.Second),
+		DialKeepAliveTimeout:  tools.AutoTimeDuration(c.DialKeepAliveTimeout, time.Second),
+		MaxCallSendMsgSize:    c.MaxCallSendMsgSize,
+		MaxCallRecvMsgSize:    c.MaxCallRecvMsgSize,
+		Username:              c.Username,
+		Password:              c.Password,
+		RejectOldCluster:      c.RejectOldCluster,
 		Context:               ctx,
-		PermitWithoutStream:   this.PermitWithoutStream,
-		MaxUnaryRetries:       this.MaxUnaryRetries,
-		BackoffWaitBetween:    tools.AutoTimeDuration(this.BackoffWaitBetween, time.Second),
-		BackoffJitterFraction: this.BackoffJitterFraction,
+		PermitWithoutStream:   c.PermitWithoutStream,
+		MaxUnaryRetries:       c.MaxUnaryRetries,
+		BackoffWaitBetween:    tools.AutoTimeDuration(c.BackoffWaitBetween, time.Second),
+		BackoffJitterFraction: c.BackoffJitterFraction,
 	}
 
-	// 使用tls
-	if this.EnableTLS {
-		// 使用tls
-		tlsConfig, err := this.TLS.NewTLSConfig()
+	// 使用 tls
+	if c.EnableTLS {
+		// 使用 tls
+		tlsConfig, err := c.TLS.NewTLSConfig()
 		if err != nil {
 			return nil, err
 		}
-		c.TLS = tlsConfig
+		cfg.TLS = tlsConfig
 	}
-	return clientv3.New(c)
+	return clientv3.New(cfg)
 }
