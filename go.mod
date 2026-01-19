@@ -182,7 +182,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
 
-replace github.com/go-ini/ini => gopkg.in/ini.v1 v1.67.1
 
 //	google.golang.org/genproto v0.0.0-20251111163417-95abcf5c77ba // indirect
 //	google.golang.org/genproto/googleapis/api v0.0.0-20251124214823-79d6a2a48846 // indirect
