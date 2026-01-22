@@ -19,12 +19,12 @@ type targetCache struct {
 func newTargetCache(ctx context.Context, policy *Policy) *targetCache {
 	return &targetCache{
 		policy: policy,
-		triggerCount: safe.NewMap[string, *safe.ResourceRWMutex[int]](ctx, safe.StringHasher{}, safe.MapConfig{
+		triggerCount: safe.NewMap[string, *safe.ResourceRWMutex[int]](ctx, safe.StringHasher{}, safe.CacheConfig{
 			EnableCleanup: true,
 			ClearInterval: time.Minute / 2,
 			TTL:           time.Minute,
 		}),
-		isLocked: safe.NewMap[string, *safe.ResourceRWMutex[bool]](ctx, safe.StringHasher{}, safe.MapConfig{
+		isLocked: safe.NewMap[string, *safe.ResourceRWMutex[bool]](ctx, safe.StringHasher{}, safe.CacheConfig{
 			EnableCleanup: true,
 			ClearInterval: time.Minute / 2,
 			TTL:           time.Minute,

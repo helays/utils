@@ -53,3 +53,64 @@ func (Byte) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	}
 	return "int"
 }
+
+type Uint64 struct {
+	uint64
+}
+
+func NewUint64(v uint64) Uint64 {
+	return Uint64{uint64: v}
+}
+
+func (u *Uint64) GetValue() uint64 {
+	return u.uint64
+}
+
+func (u *Uint64) SetValue(v uint64) {
+	u.uint64 = v
+}
+
+func (u *Uint64) Equals(other Uint64) bool {
+	return u.uint64 == other.uint64
+}
+
+func (u *Uint64) EqualsInt(other int) bool {
+	return u.uint64 == uint64(other)
+}
+
+func (u *Uint64) EqualsUint64(other uint64) bool {
+	return u.uint64 == other
+}
+
+// noinspection all
+func (u Uint64) Value() (driver.Value, error) {
+	return u.uint64, nil
+}
+
+// noinspection all
+func (u *Uint64) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+	v, err := tools.Any2Int[uint64](value)
+	if err != nil {
+		return err
+	}
+	u.uint64 = v
+	return nil
+}
+
+// noinspection all
+func (u Uint64) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	switch db.Dialector.Name() {
+	case config.DbTypeSqlite:
+		return "integer"
+	case config.DbTypeMysql:
+		return "BIGINT UNSIGNED"
+	case config.DbTypePostgres:
+		return "BIGINT"
+	case config.DbTypeSqlserver:
+		return "BIGINT"
+	}
+	return "bigint"
+}

@@ -31,14 +31,6 @@ import (
 //适合：仅限高性能计算场景
 
 type (
-	MapConfig struct {
-		EnableCleanup bool          // 是否启用自动清理功能
-		ClearInterval time.Duration // 清理间隔,推荐值是设置成 ttl/2 或者 ttl/3
-		TTL           time.Duration // 默认TTL为0，表示不过期
-		ShardSize     uint64        // 分片数量，默认为2的8次方
-		UseKey        bool          // 是否使用 key 作为 hash 值
-	}
-
 	value[K comparable, V any] struct {
 		key       K
 		val       V
@@ -67,11 +59,11 @@ type (
 		// 清理间隔,推荐值是设置成 ttl/2 或者 ttl/3
 		// 当前启用自动清理后，clearInterval必须设置
 		clearInterval time.Duration
-		onExpired     onExpired[K] // 再过期时刻触发的回调操作。
+		onExpired     OnExpired[K] // 再过期时刻触发的回调操作。
 	}
 )
 
-func NewMap[K comparable, V any](ctx context.Context, hasher Hasher[K], configs ...MapConfig) *Map[K, V] {
+func NewMap[K comparable, V any](ctx context.Context, hasher Hasher[K], configs ...CacheConfig) *Map[K, V] {
 	m := &Map[K, V]{
 		ctx:       ctx,
 		hasher:    hasher,
@@ -111,7 +103,8 @@ func NewMap[K comparable, V any](ctx context.Context, hasher Hasher[K], configs 
 	return m
 }
 
-func (m *Map[K, V]) SetOnExpired(onExpired onExpired[K]) {
+// SetOnExpired 设置过期回调函数。
+func (m *Map[K, V]) SetOnExpired(onExpired OnExpired[K]) {
 	m.onExpired = onExpired
 }
 

@@ -19,12 +19,12 @@ const (
 
 // Session session 数据结构
 type Session struct {
-	Id         string              `json:"id" gorm:"primaryKey;autoIncrement:false;type:varchar(64);not null;index;comment:Session ID"`
-	Name       string              `json:"name" gorm:"primaryKey;autoIncrement:false;type:varchar(128);not null;index;comment:Session的名字"`
-	Values     SessionValue        `json:"values" gorm:"comment:session数据"`
-	CreateTime dataType.CustomTime `json:"create_time" gorm:"comment:session 创建时间"`
-	ExpireTime dataType.CustomTime `json:"expire_time" gorm:"not null;index;comment:session 过期时间"`
-	Duration   time.Duration       `json:"duration" gorm:"comment:session有效期"`
+	Id         string                `json:"id" gorm:"primaryKey;autoIncrement:false;type:varchar(64);not null;index;comment:Session ID"`
+	Name       string                `json:"name" gorm:"primaryKey;autoIncrement:false;type:varchar(128);not null;index;comment:Session的名字"`
+	Values     dataType.SessionValue `json:"values" gorm:"comment:session数据"`
+	CreateTime dataType.CustomTime   `json:"create_time" gorm:"comment:session 创建时间"`
+	ExpireTime dataType.CustomTime   `json:"expire_time" gorm:"not null;index;comment:session 过期时间"`
+	Duration   time.Duration         `json:"duration" gorm:"comment:session有效期"`
 }
 
 type Manager struct {
@@ -60,7 +60,7 @@ func New(ctx context.Context, storage StorageDriver, opt ...*Options) *Manager {
 		options: options,
 		storage: storage,
 	}
-	gob.Register(SessionValue{})
+	gob.Register(dataType.SessionValue{})
 	if !options.DisableGc {
 		go manager.startGC(ctx)
 	}
