@@ -13,6 +13,7 @@ type Byte byte
 
 // noinspection all
 func (b Byte) Value() (driver.Value, error) {
+	// 注意，这里只能接受int64类型
 	return int64(b), nil
 }
 
