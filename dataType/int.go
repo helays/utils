@@ -2,6 +2,7 @@ package dataType
 
 import (
 	"database/sql/driver"
+	"fmt"
 
 	"github.com/helays/utils/v2/config"
 	"github.com/helays/utils/v2/tools"
@@ -23,20 +24,11 @@ func (b *Byte) Scan(value any) error {
 		*b = 0
 		return nil
 	}
-	switch t := value.(type) {
-	case byte:
-		*b = Byte(t)
-	case int8:
-		*b = Byte(t)
-	case int:
-		*b = Byte(t)
-	default:
-		v, err := tools.Any2Int[Byte](value)
-		if err != nil {
-			return err
-		}
-		*b = Byte(v)
+	v, err := tools.Any2Int[byte](value)
+	if err != nil {
+		return fmt.Errorf("Byte.Scan: unknown type %T", value)
 	}
+	*b = Byte(v)
 	return nil
 }
 
