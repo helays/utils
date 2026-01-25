@@ -37,62 +37,73 @@ func ListToTree[L ListItem[T, S, L], T comparable, S TreeNode[L, S]](src []L) []
 		children[parentID] = append(children[parentID], id)
 		idToSrc[id] = item
 	}
-	var zeroID T
+	var (
+		zeroIDs []T
+		zeroMap = make(map[T]struct{})
+	)
+	
+	// 筛选所有顶级节点。
 	for parentID, _ := range children {
 		if _, ok := idToSrc[parentID]; !ok {
-			zeroID = parentID
-			break
+			if _, ok = zeroMap[parentID]; !ok {
+				zeroIDs = append(zeroIDs, parentID)
+				zeroMap[parentID] = struct{}{}
+			}
 		}
 	}
 
 	var tempNode S
-	//对每个根节点分别构建数
-	for _, rootId := range children[zeroID] {
-		level := 1
-		rootData := idToSrc[rootId]
-		rootNode := tempNode.ToTreeNode(rootData, level)
-		//rootNode := rootData.ToTreeNode(level)
-		// 使用栈进行深度优先遍历
-		type stackItem struct {
-			node  S
-			id    T
-			level int
-		}
-		stack := []stackItem{{node: rootNode, id: rootId, level: level}}
-		for len(stack) > 0 {
-			// 弹出栈顶
-			top := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
-			// 获取子节点 ID
-			childIds := children[top.id]
-			if len(childIds) == 0 {
-				continue
+	// 分别对每个顶级节点处理
+	for _, zeroID := range zeroIDs {
+		//对每个根节点分别构建数
+		for _, rootId := range children[zeroID] {
+			level := 1
+			rootData := idToSrc[rootId]
+			rootNode := tempNode.ToTreeNode(rootData, level)
+			//rootNode := rootData.ToTreeNode(level)
+			// 使用栈进行深度优先遍历
+			type stackItem struct {
+				node  S
+				id    T
+				level int
 			}
-			// 初始化子节点切片
-			top.node.PrepareChildren(len(childIds))
-			// 遍历子节点
-			for _, childId := range childIds {
-				childData := idToSrc[childId]
-				// 创建子节点
-				childNode := tempNode.ToTreeNode(childData, top.level+1, top.node)
-				//childNode := childData.ToTreeNode(top.level+1, top.node)
-				// 添加父节点
-				top.node.AddChild(childNode)
-				// 由于上面的SetChildren 里面会解引用，所以这里不能直接用childNode
-				lastChild, ok := top.node.GetLastChild()
-				// 确保 GetLastChild() 不为 nil
-				if !ok {
+			stack := []stackItem{{node: rootNode, id: rootId, level: level}}
+			for len(stack) > 0 {
+				// 弹出栈顶
+				top := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				// 获取子节点 ID
+				childIds := children[top.id]
+				if len(childIds) == 0 {
 					continue
 				}
-				stack = append(stack, stackItem{
-					node:  lastChild,
-					id:    childId,
-					level: top.level + 1,
-				})
+				// 初始化子节点切片
+				top.node.PrepareChildren(len(childIds))
+				// 遍历子节点
+				for _, childId := range childIds {
+					childData := idToSrc[childId]
+					// 创建子节点
+					childNode := tempNode.ToTreeNode(childData, top.level+1, top.node)
+					//childNode := childData.ToTreeNode(top.level+1, top.node)
+					// 添加父节点
+					top.node.AddChild(childNode)
+					// 由于上面的SetChildren 里面会解引用，所以这里不能直接用childNode
+					lastChild, ok := top.node.GetLastChild()
+					// 确保 GetLastChild() 不为 nil
+					if !ok {
+						continue
+					}
+					stack = append(stack, stackItem{
+						node:  lastChild,
+						id:    childId,
+						level: top.level + 1,
+					})
+				}
 			}
+
+			result = append(result, rootNode)
 		}
 
-		result = append(result, rootNode)
 	}
 
 	return result
