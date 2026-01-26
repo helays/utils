@@ -10,6 +10,14 @@ import (
 	"github.com/helays/utils/v2/tools"
 )
 
+var CurvePreferencesMap = map[string]tls.CurveID{
+	"CurveP256":      tls.CurveP256,      // 标准椭圆曲线 （传统加密）
+	"CurveP384":      tls.CurveP384,      // 标准椭圆曲线 （高安全性）
+	"CurveP521":      tls.CurveP521,      // 标准椭圆曲线 （高安全性）
+	"X25519":         tls.X25519,         // 密码学曲线 最快，比P256快3-4倍
+	"X25519MLKEM768": tls.X25519MLKEM768, // 后量子混合曲线
+}
+
 // CipherSuiteMapping 密码套件映射
 var CipherSuiteMapping = map[string]uint16{
 	// TLS 1.3 密码套件
@@ -42,38 +50,42 @@ var CipherSuiteMapping = map[string]uint16{
 // 预定义的密码套件组合
 var (
 	ModernCipherSuites = []string{
-		// TLS 1.3 密码套件
-		"TLS_AES_128_GCM_SHA256",
-		"TLS_AES_256_GCM_SHA384",
-		"TLS_CHACHA20_POLY1305_SHA256",
+		// TLS 1.2 密码套件（按性能排序，从最快到最慢）
 
-		// 安全的 TLS 1.2 密码套件
-		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
-		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",
+		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",  // 1. ECDSA证书 + ChaCha20-Poly1305（移动设备/无AES-NI时最快）
+		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",    // 2. RSA证书 + ChaCha20-Poly1305（兼容移动设备）
+		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256", // 3. ECDSA证书 + AES-128-GCM（服务器有AES-NI时最快）
+		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",   // 4. RSA证书 + AES-128-GCM（广泛兼容且快）
+		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384", // 5. ECDSA证书 + AES-256-GCM（更高安全性）
+		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",   // 6. RSA证书 + AES-256-GCM（高安全性兼容）
+
+		// TLS 1.3 密码套件（Go会自动处理，放最后）
+		"TLS_AES_128_GCM_SHA256",       // TLS 1.3最快
+		"TLS_CHACHA20_POLY1305_SHA256", // TLS 1.3移动友好
+		"TLS_AES_256_GCM_SHA384",       // TLS 1.3高安全
 	} // 现代密码套件 (TLS 1.3 + 安全的 TLS 1.2)
 
 	CompatibleCipherSuites = []string{
-		// TLS 1.3
+		// TLS 1.2 密码套件（按性能排序）
+		// 第1梯队：现代快速套件
+		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",  // 最快（ECDSA+ChaCha20）
+		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",    // 快（RSA+ChaCha20）
+		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256", // 快（ECDSA+AES-128）
+		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",   // 广泛兼容且快
+
+		// 第2梯队：高安全性套件
+		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384", // 高安全 ECDSA
+		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",   // 高安全 RSA
+
+		// 第3梯队：兼容性套件（性能较差，必要时使用）
+		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256", // CBC模式，有AES-NI时还行
+		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",    // CBC+ECDSA
+		"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",  // CBC+RSA
+
+		// TLS 1.3 密码套件（放最后，Go会忽略）
 		"TLS_AES_128_GCM_SHA256",
 		"TLS_AES_256_GCM_SHA384",
 		"TLS_CHACHA20_POLY1305_SHA256",
-
-		// TLS 1.2
-		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
-		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",
-
-		// 更多兼容性套件
-		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
-		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-		"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
 	} // 兼容性密码套件 (包含更多旧版本支持)
 )
 
@@ -167,6 +179,7 @@ type TLSConfig struct {
 	ClientCAFile                string                   `json:"client_ca_file" yaml:"client_ca_file"`                                 // 客户端CA文件
 	InsecureSkipVerify          bool                     `json:"insecure_skip_verify" yaml:"insecure_skip_verify"`                     // 跳过验证
 	CipherSuites                []string                 `json:"cipher_suites" yaml:"cipher_suites"`                                   // 密钥套件
+	CurvePreferences            []string                 `json:"curve_preferences" yaml:"curve_preferences"`                           // 曲线偏好
 	SessionTicketsDisabled      bool                     `json:"session_tickets_disabled" yaml:"session_tickets_disabled"`             // 禁用会话密钥
 	MinVersion                  string                   `json:"min_version" yaml:"min_version"`                                       // 最低TLS版本
 	MaxVersion                  string                   `json:"max_version" yaml:"max_version"`                                       // 最高TLS版本
@@ -192,6 +205,17 @@ func (t *TLSConfig) ToTLSConfig() (*tls.Config, error) {
 		InsecureSkipVerify:          t.InsecureSkipVerify,
 		DynamicRecordSizingDisabled: t.DynamicRecordSizingDisabled,
 		Renegotiation:               t.Renegotiation,
+	}
+
+	// 自定义曲线
+	if len(t.CurvePreferences) > 0 {
+		for _, curveName := range t.CurvePreferences {
+			curveID, exists := CurvePreferencesMap[curveName]
+			if !exists {
+				return nil, fmt.Errorf("未知的曲线: %s", curveName)
+			}
+			config.CurvePreferences = append(config.CurvePreferences, curveID)
+		}
 	}
 
 	// 解析 TLS 版本
@@ -224,7 +248,7 @@ func (t *TLSConfig) ToTLSConfig() (*tls.Config, error) {
 		config.CipherSuites = cipherSuites
 	} else {
 		// 默认使用现代密码套件
-		cipherSuites, err = ParseCipherSuites(ModernCipherSuites)
+		cipherSuites, err = ParseCipherSuites(CompatibleCipherSuites)
 		if err != nil {
 			return nil, fmt.Errorf("解析默认密码套件失败: %v", err)
 		}
