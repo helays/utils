@@ -51,7 +51,7 @@ func (g *RouterGroup) addRoute(method, p string, handler http.Handler) {
 // Ws 添加 WebSocket 支持
 func (g *RouterGroup) Ws(p string, handler func(ws *websocket.Conn)) {
 	fullPath := g.calculatePrefix(p)
-	g.service.addWSRoute(fullPath, handler)
+	g.service.addWSRoute("GET "+fullPath, handler)
 }
 
 // Use 支持链式调用
