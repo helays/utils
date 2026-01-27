@@ -105,3 +105,15 @@ func NewDesc[T any](key, code string, meta *T) Description[T] {
 		Metadata: meta,
 	}
 }
+
+var HttpMethodList = []string{
+	http.MethodGet,
+	http.MethodHead,
+	http.MethodPost,
+	http.MethodPut,
+	http.MethodPatch,
+	http.MethodDelete,
+	http.MethodConnect,
+	http.MethodOptions,
+	http.MethodTrace,
+}

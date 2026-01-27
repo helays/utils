@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -132,19 +133,25 @@ func (g *Group[T]) TraceWithHandler(p string, handler http.Handler, descriptions
 }
 
 func (g *Group[T]) Any(p string, handler http.HandlerFunc, descriptions ...Description[T]) {
-	g.addRoute("", p, handler, descriptions...)
+	for _, method := range HttpMethodList {
+		g.addRoute(method, p, handler, descriptions...)
+	}
 }
 
 func (g *Group[T]) AnyWithHandler(p string, handler http.Handler, descriptions ...Description[T]) {
-	g.addRoute("", p, handler, descriptions...)
+	for _, method := range HttpMethodList {
+		g.addRoute(method, p, handler, descriptions...)
+	}
 }
 
+// WS 对于WS类型，由于新版本的http server，不支持混合路由。
+// 所以指定成GET
 func (g *Group[T]) WS(p string, handler func(ws *websocket.Conn)) {
 	fullPath := g.calculatePrefix(strings.TrimSpace(p))
-	g.serv.AddWebsocketRoute(fullPath, handler)
+	g.serv.AddWebsocketRoute(fmt.Sprintf("%s %s", http.MethodGet, fullPath), handler)
 }
 
 func (g *Group[T]) WSWithDescription(p string, handler func(ws *websocket.Conn), description Description[T]) {
 	fullPath := g.calculatePrefix(strings.TrimSpace(p))
-	g.serv.AddWebsocketRouteWithDescription(fullPath, handler, description)
+	g.serv.AddWebsocketRouteWithDescription(fmt.Sprintf("%s %s", http.MethodGet, fullPath), handler, description)
 }
