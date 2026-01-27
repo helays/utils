@@ -19,7 +19,7 @@ func New(db *gorm.DB) *Instance {
 	ins := &Instance{
 		db: db.Session(&gorm.Session{}),
 	}
-	userDb.AutoCreateTableWithStruct(ins.db, session.Session{}, "创建session表失败")
+	userDb.AutoCreateTableWithStruct(ins.db, session.Session{}, "创建 session 表失败")
 	return ins
 }
 
