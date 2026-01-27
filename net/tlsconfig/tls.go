@@ -166,7 +166,7 @@ var (
 type TLSConfig struct {
 	Enable       bool          `json:"enable" yaml:"enable"`
 	Certificates []Certificate `json:"certificates" yaml:"certificates"` // 证书
-	RootCAFile   string        `json:"root_ca_file" yaml:"root_ca_file"` // 根CA文件
+	RootCAFile   []string      `json:"root_ca_file" yaml:"root_ca_file"` // 根CA文件
 	NextProtos   []string      `json:"next_protos" yaml:"next_protos"`   // 支持的协议
 	ServerName   string        `json:"server_name" yaml:"server_name"`   // 服务器名称
 
@@ -176,7 +176,7 @@ type TLSConfig struct {
 	// 3 如果提供客户端证书则验证
 	// 4 要求并验证客户端证书
 	ClientAuth                  tls.ClientAuthType       `json:"client_auth" yaml:"client_auth"`                                       // 客户端验证
-	ClientCAFile                string                   `json:"client_ca_file" yaml:"client_ca_file"`                                 // 客户端CA文件
+	ClientCAFile                []string                 `json:"client_ca_file" yaml:"client_ca_file"`                                 // 客户端CA文件
 	InsecureSkipVerify          bool                     `json:"insecure_skip_verify" yaml:"insecure_skip_verify"`                     // 跳过验证
 	CipherSuites                []string                 `json:"cipher_suites" yaml:"cipher_suites"`                                   // 密钥套件
 	CurvePreferences            []string                 `json:"curve_preferences" yaml:"curve_preferences"`                           // 曲线偏好
@@ -205,6 +205,7 @@ func (t *TLSConfig) ToTLSConfig() (*tls.Config, error) {
 		InsecureSkipVerify:          t.InsecureSkipVerify,
 		DynamicRecordSizingDisabled: t.DynamicRecordSizingDisabled,
 		Renegotiation:               t.Renegotiation,
+		ClientAuth:                  t.ClientAuth,
 	}
 
 	// 自定义曲线
@@ -219,40 +220,44 @@ func (t *TLSConfig) ToTLSConfig() (*tls.Config, error) {
 	}
 
 	// 解析 TLS 版本
-	if t.MinVersion != "" {
-		minVersion, err := ParseTLSVersion(t.MinVersion)
-		if err != nil {
-			return nil, fmt.Errorf("解析最低TLS版本失败: %v", err)
+	{
+		if t.MinVersion != "" {
+			minVersion, err := ParseTLSVersion(t.MinVersion)
+			if err != nil {
+				return nil, fmt.Errorf("解析最低TLS版本失败: %v", err)
+			}
+			config.MinVersion = minVersion
+		} else {
+			// 默认使用 TLS 1.2
+			config.MinVersion = tls.VersionTLS12
 		}
-		config.MinVersion = minVersion
-	} else {
-		// 默认使用 TLS 1.2
-		config.MinVersion = tls.VersionTLS12
-	}
-	if t.MaxVersion != "" {
-		maxVersion, err := ParseTLSVersion(t.MaxVersion)
-		if err != nil {
-			return nil, fmt.Errorf("解析最高TLS版本失败: %v", err)
+		if t.MaxVersion != "" {
+			maxVersion, err := ParseTLSVersion(t.MaxVersion)
+			if err != nil {
+				return nil, fmt.Errorf("解析最高TLS版本失败: %v", err)
+			}
+			config.MaxVersion = maxVersion
 		}
-		config.MaxVersion = maxVersion
 	}
 
 	// 解析密码套件
-	var cipherSuites []uint16
-	var err error
-	if len(t.CipherSuites) > 0 {
-		cipherSuites, err = ParseCipherSuites(t.CipherSuites)
-		if err != nil {
-			return nil, fmt.Errorf("解析密码套件失败: %v", err)
+	{
+		var cipherSuites []uint16
+		var err error
+		if len(t.CipherSuites) > 0 {
+			cipherSuites, err = ParseCipherSuites(t.CipherSuites)
+			if err != nil {
+				return nil, fmt.Errorf("解析密码套件失败: %v", err)
+			}
+			config.CipherSuites = cipherSuites
+		} else {
+			// 默认使用现代密码套件
+			cipherSuites, err = ParseCipherSuites(CompatibleCipherSuites)
+			if err != nil {
+				return nil, fmt.Errorf("解析默认密码套件失败: %v", err)
+			}
+			config.CipherSuites = cipherSuites
 		}
-		config.CipherSuites = cipherSuites
-	} else {
-		// 默认使用现代密码套件
-		cipherSuites, err = ParseCipherSuites(CompatibleCipherSuites)
-		if err != nil {
-			return nil, fmt.Errorf("解析默认密码套件失败: %v", err)
-		}
-		config.CipherSuites = cipherSuites
 	}
 
 	// 加载服务器证书
@@ -276,35 +281,50 @@ func (t *TLSConfig) ToTLSConfig() (*tls.Config, error) {
 	}
 
 	// 加载根 CA 证书
-	if t.RootCAFile != "" {
-		rootCAFile := tools.Fileabs(t.RootCAFile)
-		rootCACert, err := os.ReadFile(rootCAFile)
-		if err != nil {
-			return nil, fmt.Errorf("读取根证书文件失败: %v", err)
-		}
-		rootCertPool := x509.NewCertPool()
-		if !rootCertPool.AppendCertsFromPEM(rootCACert) {
-			return nil, fmt.Errorf("解析根证书失败")
-		}
-		config.RootCAs = rootCertPool
+	// noinspection all
+	if pool, err := t.loadCaKit(t.RootCAFile...); err != nil {
+		return nil, fmt.Errorf("服务端证书添加失败 %v", err)
+	} else {
+		config.RootCAs = pool
 	}
-	// 加载客户端 CA 证书
-	if t.ClientCAFile != "" {
-		clientCACert, err := os.ReadFile(tools.Fileabs(t.ClientCAFile))
+
+	// 加载客户端证书
+	if len(t.ClientCAFile) > 0 {
+		pool, err := t.loadCaKit(t.ClientCAFile...)
 		if err != nil {
-			return nil, fmt.Errorf("读取客户端CA文件失败: %v", err)
+			return nil, fmt.Errorf("客户端证书添加失败 %v", err)
 		}
-		clientCertPool := x509.NewCertPool()
-		if !clientCertPool.AppendCertsFromPEM(clientCACert) {
-			return nil, fmt.Errorf("解析客户端CA证书失败")
-		}
-		config.ClientCAs = clientCertPool
-		config.ClientAuth = t.ClientAuth
+		config.ClientCAs = pool
 	} else if t.ClientAuth != tls.NoClientCert {
 		// 如果设置了客户端认证但没有提供 CA 文件，返回错误
 		return nil, fmt.Errorf("客户端认证需要提供 client_ca_file")
 	}
 	return config, nil
+}
+
+// 载入 ca 证书工具方法
+// 支持pem和der两种格式的证书。
+func (t *TLSConfig) loadCaKit(cas ...string) (*x509.CertPool, error) {
+	if len(cas) < 1 {
+		return nil, nil
+	}
+	pool := x509.NewCertPool()
+	for _, ca := range cas {
+		caFile := tools.Fileabs(ca)
+		caCert, err := os.ReadFile(caFile)
+		if err != nil {
+			return nil, fmt.Errorf("读取证书[%s]内容失败：%v", ca, err)
+		}
+		if pool.AppendCertsFromPEM(caCert) {
+			continue
+		}
+		cert, err := x509.ParseCertificate(caCert)
+		if err != nil {
+			return nil, fmt.Errorf("解析证书[%s]失败：%v（既不是PEM也不是DER格式）", ca, err)
+		}
+		pool.AddCert(cert)
+	}
+	return pool, nil
 }
 
 // DefaultTLSConfig 返回一个安全的默认 TLS 配置
