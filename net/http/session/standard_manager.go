@@ -303,7 +303,7 @@ func (m *Manager) SetVal(value *Value) error {
 	sv := Session{
 		Id:         value.SessionID,
 		Name:       value.Field,
-		Values:     NewSessionValue(value.Value),
+		Values:     dataType.NewSessionValue(value.Value),
 		CreateTime: dataType.NewCustomTime(now),
 		Duration:   tools.Ternary(value.TTL > 0, value.TTL, ExpireTime),
 	}

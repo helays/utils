@@ -15,7 +15,7 @@ type Instance struct {
 
 func New(ctx context.Context) *Instance {
 	i := &Instance{}
-	i.storage = safe.NewMap[string, *session.Session](ctx, safe.StringHasher{}, safe.MapConfig{
+	i.storage = safe.NewMap[string, *session.Session](ctx, safe.StringHasher{}, safe.CacheConfig{
 		EnableCleanup: true,
 		ClearInterval: time.Minute / 2,
 		TTL:           time.Minute,

@@ -10,6 +10,14 @@ import (
 	"github.com/helays/utils/v2/tools"
 )
 
+var CurvePreferencesMap = map[string]tls.CurveID{
+	"CurveP256":      tls.CurveP256,      // 标准椭圆曲线 （传统加密）
+	"CurveP384":      tls.CurveP384,      // 标准椭圆曲线 （高安全性）
+	"CurveP521":      tls.CurveP521,      // 标准椭圆曲线 （高安全性）
+	"X25519":         tls.X25519,         // 密码学曲线 最快，比P256快3-4倍
+	"X25519MLKEM768": tls.X25519MLKEM768, // 后量子混合曲线
+}
+
 // CipherSuiteMapping 密码套件映射
 var CipherSuiteMapping = map[string]uint16{
 	// TLS 1.3 密码套件
@@ -42,38 +50,42 @@ var CipherSuiteMapping = map[string]uint16{
 // 预定义的密码套件组合
 var (
 	ModernCipherSuites = []string{
-		// TLS 1.3 密码套件
-		"TLS_AES_128_GCM_SHA256",
-		"TLS_AES_256_GCM_SHA384",
-		"TLS_CHACHA20_POLY1305_SHA256",
+		// TLS 1.2 密码套件（按性能排序，从最快到最慢）
 
-		// 安全的 TLS 1.2 密码套件
-		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
-		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",
+		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",  // 1. ECDSA证书 + ChaCha20-Poly1305（移动设备/无AES-NI时最快）
+		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",    // 2. RSA证书 + ChaCha20-Poly1305（兼容移动设备）
+		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256", // 3. ECDSA证书 + AES-128-GCM（服务器有AES-NI时最快）
+		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",   // 4. RSA证书 + AES-128-GCM（广泛兼容且快）
+		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384", // 5. ECDSA证书 + AES-256-GCM（更高安全性）
+		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",   // 6. RSA证书 + AES-256-GCM（高安全性兼容）
+
+		// TLS 1.3 密码套件（Go会自动处理，放最后）
+		"TLS_AES_128_GCM_SHA256",       // TLS 1.3最快
+		"TLS_CHACHA20_POLY1305_SHA256", // TLS 1.3移动友好
+		"TLS_AES_256_GCM_SHA384",       // TLS 1.3高安全
 	} // 现代密码套件 (TLS 1.3 + 安全的 TLS 1.2)
 
 	CompatibleCipherSuites = []string{
-		// TLS 1.3
+		// TLS 1.2 密码套件（按性能排序）
+		// 第1梯队：现代快速套件
+		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",  // 最快（ECDSA+ChaCha20）
+		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",    // 快（RSA+ChaCha20）
+		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256", // 快（ECDSA+AES-128）
+		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",   // 广泛兼容且快
+
+		// 第2梯队：高安全性套件
+		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384", // 高安全 ECDSA
+		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",   // 高安全 RSA
+
+		// 第3梯队：兼容性套件（性能较差，必要时使用）
+		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256", // CBC模式，有AES-NI时还行
+		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",    // CBC+ECDSA
+		"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",  // CBC+RSA
+
+		// TLS 1.3 密码套件（放最后，Go会忽略）
 		"TLS_AES_128_GCM_SHA256",
 		"TLS_AES_256_GCM_SHA384",
 		"TLS_CHACHA20_POLY1305_SHA256",
-
-		// TLS 1.2
-		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
-		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",
-
-		// 更多兼容性套件
-		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
-		"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-		"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
 	} // 兼容性密码套件 (包含更多旧版本支持)
 )
 
@@ -154,7 +166,7 @@ var (
 type TLSConfig struct {
 	Enable       bool          `json:"enable" yaml:"enable"`
 	Certificates []Certificate `json:"certificates" yaml:"certificates"` // 证书
-	RootCAFile   string        `json:"root_ca_file" yaml:"root_ca_file"` // 根CA文件
+	RootCAFile   []string      `json:"root_ca_file" yaml:"root_ca_file"` // 根CA文件
 	NextProtos   []string      `json:"next_protos" yaml:"next_protos"`   // 支持的协议
 	ServerName   string        `json:"server_name" yaml:"server_name"`   // 服务器名称
 
@@ -164,9 +176,10 @@ type TLSConfig struct {
 	// 3 如果提供客户端证书则验证
 	// 4 要求并验证客户端证书
 	ClientAuth                  tls.ClientAuthType       `json:"client_auth" yaml:"client_auth"`                                       // 客户端验证
-	ClientCAFile                string                   `json:"client_ca_file" yaml:"client_ca_file"`                                 // 客户端CA文件
+	ClientCAFile                []string                 `json:"client_ca_file" yaml:"client_ca_file"`                                 // 客户端CA文件
 	InsecureSkipVerify          bool                     `json:"insecure_skip_verify" yaml:"insecure_skip_verify"`                     // 跳过验证
 	CipherSuites                []string                 `json:"cipher_suites" yaml:"cipher_suites"`                                   // 密钥套件
+	CurvePreferences            []string                 `json:"curve_preferences" yaml:"curve_preferences"`                           // 曲线偏好
 	SessionTicketsDisabled      bool                     `json:"session_tickets_disabled" yaml:"session_tickets_disabled"`             // 禁用会话密钥
 	MinVersion                  string                   `json:"min_version" yaml:"min_version"`                                       // 最低TLS版本
 	MaxVersion                  string                   `json:"max_version" yaml:"max_version"`                                       // 最高TLS版本
@@ -192,43 +205,59 @@ func (t *TLSConfig) ToTLSConfig() (*tls.Config, error) {
 		InsecureSkipVerify:          t.InsecureSkipVerify,
 		DynamicRecordSizingDisabled: t.DynamicRecordSizingDisabled,
 		Renegotiation:               t.Renegotiation,
+		ClientAuth:                  t.ClientAuth,
+	}
+
+	// 自定义曲线
+	if len(t.CurvePreferences) > 0 {
+		for _, curveName := range t.CurvePreferences {
+			curveID, exists := CurvePreferencesMap[curveName]
+			if !exists {
+				return nil, fmt.Errorf("未知的曲线: %s", curveName)
+			}
+			config.CurvePreferences = append(config.CurvePreferences, curveID)
+		}
 	}
 
 	// 解析 TLS 版本
-	if t.MinVersion != "" {
-		minVersion, err := ParseTLSVersion(t.MinVersion)
-		if err != nil {
-			return nil, fmt.Errorf("解析最低TLS版本失败: %v", err)
+	{
+		if t.MinVersion != "" {
+			minVersion, err := ParseTLSVersion(t.MinVersion)
+			if err != nil {
+				return nil, fmt.Errorf("解析最低TLS版本失败: %v", err)
+			}
+			config.MinVersion = minVersion
+		} else {
+			// 默认使用 TLS 1.2
+			config.MinVersion = tls.VersionTLS12
 		}
-		config.MinVersion = minVersion
-	} else {
-		// 默认使用 TLS 1.2
-		config.MinVersion = tls.VersionTLS12
-	}
-	if t.MaxVersion != "" {
-		maxVersion, err := ParseTLSVersion(t.MaxVersion)
-		if err != nil {
-			return nil, fmt.Errorf("解析最高TLS版本失败: %v", err)
+		if t.MaxVersion != "" {
+			maxVersion, err := ParseTLSVersion(t.MaxVersion)
+			if err != nil {
+				return nil, fmt.Errorf("解析最高TLS版本失败: %v", err)
+			}
+			config.MaxVersion = maxVersion
 		}
-		config.MaxVersion = maxVersion
 	}
 
 	// 解析密码套件
-	var cipherSuites []uint16
-	var err error
-	if len(t.CipherSuites) > 0 {
-		cipherSuites, err = ParseCipherSuites(t.CipherSuites)
-		if err != nil {
-			return nil, fmt.Errorf("解析密码套件失败: %v", err)
+	{
+		var cipherSuites []uint16
+		var err error
+		if len(t.CipherSuites) > 0 {
+			cipherSuites, err = ParseCipherSuites(t.CipherSuites)
+			if err != nil {
+				return nil, fmt.Errorf("解析密码套件失败: %v", err)
+			}
+			config.CipherSuites = cipherSuites
+		} else {
+			// 默认使用现代密码套件
+			cipherSuites, err = ParseCipherSuites(CompatibleCipherSuites)
+			if err != nil {
+				return nil, fmt.Errorf("解析默认密码套件失败: %v", err)
+			}
+			config.CipherSuites = cipherSuites
 		}
-		config.CipherSuites = cipherSuites
-	} else {
-		// 默认使用现代密码套件
-		cipherSuites, err = ParseCipherSuites(ModernCipherSuites)
-		if err != nil {
-			return nil, fmt.Errorf("解析默认密码套件失败: %v", err)
-		}
-		config.CipherSuites = cipherSuites
 	}
 
 	// 加载服务器证书
@@ -252,35 +281,50 @@ func (t *TLSConfig) ToTLSConfig() (*tls.Config, error) {
 	}
 
 	// 加载根 CA 证书
-	if t.RootCAFile != "" {
-		rootCAFile := tools.Fileabs(t.RootCAFile)
-		rootCACert, err := os.ReadFile(rootCAFile)
-		if err != nil {
-			return nil, fmt.Errorf("读取根证书文件失败: %v", err)
-		}
-		rootCertPool := x509.NewCertPool()
-		if !rootCertPool.AppendCertsFromPEM(rootCACert) {
-			return nil, fmt.Errorf("解析根证书失败")
-		}
-		config.RootCAs = rootCertPool
+	// noinspection all
+	if pool, err := t.loadCaKit(t.RootCAFile...); err != nil {
+		return nil, fmt.Errorf("服务端证书添加失败 %v", err)
+	} else {
+		config.RootCAs = pool
 	}
-	// 加载客户端 CA 证书
-	if t.ClientCAFile != "" {
-		clientCACert, err := os.ReadFile(tools.Fileabs(t.ClientCAFile))
+
+	// 加载客户端证书
+	if len(t.ClientCAFile) > 0 {
+		pool, err := t.loadCaKit(t.ClientCAFile...)
 		if err != nil {
-			return nil, fmt.Errorf("读取客户端CA文件失败: %v", err)
+			return nil, fmt.Errorf("客户端证书添加失败 %v", err)
 		}
-		clientCertPool := x509.NewCertPool()
-		if !clientCertPool.AppendCertsFromPEM(clientCACert) {
-			return nil, fmt.Errorf("解析客户端CA证书失败")
-		}
-		config.ClientCAs = clientCertPool
-		config.ClientAuth = t.ClientAuth
+		config.ClientCAs = pool
 	} else if t.ClientAuth != tls.NoClientCert {
 		// 如果设置了客户端认证但没有提供 CA 文件，返回错误
 		return nil, fmt.Errorf("客户端认证需要提供 client_ca_file")
 	}
 	return config, nil
+}
+
+// 载入 ca 证书工具方法
+// 支持pem和der两种格式的证书。
+func (t *TLSConfig) loadCaKit(cas ...string) (*x509.CertPool, error) {
+	if len(cas) < 1 {
+		return nil, nil
+	}
+	pool := x509.NewCertPool()
+	for _, ca := range cas {
+		caFile := tools.Fileabs(ca)
+		caCert, err := os.ReadFile(caFile)
+		if err != nil {
+			return nil, fmt.Errorf("读取证书[%s]内容失败：%v", ca, err)
+		}
+		if pool.AppendCertsFromPEM(caCert) {
+			continue
+		}
+		cert, err := x509.ParseCertificate(caCert)
+		if err != nil {
+			return nil, fmt.Errorf("解析证书[%s]失败：%v（既不是PEM也不是DER格式）", ca, err)
+		}
+		pool.AddCert(cert)
+	}
+	return pool, nil
 }
 
 // DefaultTLSConfig 返回一个安全的默认 TLS 配置

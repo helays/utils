@@ -1,64 +1,11 @@
 package session
 
 import (
-	"bytes"
-	"database/sql/driver"
-	"encoding/gob"
 	"errors"
 	"time"
 
 	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/tools"
-	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 )
-
-func NewSessionValue(val any) SessionValue {
-	return SessionValue{Val: val}
-}
-
-// noinspection all
-type SessionValue struct {
-	Val any
-}
-
-// Value return blob value, implement driver.Valuer interface
-// noinspection all
-func (s SessionValue) Value() (driver.Value, error) {
-	var buf bytes.Buffer
-	err := gob.NewEncoder(&buf).Encode(s)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// noinspection all
-func (s *SessionValue) Scan(val any) error {
-	if val == nil {
-		*s = SessionValue{}
-		return nil
-	}
-
-	b, err := tools.Any2bytes(val)
-	if err != nil {
-		return err
-	}
-
-	err = gob.NewDecoder(bytes.NewReader(b)).Decode(s)
-
-	return err
-}
-
-// GormDBDataType gorm db data type
-// noinspection all
-func (SessionValue) GormDBDataType(db *gorm.DB, field *schema.Field) string {
-	return dataType.BlobDbDataType(db, field)
-}
-
-func (s SessionValue) GormDataType() string {
-	return "blob"
-}
 
 //  这个需要移除 上级Session 已经实现了二进制序列化
 //func (s SessionValue) GobEncode() ([]byte, error) {
@@ -81,22 +28,9 @@ const (
 )
 
 var (
-	ErrUnSupport  = errors.New("不支持的session载体")
-	ErrNotFound   = errors.New("session不存在")
-	ErrNotPointer = errors.New("session变量目标必须是指针")
-)
-
-type Engine string
-
-func (e Engine) String() string {
-	return string(e)
-}
-
-const (
-	EngineRedis  Engine = "redis"
-	EngineRdbms  Engine = "rdbms"
-	EngineMemory Engine = "memory"
-	EngineFile   Engine = "file"
+	ErrUnSupport  = errors.New("不支持的 session 载体")
+	ErrNotFound   = errors.New("session 不存在")
+	ErrNotPointer = errors.New("session 变量目标必须是指针")
 )
 
 // noinspection all

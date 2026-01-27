@@ -44,12 +44,12 @@ func NewIPMatcher(ctx context.Context, config *Config) (*IPMatcher, error) {
 	}
 	ipv4CacheTTL := tools.AutoTimeDuration(m.config.IPv4CacheTTL, time.Second, 30*time.Second)
 	ipv6CacheTTL := tools.AutoTimeDuration(m.config.IPv6CacheTTL, time.Second, 10*time.Second)
-	m.ipv4Cache = safe.NewMap[uint32, struct{}](ctx, safe.IntegerHasher[uint32]{}, safe.MapConfig{
+	m.ipv4Cache = safe.NewMap[uint32, struct{}](ctx, safe.IntegerHasher[uint32]{}, safe.CacheConfig{
 		EnableCleanup: true,
 		ClearInterval: ipv4CacheTTL / 2,
 		TTL:           ipv4CacheTTL,
 	})
-	m.ipv6Cache = safe.NewMap[[16]byte, struct{}](ctx, safe.Array16Hasher{}, safe.MapConfig{
+	m.ipv6Cache = safe.NewMap[[16]byte, struct{}](ctx, safe.Array16Hasher{}, safe.CacheConfig{
 		EnableCleanup: true,
 		ClearInterval: ipv6CacheTTL / 2,
 		TTL:           ipv6CacheTTL,

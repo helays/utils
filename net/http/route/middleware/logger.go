@@ -30,8 +30,13 @@ func (c *ResponseProcessor) metrics(w *writer) {
 
 }
 
-// StdLogger 日志标准输出器
+// ================= StdLogger 日志标准输出器 ================
 
+// StdLogger 日志标准输出器
+// http code >= 500 输出到Stderr,日志等级Fatal
+// http code >= 400 输出的Stderr，日志等级Error
+// http code >= 300 输出到Stdout，日志等级Warn
+// 否则输出到 Stdout，日志等级 Info
 type StdLogger struct{}
 
 func NewStdLogger() *StdLogger {
@@ -39,12 +44,43 @@ func NewStdLogger() *StdLogger {
 }
 
 func (s *StdLogger) Write(l *Logs) {
-	if l.Status >= http.StatusBadRequest {
+	if l.Status >= http.StatusInternalServerError {
+		ulogs.Fatalf("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
+	} else if l.Status >= http.StatusBadRequest {
 		ulogs.Errorf("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
+	} else if l.Status >= http.StatusMultipleChoices {
+		ulogs.Warnf("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
 	} else {
 		ulogs.Infof("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
 	}
 }
+
+// ================= DebugStdLogger 日志标准输出器 ================
+
+// DebugStdLogger 调试日志输出器（将正常日志输出到debug级别）
+// http code >= 500 输出到Stderr,日志等级Fatal
+// http code >= 400 输出的Stderr，日志等级Error
+// http code >= 300 输出到Stdout，日志等级Warn
+// 否则输出到 Stdout，日志等级 Debug（正常日志使用debug级别）
+type DebugStdLogger struct{}
+
+func NewDebugStdLogger() *DebugStdLogger {
+	return &DebugStdLogger{}
+}
+
+func (d *DebugStdLogger) Write(l *Logs) {
+	if l.Status >= http.StatusInternalServerError {
+		ulogs.Fatalf("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
+	} else if l.Status >= http.StatusBadRequest {
+		ulogs.Errorf("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
+	} else if l.Status >= http.StatusMultipleChoices {
+		ulogs.Warnf("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
+	} else {
+		ulogs.Debugf("[%s] %s %s %d %d %s [%s]", l.Ip, l.Method, l.Uri, l.Status, l.ContentSize, l.UserAgent, l.Elapsed)
+	}
+}
+
+// ================= ZapLogger 日志输出器 ================
 
 type ZapLogger struct {
 	logger *zaploger.Logger
@@ -66,9 +102,13 @@ func (z *ZapLogger) Write(l *Logs) {
 		zap.String("http_user_agent", l.UserAgent),
 		zap.Any("elapsed", l.Elapsed),
 	}
+
 	if l.Status >= http.StatusBadRequest {
 		z.logger.Error(context.Background(), l.Ip, msg...)
-		return
+	} else if l.Status >= http.StatusMultipleChoices {
+		z.logger.Warn(context.Background(), l.Ip, msg...)
+	} else {
+		z.logger.Debug(context.Background(), l.Ip, msg...)
 	}
-	z.logger.Debug(context.Background(), l.Ip, msg...)
+
 }
