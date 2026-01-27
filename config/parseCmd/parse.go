@@ -22,11 +22,9 @@ func Parseparams(f ...func()) {
 	flag.BoolVar(&config.Dbg, "debug", false, "Debug 模式")
 	flag.StringVar(&logLevel, "log-level", "info", "日志级别:\ndebug info warn error fatal")
 	flag.BoolVar(&vers, "version", false, "查看版本")
-	if len(f) > 0 {
-		for _, v := range f {
-			if v != nil {
-				v()
-			}
+	for _, v := range f {
+		if v != nil {
+			v()
 		}
 	}
 	flag.Parse()
