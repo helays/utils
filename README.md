@@ -213,5 +213,5 @@ msg, ok := rule.Validate(map[string]any{"age": 20})
 
 © helays, 2024~time.Now
 
-Released under the [MIT License](https://github.com/helays/utils/blob/master/LICENSE)
+本项目采用 MIT 许可证，详见 [MIT License](https://github.com/helays/utils/blob/master/LICENSE)。
 
