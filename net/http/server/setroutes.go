@@ -52,13 +52,16 @@ func (s *Server[T]) AddRouteFunc(method, path string, handle http.HandlerFunc, c
 }
 
 func (s *Server[T]) AddRoute(method, path string, handle http.Handler, cb ...Middleware) {
-	s.routes[path] = &routerRule[T]{
-		routeType:   RouteTypeHTTP,
-		method:      method,
-		path:        path,
-		handle:      handle,
-		middlewares: cb,
+	if !s.checkUniq(method, path) {
+		s.routes = append(s.routes, &routerRule[T]{
+			routeType:   RouteTypeHTTP,
+			method:      method,
+			path:        path,
+			handle:      handle,
+			middlewares: cb,
+		})
 	}
+
 }
 
 func (s *Server[T]) AddRouteFuncWithDescription(method, path string, handle http.HandlerFunc, description Description[T], cb ...Middleware) {
@@ -66,29 +69,44 @@ func (s *Server[T]) AddRouteFuncWithDescription(method, path string, handle http
 }
 
 func (s *Server[T]) AddRouteWithDescription(method, path string, handle http.Handler, description Description[T], cb ...Middleware) {
-	s.routes[path] = &routerRule[T]{
-		routeType:   RouteTypeHTTP,
-		method:      method,
-		path:        path,
-		handle:      handle,
-		middlewares: cb,
-		description: description,
+	if !s.checkUniq(method, path) {
+		s.routes = append(s.routes, &routerRule[T]{
+			routeType:   RouteTypeHTTP,
+			method:      method,
+			path:        path,
+			handle:      handle,
+			middlewares: cb,
+			description: description,
+		})
 	}
 }
 
 func (s *Server[T]) AddWebsocketRoute(path string, handle websocket.Handler) {
-	s.routes[path] = &routerRule[T]{
-		routeType: RouteTypeWebSocket,
-		path:      path,
-		wsHandle:  handle,
+	if !s.checkUniq("ws", path) {
+		s.routes = append(s.routes, &routerRule[T]{
+			routeType: RouteTypeWebSocket,
+			path:      path,
+			wsHandle:  handle,
+		})
 	}
 }
 
 func (s *Server[T]) AddWebsocketRouteWithDescription(path string, handle websocket.Handler, description Description[T]) {
-	s.routes[path] = &routerRule[T]{
-		routeType:   RouteTypeWebSocket,
-		path:        path,
-		wsHandle:    handle,
-		description: description,
+	if !s.checkUniq("ws", path) {
+		s.routes = append(s.routes, &routerRule[T]{
+			routeType:   RouteTypeWebSocket,
+			path:        path,
+			wsHandle:    handle,
+			description: description,
+		})
 	}
+}
+
+func (s *Server[T]) checkUniq(method, path string) bool {
+	uk := method + path
+	if _, ok := s.routesMap[uk]; ok {
+		return true
+	}
+	s.routesMap[uk] = struct{}{}
+	return false
 }
