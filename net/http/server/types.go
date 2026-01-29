@@ -56,9 +56,10 @@ type IPAccessConfig struct {
 
 type Server[T any] struct {
 	opt         *Config
-	serverNames map[string]struct{}       // 绑定的域名
-	routes      map[string]*routerRule[T] // 路由集合
-	route       *route.Route              // 系统默认路由
+	serverNames map[string]struct{} // 绑定的域名
+	routesMap   map[string]struct{} // 用于路由添加去重的集合
+	routes      []*routerRule[T]    // 路由集合
+	route       *route.Route        // 系统默认路由
 
 	enhancedWriter *middleware.ResponseProcessor  // 通用响应处理中间件
 	ipAccess       *middleware.IPAccessMiddleware // IP 访问控制中间件

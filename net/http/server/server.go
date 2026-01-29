@@ -53,7 +53,8 @@ func NewGeneric[T any](ctx context.Context, cfg *Config) (*Server[T], error) {
 	if err := s.tls(); err != nil {
 		return nil, err
 	}
-	s.routes = make(map[string]*routerRule[T])
+	s.routes = make([]*routerRule[T], 0)
+	s.routesMap = make(map[string]struct{})
 	s.route = route.New(&s.opt.Route) // 系统 通用路由
 
 	mime.InitMimeTypes()
@@ -233,6 +234,6 @@ func (s *Server[T]) AddLogHandler(le ...middleware.Logger) {
 }
 
 func (s *Server[T]) TLS() *tls.Config {
-	
+
 	return s.server.TLSConfig
 }
