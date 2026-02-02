@@ -12,6 +12,10 @@ import (
 
 type String string
 
+func NewString(s string) String {
+	return String(s)
+}
+
 // noinspection all
 func (s *String) Scan(val interface{}) (err error) {
 	return HelperStringScan(val, s)
