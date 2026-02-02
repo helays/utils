@@ -167,7 +167,7 @@ func (c CustomTime) ToTime() time.Time {
 
 // noinspection all
 func (c CustomTime) IsZero() bool {
-	return c.IsZero()
+	return c.Time.IsZero()
 }
 
 // AdjustTimezoneIfNeeded 调整时区
