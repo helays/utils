@@ -111,6 +111,10 @@ func (ro *Route) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ro *Route) singleFile(w http.ResponseWriter, r *http.Request, path string) {
+	// 检查最后一个字符 是不是 /
+	if len(path) > 0 && path[len(path)-1] == '/' {
+		path = path + ro.opt.Index
+	}
 	hfs, enableEmbed := ro.loadFile(path)
 	// 获取文件
 	f, d, err := HttpFS(hfs, path)
@@ -167,10 +171,7 @@ func (ro *Route) loadFile(path string) (http.FileSystem, bool) {
 		hfs         http.FileSystem
 		enableEmbed = false
 	)
-	// 检查最后一个字符 是不是 /
-	if len(path) > 0 && path[len(path)-1] == '/' {
-		path = path + ro.opt.Index
-	}
+
 	for _, cache := range ro.embed {
 		if strings.HasPrefix(path, cache.Search) {
 			if cache.Prefix != "" {
@@ -182,7 +183,7 @@ func (ro *Route) loadFile(path string) (http.FileSystem, bool) {
 		}
 	}
 
-	// 判断hfs是否是空
+	// 判断 hfs 是否是空
 	if hfs == nil {
 		hfs = http.Dir(ro.opt.Root)
 	}
