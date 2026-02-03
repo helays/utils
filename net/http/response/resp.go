@@ -28,6 +28,10 @@ func ReqError(r *http.Request, i ...any) {
 	log.Println(append(msg, i...)...)
 }
 
+func RespHtml(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+}
+
 func RespJson(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 }
