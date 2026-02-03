@@ -44,7 +44,7 @@ func builtinFuncMap() template.FuncMap {
 			return tools.Any2string(v)
 		},
 		"toInt": func(v any) int64 {
-			return tools.MustAny2int[int64](v)
+			return tools.MustAny2Int[int64](v)
 		},
 		"toFloat": func(v any) float64 {
 			n, _ := tools.Any2float64(v)

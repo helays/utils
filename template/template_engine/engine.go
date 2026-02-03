@@ -124,7 +124,7 @@ func (e *Engine) loadLayout() error {
 			return err
 		}
 	}
-	// 先打开layout目录
+	// 先打开 layout 目录
 	subFs, err = fs.Sub(subFs, e.layoutDir)
 	if err != nil {
 		return err
