@@ -1,8 +1,8 @@
 package rdbms
 
 import (
-	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/db"
+	"helay.net/go/utils/v3/dataType"
+	"helay.net/go/utils/v3/db"
 )
 
 // CacheFast 采用双hash模式，缓存数据结构

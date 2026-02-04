@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/db/elastic/elasticModel"
+	"helay.net/go/utils/v3/db/elastic/elasticModel"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/excelTools"
-	"github.com/helays/utils/v2/net/http/httpkit"
-	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/excelTools"
+	"helay.net/go/utils/v3/net/http/httpkit"
+	"helay.net/go/utils/v3/tools"
 )
 
 // ElasticsearchExport 用于导出Elasticsearch数据的结构体

@@ -3,7 +3,7 @@ package hdfs
 import (
 	"fmt"
 
-	"github.com/helays/utils/v2/config"
+	"helay.net/go/utils/v3/config"
 )
 
 type Config struct {

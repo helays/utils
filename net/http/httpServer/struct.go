@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/helays/utils/v2/logger/zaploger"
-	"github.com/helays/utils/v2/net/http/route/middleware"
-	"github.com/helays/utils/v2/net/ipmatch"
-	"github.com/helays/utils/v2/security/cors"
-	"github.com/helays/utils/v2/security/cors/cors_std"
 	"golang.org/x/net/websocket"
+	"helay.net/go/utils/v3/logger/zaploger"
+	"helay.net/go/utils/v3/net/http/route/middleware"
+	"helay.net/go/utils/v3/net/ipmatch"
+	"helay.net/go/utils/v3/security/cors"
+	"helay.net/go/utils/v3/security/cors/cors_std"
 )
 
 type HttpServer struct {

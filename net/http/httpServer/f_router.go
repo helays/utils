@@ -5,9 +5,9 @@ import (
 	"net/http/pprof"
 	"time"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/httpServer/router"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/httpServer/router"
 )
 
 // 设置路由

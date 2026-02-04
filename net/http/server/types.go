@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/helays/utils/v2/logger/zaploger"
-	"github.com/helays/utils/v2/net/http/route"
-	"github.com/helays/utils/v2/net/http/route/middleware"
-	"github.com/helays/utils/v2/net/ipmatch"
-	"github.com/helays/utils/v2/net/tlsconfig"
-	"github.com/helays/utils/v2/security/cors"
 	quicHttp3 "github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/websocket"
+	"helay.net/go/utils/v3/logger/zaploger"
+	"helay.net/go/utils/v3/net/http/route"
+	"helay.net/go/utils/v3/net/http/route/middleware"
+	"helay.net/go/utils/v3/net/ipmatch"
+	"helay.net/go/utils/v3/net/tlsconfig"
+	"helay.net/go/utils/v3/security/cors"
 )
 
 const Version = "vs/2.1"

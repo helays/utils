@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/tools"
 	"golang.org/x/exp/constraints"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/tools"
 )
 
 func BlobDbDataType(db *gorm.DB, _ *schema.Field) string {

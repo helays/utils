@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/close/httpClose"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/mime"
-	"github.com/helays/utils/v2/net/http/route"
-	"github.com/helays/utils/v2/net/http/route/middleware"
-	"github.com/helays/utils/v2/net/ipmatch"
-	"github.com/helays/utils/v2/tools"
 	"github.com/quic-go/quic-go"
 	quicHttp3 "github.com/quic-go/quic-go/http3"
+	"helay.net/go/utils/v3/close/httpClose"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/mime"
+	"helay.net/go/utils/v3/net/http/route"
+	"helay.net/go/utils/v3/net/http/route/middleware"
+	"helay.net/go/utils/v3/net/ipmatch"
+	"helay.net/go/utils/v3/tools"
 )
 
 // noinspection all

@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 // QueryGetSlice 获取query参数，并分割

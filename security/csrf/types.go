@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/helays/utils/v2/crypto/xxhashkit"
-	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/tools"
 	"github.com/vmihailenco/msgpack/v5"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/crypto/xxhashkit"
+	"helay.net/go/utils/v3/dataType"
+	"helay.net/go/utils/v3/tools"
 )
 
 type Strategy string

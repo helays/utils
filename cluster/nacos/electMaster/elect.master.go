@@ -2,10 +2,10 @@ package electMaster
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/logger/ulogs"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"helay.net/go/utils/v3/logger/ulogs"
 	"sort"
 	"time"
 )

@@ -4,8 +4,8 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/helays/utils/v2/net/http/request"
-	"github.com/helays/utils/v2/net/ipmatch"
+	"helay.net/go/utils/v3/net/http/request"
+	"helay.net/go/utils/v3/net/ipmatch"
 )
 
 type IPAccessMiddleware struct {

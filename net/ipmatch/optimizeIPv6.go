@@ -5,7 +5,7 @@ import (
 	"net/netip"
 	"sort"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 // optimizeIPv6Storage 优化IPv6存储

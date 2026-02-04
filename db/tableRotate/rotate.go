@@ -8,15 +8,15 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/db/userDb"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/tools"
-	"github.com/helays/utils/v2/tools/retention"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/db/userDb"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/tools"
+	"helay.net/go/utils/v3/tools/retention"
 )
 
 const dateFormat = "20060102150405"

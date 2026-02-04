@@ -2,7 +2,7 @@ package pubsub
 
 import (
 	"context"
-	"github.com/helays/utils/v2/logger/zaploger"
+	"helay.net/go/utils/v3/logger/zaploger"
 	"path"
 	"strings"
 )

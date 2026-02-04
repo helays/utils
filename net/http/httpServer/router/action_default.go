@@ -11,15 +11,15 @@ import (
 	"time"
 
 	"github.com/dchest/captcha"
-	"github.com/helays/utils/v2"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/mime"
-	"github.com/helays/utils/v2/net/http/response"
-	"github.com/helays/utils/v2/net/http/route"
-	"github.com/helays/utils/v2/net/http/session"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/mime"
+	"helay.net/go/utils/v3/net/http/response"
+	"helay.net/go/utils/v3/net/http/route"
+	"helay.net/go/utils/v3/net/http/session"
+	"helay.net/go/utils/v3/tools"
 )
 
 //

@@ -1,4 +1,4 @@
-module github.com/helays/utils/v2
+module helay.net/go/utils/v3
 
 go 1.24.0
 

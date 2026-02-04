@@ -4,11 +4,11 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/net/checkIp"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/dataType"
+	"helay.net/go/utils/v3/net/checkIp"
 )
 
 type Config struct {

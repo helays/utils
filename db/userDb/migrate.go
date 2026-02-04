@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/db/tablename"
-	"github.com/helays/utils/v2/logger/ulogs"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/db/tablename"
+	"helay.net/go/utils/v3/logger/ulogs"
 )
 
 // AutoMigrate 根据结构体自动创建表

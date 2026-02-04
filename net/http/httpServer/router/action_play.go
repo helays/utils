@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/net/http/httpkit"
-	"github.com/helays/utils/v2/net/http/route"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/net/http/httpkit"
+	"helay.net/go/utils/v3/net/http/route"
+	"helay.net/go/utils/v3/tools"
 )
 
 //

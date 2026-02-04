@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/db/dbErrors/errTools"
-	"github.com/helays/utils/v2/logger/ulogs"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/db/dbErrors/errTools"
+	"helay.net/go/utils/v3/logger/ulogs"
 )
 
 var nullSqlConn map[string]*gorm.DB

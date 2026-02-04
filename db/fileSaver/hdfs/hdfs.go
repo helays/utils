@@ -3,8 +3,8 @@ package hdfs
 import (
 	"fmt"
 	"github.com/colinmarc/hdfs/v2"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/config"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/config"
 	"io"
 	"os"
 	"path"

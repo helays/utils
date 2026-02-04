@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/response"
-	"github.com/helays/utils/v2/net/http/route"
 	"github.com/pkg/errors"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/response"
+	"helay.net/go/utils/v3/net/http/route"
 )
 
 //

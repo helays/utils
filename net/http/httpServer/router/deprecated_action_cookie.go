@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
-// Deprecated: 请使用 github.com/helays/utils/v2/net/http/cookiekit.SetCookie
+// Deprecated: 请使用 helay.net/go/utils/v3/net/http/cookiekit.SetCookie
 func (ro *Router) SetCookie(w http.ResponseWriter, k, value, path string) {
 	path = tools.Ternary(path == "", "/", path)
 	cookie := http.Cookie{
@@ -27,7 +27,7 @@ func (ro *Router) SetCookie(w http.ResponseWriter, k, value, path string) {
 	http.SetCookie(w, &cookie)
 }
 
-// Deprecated: 请使用 github.com/helays/utils/v2/net/http/cookiekit.DelCookie
+// Deprecated: 请使用 helay.net/go/utils/v3/net/http/cookiekit.DelCookie
 func (ro *Router) DelCookie(w http.ResponseWriter, k, path string) {
 
 	cookie := http.Cookie{

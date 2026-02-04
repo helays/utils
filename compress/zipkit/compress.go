@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/close/vclose"
+	"helay.net/go/utils/v3/close/osClose"
+	"helay.net/go/utils/v3/close/vclose"
 )
 
 // CompressFileToZip 将多个文件压缩为ZIP文件

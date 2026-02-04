@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/helays/utils/v2/close/httpClose"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/net/http/server"
 	"golang.org/x/net/websocket"
+	"helay.net/go/utils/v3/close/httpClose"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/net/http/server"
 )
 
 // MiddlewareFunc 修改为支持 http.Handler

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm/clause"
+	"helay.net/go/utils/v3/tools"
 )
 
 // 辅助函数

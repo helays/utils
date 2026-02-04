@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 func (c *Config) Apply(w http.ResponseWriter, origin string) bool {

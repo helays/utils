@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/helays/utils/v2/close/vclose"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	"helay.net/go/utils/v3/close/vclose"
 )
 
 type Saver struct {

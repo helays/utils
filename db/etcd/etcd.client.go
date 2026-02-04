@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	tlsconfig "github.com/helays/utils/v2/crypto/tls.config"
-	"github.com/helays/utils/v2/tools"
 	"go.etcd.io/etcd/client/v3"
+	tlsconfig "helay.net/go/utils/v3/crypto/tls.config"
+	"helay.net/go/utils/v3/tools"
 )
 
 type Config struct {

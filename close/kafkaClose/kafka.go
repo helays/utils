@@ -2,7 +2,7 @@ package kafkaClose
 
 import (
 	"github.com/IBM/sarama"
-	"github.com/helays/utils/v2/logger/ulogs"
+	"helay.net/go/utils/v3/logger/ulogs"
 )
 
 // CloseKafkaPartition 关闭分区

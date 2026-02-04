@@ -3,9 +3,9 @@ package dbresponse
 import (
 	"net/http"
 
-	"github.com/helays/utils/v2/db/userDb"
-	"github.com/helays/utils/v2/net/http/response"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/db/userDb"
+	"helay.net/go/utils/v3/net/http/response"
 )
 
 // ModelDelete 执行模型删除操作。

@@ -13,12 +13,12 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/dataType/customWriter"
-	"github.com/helays/utils/v2/net/http/httpkit"
-	mime2 "github.com/helays/utils/v2/net/http/mime"
-	"github.com/helays/utils/v2/net/http/request"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/close/osClose"
+	"helay.net/go/utils/v3/dataType/customWriter"
+	"helay.net/go/utils/v3/net/http/httpkit"
+	mime2 "helay.net/go/utils/v3/net/http/mime"
+	"helay.net/go/utils/v3/net/http/request"
+	"helay.net/go/utils/v3/tools"
 )
 
 func ReqError(r *http.Request, i ...any) {

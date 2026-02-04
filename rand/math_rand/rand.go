@@ -3,7 +3,7 @@ package math_rand
 import (
 	"math/rand/v2"
 
-	"github.com/helays/utils/v2/config"
+	"helay.net/go/utils/v3/config"
 )
 
 //

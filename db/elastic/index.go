@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"github.com/helays/utils/v2/close/esClose"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/close/esClose"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/tools"
 )
 
 type Index struct {

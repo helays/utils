@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/tools"
 )
 
 type tableSplit struct {

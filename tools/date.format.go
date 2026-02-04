@@ -3,7 +3,7 @@ package tools
 import (
 	"strings"
 
-	"github.com/helays/utils/v2/config"
+	"helay.net/go/utils/v3/config"
 )
 
 // 判断是否是Go语言的时间格式模板

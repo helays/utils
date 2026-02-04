@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/helays/utils/v2/net/http/request"
-	"github.com/helays/utils/v2/tools/decode/json_decode_tee"
+	"helay.net/go/utils/v3/net/http/request"
+	"helay.net/go/utils/v3/tools/decode/json_decode_tee"
 )
 
 func JsonDecodeResp[T any](w http.ResponseWriter, r *http.Request) (T, bool) {

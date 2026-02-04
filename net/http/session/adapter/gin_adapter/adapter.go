@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/helays/utils/v2/net/http/session"
+	"helay.net/go/utils/v3/net/http/session"
 )
 
 type GinManager struct {

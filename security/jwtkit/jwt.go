@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/helays/utils/v2/tools"
-	"github.com/helays/utils/v2/tools/sonyflakekit"
+	"helay.net/go/utils/v3/tools"
+	"helay.net/go/utils/v3/tools/sonyflakekit"
 )
 
 type JWTManager struct {

@@ -3,10 +3,10 @@ package gormkit
 import (
 	"fmt"
 
-	"github.com/helays/utils/v2/db/exportkit"
-	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/db/exportkit"
+	"helay.net/go/utils/v3/tools"
 )
 
 func (e *Export) batch(et exportkit.ExportType, columns []string) error {

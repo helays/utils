@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/net/http/httpkit"
-	"github.com/helays/utils/v2/net/http/mime"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/net/http/httpkit"
+	"helay.net/go/utils/v3/net/http/mime"
+	"helay.net/go/utils/v3/tools"
 )
 
 // HttpFS 获取文件

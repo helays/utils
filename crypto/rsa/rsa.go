@@ -9,8 +9,8 @@ import (
 	"encoding/pem"
 	"errors"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/crypto/sha256"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/crypto/sha256"
 )
 
 // RsaVerify 签名验证，用公钥进行验证

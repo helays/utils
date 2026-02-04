@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/httpkit"
-	mime2 "github.com/helays/utils/v2/net/http/mime"
+	"helay.net/go/utils/v3/close/osClose"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/httpkit"
+	mime2 "helay.net/go/utils/v3/net/http/mime"
 )
 
 // Play 公共函数文件

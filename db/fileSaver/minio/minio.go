@@ -3,9 +3,9 @@ package minio
 import (
 	"context"
 	"fmt"
-	"github.com/helays/utils/v2/config"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"helay.net/go/utils/v3/config"
 	"io"
 	"path"
 	"strings"

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/net/http/session"
-	"github.com/helays/utils/v2/safe"
+	"helay.net/go/utils/v3/net/http/session"
+	"helay.net/go/utils/v3/safe"
 )
 
 type Instance struct {

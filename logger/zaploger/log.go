@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/tools"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm/logger"
+	"helay.net/go/utils/v3/tools"
 )
 
 // LogConfig defines the configuration for each log level.

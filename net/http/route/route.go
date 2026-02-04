@@ -1,7 +1,7 @@
 package route
 
 import (
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 type Route struct {

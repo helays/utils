@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"helay.net/go/utils/v3/dataType"
+	"helay.net/go/utils/v3/tools"
 )
 
 //

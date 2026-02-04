@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/net/http/cookiekit"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/dataType"
+	"helay.net/go/utils/v3/net/http/cookiekit"
+	"helay.net/go/utils/v3/tools"
 )
 
 // c0449773432e4a478d157a8a923199ac

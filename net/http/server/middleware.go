@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/helays/utils/v2/close/httpClose"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/security/cors/cors_std"
-	"github.com/helays/utils/v2/tools"
 	"golang.org/x/net/websocket"
+	"helay.net/go/utils/v3/close/httpClose"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/security/cors/cors_std"
+	"helay.net/go/utils/v3/tools"
 )
 
 // Chain 中间件链（兼容 http.Handler）

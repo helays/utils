@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/helays/utils/v2/db/userDb"
-	"github.com/helays/utils/v2/net/http/session"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"helay.net/go/utils/v3/db/userDb"
+	"helay.net/go/utils/v3/net/http/session"
 )
 
 type Instance struct {

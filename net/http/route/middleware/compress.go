@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/logger/zaploger"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/logger/zaploger"
 )
 
 type CompressionConfig struct {

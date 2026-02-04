@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
+	"helay.net/go/utils/v3/close/osClose"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/logger/ulogs"
 )
 
 type ReadRowCallback func(scanner *bufio.Scanner) error

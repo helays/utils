@@ -6,12 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/helays/utils/v2/close/osClose"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/tools"
-	"github.com/helays/utils/v2/tools/fileinclude"
 	"gopkg.in/yaml.v3"
+	"helay.net/go/utils/v3/close/osClose"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/tools"
+	"helay.net/go/utils/v3/tools/fileinclude"
 )
 
 func LoadYaml(i any) {

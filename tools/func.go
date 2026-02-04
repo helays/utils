@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/config"
 	"golang.org/x/exp/constraints"
+	"helay.net/go/utils/v3/config"
 )
 
 // PadRight 在字符串后面补齐固定字符，并达到n个长度

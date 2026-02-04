@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helays/utils/v2/close/netClose"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/worker"
+	"helay.net/go/utils/v3/close/netClose"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/worker"
 )
 
 var (

@@ -2,10 +2,10 @@ package electMaster
 
 import (
 	"context"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/logger/ulogs"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/logger/ulogs"
 	"time"
 )
 

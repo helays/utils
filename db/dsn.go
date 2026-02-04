@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/tools"
 )
 
 func (this *Dbbase) Dsn() string {

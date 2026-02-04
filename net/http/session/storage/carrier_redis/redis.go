@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/gob"
 
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/session"
 	"github.com/redis/go-redis/v9"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/session"
 )
 
 type Instance struct {
