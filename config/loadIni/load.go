@@ -1,10 +1,10 @@
 package loadIni
 
 import (
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/tools"
 	"gopkg.in/ini.v1"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/tools"
 )
 
 func LoadIni(i any) {

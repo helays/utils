@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/db/exportkit"
-	"github.com/helays/utils/v2/excelTools"
-	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/db/exportkit"
+	"helay.net/go/utils/v3/excelTools"
+	"helay.net/go/utils/v3/tools"
 )
 
 type Export struct {

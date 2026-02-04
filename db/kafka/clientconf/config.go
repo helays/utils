@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	cfg_proxy "github.com/helays/utils/v2/config/cfg-proxy"
-	"github.com/helays/utils/v2/scram"
-	"github.com/helays/utils/v2/tools"
 	"github.com/rcrowley/go-metrics"
+	cfg_proxy "helay.net/go/utils/v3/config/cfg-proxy"
+	"helay.net/go/utils/v3/scram"
+	"helay.net/go/utils/v3/tools"
 )
 
 // noinspection all

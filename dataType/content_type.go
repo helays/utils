@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/helays/utils/v2/config"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/config"
 )
 
 // ContentType 表示检测到的内容类型

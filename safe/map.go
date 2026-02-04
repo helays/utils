@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 // 泛型 并发安全map,利用分片map提升并发性能。

@@ -3,14 +3,14 @@ package sftp
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/net/checkIp"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/dataType"
+	"helay.net/go/utils/v3/net/checkIp"
 	"io"
 	"path"
 )

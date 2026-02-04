@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/helays/utils/v2/dataType"
+	"helay.net/go/utils/v3/dataType"
 )
 
 type JSONHandler func(ctx context.Context, obj map[string]interface{}) error

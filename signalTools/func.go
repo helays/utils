@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/helays/utils/v2/logger/ulogs"
+	"helay.net/go/utils/v3/logger/ulogs"
 )
 
 // SignalHandle 系统信号

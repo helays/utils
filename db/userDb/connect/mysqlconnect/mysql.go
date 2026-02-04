@@ -1,9 +1,9 @@
 package mysqlconnect
 
 import (
-	"github.com/helays/utils/v2/db"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/db"
 )
 
 func InitDB(c *db.Dbbase) (*gorm.DB, error) {

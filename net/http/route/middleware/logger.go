@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/logger/zaploger"
-	"github.com/helays/utils/v2/net/http/request"
 	"go.uber.org/zap"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/logger/zaploger"
+	"helay.net/go/utils/v3/net/http/request"
 )
 
 func (c *ResponseProcessor) metrics(w *writer) {

@@ -13,7 +13,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 const maxParamCount = ^uint8(0)

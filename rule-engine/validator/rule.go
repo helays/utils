@@ -2,8 +2,8 @@ package validator
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/rule-engine/validator/operators"
-	"github.com/helays/utils/v2/rule-engine/validator/types"
+	"helay.net/go/utils/v3/rule-engine/validator/operators"
+	"helay.net/go/utils/v3/rule-engine/validator/types"
 	"strings"
 	"sync"
 )

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/helays/utils/v2/net/http/request"
+	"helay.net/go/utils/v3/net/http/request"
 )
 
 // 默认验证中间件

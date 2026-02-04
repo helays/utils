@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	"github.com/helays/utils/v2/scram"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/scram"
+	"helay.net/go/utils/v3/tools"
 )
 
 // 设置 kafka

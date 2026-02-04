@@ -5,9 +5,9 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	"github.com/helays/utils/v2/config"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/config"
 )
 
 type String string

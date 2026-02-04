@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/helays/utils/v2/config"
+	"helay.net/go/utils/v3/config"
 )
 
 var once sync.Once

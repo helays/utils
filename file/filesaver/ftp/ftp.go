@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/helays/utils/v2/close/ftpClose"
-	"github.com/helays/utils/v2/dataType/customWriter"
 	"github.com/jlaffaye/ftp"
+	"helay.net/go/utils/v3/close/ftpClose"
+	"helay.net/go/utils/v3/dataType/customWriter"
 )
 
 type Saver struct {

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/tools"
 	"github.com/redis/go-redis/v9"
 	"github.com/redis/go-redis/v9/maintnotifications"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/tools"
 )
 
 // 配置说明

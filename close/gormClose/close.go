@@ -1,8 +1,8 @@
 package gormClose
 
 import (
-	"github.com/helays/utils/v2/close/vclose"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/close/vclose"
 )
 
 func Close(db *gorm.DB) {

@@ -1,11 +1,11 @@
 package loadAuto
 
 import (
-	"github.com/helays/utils/v2/config"
-	loadIni2 "github.com/helays/utils/v2/config/loadIni"
-	loadJson2 "github.com/helays/utils/v2/config/loadJson"
-	"github.com/helays/utils/v2/config/loadYaml"
-	"github.com/helays/utils/v2/logger/ulogs"
+	"helay.net/go/utils/v3/config"
+	loadIni2 "helay.net/go/utils/v3/config/loadIni"
+	loadJson2 "helay.net/go/utils/v3/config/loadJson"
+	"helay.net/go/utils/v3/config/loadYaml"
+	"helay.net/go/utils/v3/logger/ulogs"
 	"path/filepath"
 )
 

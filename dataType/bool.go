@@ -4,10 +4,10 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/tools"
 )
 
 // Bool 注意当使用这个类型时，在定义模型时，默认值需要带上括号。不然pg数据库会报错。

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 // PerKeyTTLMap 是支持每个键单独 TTL 的泛型安全 Map

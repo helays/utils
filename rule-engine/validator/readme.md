@@ -41,8 +41,8 @@
 
 ```go
 import (
-	"github.com/helays/utils/v2/rule-engine/validator"
-	"github.com/helays/utils/v2/rule-engine/validator/types"
+	"helay.net/go/utils/v3/rule-engine/validator"
+	"helay.net/go/utils/v3/rule-engine/validator/types"
 )
 
 func main() {

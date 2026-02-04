@@ -1,9 +1,9 @@
 package sqliteconnect
 
 import (
-	"github.com/helays/utils/v2/db"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/db"
 )
 
 func InitDB(c *db.Dbbase) (*gorm.DB, error) {

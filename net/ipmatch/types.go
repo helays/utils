@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/helays/utils/v2/safe"
+	"helay.net/go/utils/v3/safe"
 )
 
 // IPVersion IP版本类型

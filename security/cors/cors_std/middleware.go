@@ -3,7 +3,7 @@ package cors_std
 import (
 	"net/http"
 
-	"github.com/helays/utils/v2/security/cors"
+	"helay.net/go/utils/v3/security/cors"
 )
 
 func Cors(opt cors.Config) func(next http.Handler) http.Handler {

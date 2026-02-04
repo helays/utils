@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/helays/utils/v2/tools"
 	"golang.org/x/net/proxy"
+	"helay.net/go/utils/v3/tools"
 )
 
 const (

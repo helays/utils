@@ -3,11 +3,11 @@ package httpExportExcel
 import (
 	"net/http"
 
-	"github.com/helays/utils/v2/db/exportkit"
-	"github.com/helays/utils/v2/db/exportkit/gormkit"
-	"github.com/helays/utils/v2/net/http/httpkit"
-	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/db/exportkit"
+	"helay.net/go/utils/v3/db/exportkit/gormkit"
+	"helay.net/go/utils/v3/net/http/httpkit"
+	"helay.net/go/utils/v3/tools"
 )
 
 //

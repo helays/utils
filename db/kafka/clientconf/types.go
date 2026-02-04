@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	"github.com/helays/utils/v2/dataType"
-	"github.com/helays/utils/v2/net/tlsconfig"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/dataType"
+	"helay.net/go/utils/v3/net/tlsconfig"
 )
 
 type Retry struct {

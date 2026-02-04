@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/helays/utils/v2/security/csrf"
+	"helay.net/go/utils/v3/security/csrf"
 )
 
 // getClientToken 获取客户端的token

@@ -2,7 +2,7 @@ package xxhashkit
 
 import (
 	"github.com/cespare/xxhash/v2"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 func XXHashString(s string) string {

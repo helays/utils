@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/tools"
-	"github.com/helays/utils/v2/tools/backoff"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/tools"
+	"helay.net/go/utils/v3/tools/backoff"
 )
 
 type ConsumerConfig struct {

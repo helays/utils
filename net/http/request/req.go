@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 // GetHeaderValueFormatInt 获取多个header字段，并转为int

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/helays/utils/v2/net/http/response"
-	"github.com/helays/utils/v2/net/http/session"
-	"github.com/helays/utils/v2/safe"
-	"github.com/helays/utils/v2/security/csrf"
+	"helay.net/go/utils/v3/net/http/response"
+	"helay.net/go/utils/v3/net/http/session"
+	"helay.net/go/utils/v3/safe"
+	"helay.net/go/utils/v3/security/csrf"
 )
 
 type Std struct {

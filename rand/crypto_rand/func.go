@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/helays/utils/v2/crypto/md5"
+	"helay.net/go/utils/v3/crypto/md5"
 )
 
 //

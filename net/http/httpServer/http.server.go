@@ -12,16 +12,16 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	"github.com/helays/utils/v2/close/httpClose"
-	"github.com/helays/utils/v2/crypto/xxhashkit"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/mime"
-	"github.com/helays/utils/v2/net/http/route/middleware"
-	"github.com/helays/utils/v2/net/ipkit"
-	"github.com/helays/utils/v2/net/ipmatch"
-	"github.com/helays/utils/v2/safe"
-	"github.com/helays/utils/v2/tools"
 	"golang.org/x/net/websocket"
+	"helay.net/go/utils/v3/close/httpClose"
+	"helay.net/go/utils/v3/crypto/xxhashkit"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/mime"
+	"helay.net/go/utils/v3/net/http/route/middleware"
+	"helay.net/go/utils/v3/net/ipkit"
+	"helay.net/go/utils/v3/net/ipmatch"
+	"helay.net/go/utils/v3/safe"
+	"helay.net/go/utils/v3/tools"
 )
 
 // HttpServerStart 公功 http server 启动函数

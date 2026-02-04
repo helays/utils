@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/goccy/go-json"
-	"github.com/helays/utils/v2/dataType/customWriter"
+	"helay.net/go/utils/v3/dataType/customWriter"
 )
 
 func (i *Import) processJSON(handler JSONHandler) (totalSize int64, err error) {

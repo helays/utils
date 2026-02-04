@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/helays/utils/v2/close/vclose"
 	"golang.org/x/net/proxy"
+	"helay.net/go/utils/v3/close/vclose"
 )
 
 var once sync.Once

@@ -9,11 +9,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/tools"
 	"golang.org/x/exp/constraints"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/tools"
 )
 
 type IntString[T constraints.Integer] struct {

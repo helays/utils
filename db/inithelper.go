@@ -2,12 +2,12 @@ package db
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/close/gormClose"
-	"github.com/helays/utils/v2/logger/zaploger"
-	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/close/gormClose"
+	"helay.net/go/utils/v3/logger/zaploger"
+	"helay.net/go/utils/v3/tools"
 	"strings"
 	"time"
 )

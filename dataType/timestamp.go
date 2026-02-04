@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/rule-engine/formatter"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/rule-engine/formatter"
 )
 
 type Timestamp struct {

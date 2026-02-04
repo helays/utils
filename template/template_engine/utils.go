@@ -2,7 +2,7 @@ package template_engine
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 	"html"
 	"net/url"
 	"time"

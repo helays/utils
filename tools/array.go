@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/helays/utils/v2/config"
 	"golang.org/x/exp/constraints"
+	"helay.net/go/utils/v3/config"
 )
 
 // ArrayChunk 高性能泛型切片分块函数

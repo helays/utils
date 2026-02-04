@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/helays/utils/v2/safe"
-	"github.com/helays/utils/v2/security/cors"
+	"helay.net/go/utils/v3/safe"
+	"helay.net/go/utils/v3/security/cors"
 )
 
 type StdCORS struct {

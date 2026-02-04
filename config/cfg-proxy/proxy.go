@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"strings"
 
-	_ "github.com/helays/utils/v2/net/http/http-proxy"
 	"github.com/pkg/errors"
 	"golang.org/x/net/proxy"
+	_ "helay.net/go/utils/v3/net/http/http-proxy"
 )
 
 type ProxyTypes string

@@ -2,7 +2,7 @@ package kafkaHander
 
 import (
 	"fmt"
-	"github.com/helays/utils/v2/message/pubsub"
+	"helay.net/go/utils/v3/message/pubsub"
 )
 
 // 消费组模式，因特殊原因，这只能用相同的topic,根据不同的key来区分具体业务

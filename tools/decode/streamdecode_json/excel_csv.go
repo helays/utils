@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/dataType/customWriter"
-	"github.com/helays/utils/v2/excelTools"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
+	"helay.net/go/utils/v3/dataType/customWriter"
+	"helay.net/go/utils/v3/excelTools"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/tools"
 )
 
 // 参数验证

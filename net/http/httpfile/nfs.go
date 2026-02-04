@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/helays/utils/v2/close/vclose"
+	"helay.net/go/utils/v3/close/vclose"
 )
 
 // NoSymlinkFileSystem 禁用符号链接的文件系统包装器

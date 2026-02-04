@@ -8,8 +8,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"github.com/helays/utils/v2/crypto/sm4"
-	"github.com/helays/utils/v2/logger/ulogs"
+	"helay.net/go/utils/v3/crypto/sm4"
+	"helay.net/go/utils/v3/logger/ulogs"
 	"io/ioutil"
 )
 

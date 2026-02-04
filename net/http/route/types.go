@@ -4,9 +4,9 @@ import (
 	"database/sql/driver"
 	"embed"
 
-	"github.com/helays/utils/v2/dataType"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/dataType"
 )
 
 // noinspection all

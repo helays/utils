@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/net/ipkit"
-	"github.com/helays/utils/v2/safe"
-	"github.com/helays/utils/v2/tools"
 	"github.com/malfunkt/iprange"
 	"go4.org/netipx"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/net/ipkit"
+	"helay.net/go/utils/v3/safe"
+	"helay.net/go/utils/v3/tools"
 )
 
 // 构建过程：

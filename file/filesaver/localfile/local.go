@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/tools"
 )
 
 type Config struct {

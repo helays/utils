@@ -3,7 +3,7 @@ package ipmatch
 import (
 	"net/netip"
 
-	"github.com/helays/utils/v2/net/ipkit"
+	"helay.net/go/utils/v3/net/ipkit"
 )
 
 func (m *IPMatcher) Contains(ip string) bool {

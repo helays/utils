@@ -5,11 +5,11 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 
-	"github.com/helays/utils/v2/dataType"
 	"github.com/vmihailenco/msgpack/v5"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/dataType"
 )
 
 // Config CORS配置结构体

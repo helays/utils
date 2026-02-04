@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/helays/gomail/v2"
-	cfg_proxy "github.com/helays/utils/v2/config/cfg-proxy"
-	cfg_tls "github.com/helays/utils/v2/config/cfg-tls"
+	cfg_proxy "helay.net/go/utils/v3/config/cfg-proxy"
+	cfg_tls "helay.net/go/utils/v3/config/cfg-tls"
 )
 
 type EmailSender struct {

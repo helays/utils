@@ -4,8 +4,8 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/helays/utils/v2/safe"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/safe"
+	"helay.net/go/utils/v3/tools"
 )
 
 var modelFieldsCache = safe.NewMap[string, *modelFieldTypes](context.Background(), safe.StringHasher{})

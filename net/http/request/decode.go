@@ -12,9 +12,9 @@ import (
 
 	"github.com/go-playground/form/v4"
 	"github.com/gorilla/schema"
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/tools"
-	"github.com/helays/utils/v2/tools/decode/json_decode_tee"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/tools"
+	"helay.net/go/utils/v3/tools/decode/json_decode_tee"
 )
 
 // QueryDecode 解析query数据

@@ -3,8 +3,8 @@ package operators
 import (
 	"fmt"
 
-	"github.com/helays/utils/v2/rule-engine/validator/types"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/rule-engine/validator/types"
+	"helay.net/go/utils/v3/tools"
 )
 
 func ValidateLength(operator types.Operator, value any, rule []any) (string, bool) {

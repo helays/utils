@@ -2,10 +2,10 @@ package redisHander
 
 import (
 	"context"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/message/pubsub"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/message/pubsub"
 )
 
 // Instance redis实例

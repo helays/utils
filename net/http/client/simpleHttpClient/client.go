@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	cfg_proxy "github.com/helays/utils/v2/config/cfg-proxy"
-	"github.com/helays/utils/v2/safe"
+	cfg_proxy "helay.net/go/utils/v3/config/cfg-proxy"
+	"helay.net/go/utils/v3/safe"
 )
 
 var cache = safe.NewMap[string, *http.Client](context.Background(), safe.StringHasher{})

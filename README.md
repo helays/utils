@@ -1,6 +1,6 @@
 # helays/utils
 
-通用 Go 工具包集合 —— 一组实用、模块化的基础库，用于加速后端服务和工具类开发。模块以 `github.com/helays/utils/v2` 作为 module 前缀导入，包含文件/IO 工具、模板助手、HTTP 层辅助、文件存储驱动、数据库辅助、规则验证引擎、锁定策略、安全工具与日志封装等。
+通用 Go 工具包集合 —— 一组实用、模块化的基础库，用于加速后端服务和工具类开发。模块以 `helay.net/go/utils/v3` 作为 module 前缀导入，包含文件/IO 工具、模板助手、HTTP 层辅助、文件存储驱动、数据库辅助、规则验证引擎、锁定策略、安全工具与日志封装等。
 
 ---
 
@@ -9,16 +9,16 @@
 1. **安装（模块导入）：**
 
 ```bash
-go get github.com/helays/utils/v2
+go get helay.net/go/utils/v3
 ```
 
 2. **典型导入示例：**
 
 ```go
 import (
-    "github.com/helays/utils/v2/tools"
-    "github.com/helays/utils/v2/template/template_engine"
-    "github.com/helays/utils/v2/rule-engine/validator"
+    "helay.net/go/utils/v3/tools"
+    "helay.net/go/utils/v3/template/template_engine"
+    "helay.net/go/utils/v3/rule-engine/validator"
 )
 ```
 
@@ -51,7 +51,7 @@ msg, ok := rule.Validate(map[string]any{"age": 20})
 
 1. **tools — 通用辅助工具**  
 
-   - 包路径：`github.com/helays/utils/v2/tools`  
+   - 包路径：`helay.net/go/utils/v3/tools`  
 
    - 功能：字符串与命名转换、文件读写、IO 辅助、map/切片工具、环形缓冲索引、深拷贝等。  
 
@@ -63,7 +63,7 @@ msg, ok := rule.Validate(map[string]any{"age": 20})
 
 2. **net/http — HTTP 层工具与中间件**  
 
-   - 包路径：`github.com/helays/utils/v2/net/http`（及其子包）  
+   - 包路径：`helay.net/go/utils/v3/net/http`（及其子包）  
 
    - 功能：统一响应（response）、路由处理、http server 支持、session、mime、route 中间件（日志/metrics）等。  
 
@@ -74,7 +74,7 @@ msg, ok := rule.Validate(map[string]any{"age": 20})
 
 3. **template/template_engine — 模板内置函数**  
 
-   - 包路径：`github.com/helays/utils/v2/template/template_engine`  
+   - 包路径：`helay.net/go/utils/v3/template/template_engine`  
 
    - 功能：为 `html/template` 提供内置函数（时间、格式化、链接生成、dict、循环等）。  
 
@@ -86,9 +86,9 @@ msg, ok := rule.Validate(map[string]any{"age": 20})
 4. **file/filesaver & db/fileSaver — 文件存储抽象与驱动**  
 
    - 包路径：
-     - 抽象：`github.com/helays/utils/v2/file/filesaver`
-     - 本地驱动：`github.com/helays/utils/v2/file/filesaver/localfile`
-     - MinIO 驱动：`github.com/helays/utils/v2/db/fileSaver/minio`  
+     - 抽象：`helay.net/go/utils/v3/file/filesaver`
+     - 本地驱动：`helay.net/go/utils/v3/file/filesaver/localfile`
+     - MinIO 驱动：`helay.net/go/utils/v3/db/fileSaver/minio`  
 
    - 功能：统一文件写入/读取/列举/删除接口，支持本地、FTP、SFTP、HDFS、MinIO 等后端。  
 
@@ -97,7 +97,7 @@ msg, ok := rule.Validate(map[string]any{"age": 20})
 
 5. **db — 数据库辅助与查询构造器**  
 
-   - 包路径：`github.com/helays/utils/v2/db`，查询构造器在 `db/query`  
+   - 包路径：`helay.net/go/utils/v3/db`，查询构造器在 `db/query`  
 
    - 功能：DSN 构建（MySQL/Postgres/SQLite）、查询构造器到 GORM clause 的转换、字段解析工具。  
 
@@ -106,14 +106,14 @@ msg, ok := rule.Validate(map[string]any{"age": 20})
 
 6. **db/localredis — 本地 Redis 适配（测试替代）**  
 
-   - 包路径：`github.com/helays/utils/v2/db/localredis`  
+   - 包路径：`helay.net/go/utils/v3/db/localredis`  
 
    - 说明：提供本地实现以便在无 Redis 环境或测试中替代真实 redis 客户端。注意：部分方法为占位实现，生产使用前请确认完整性。
 
 
 7. **rule-engine/validator — 规则验证引擎**  
 
-   - 包路径：`github.com/helays/utils/v2/rule-engine/validator`  
+   - 包路径：`helay.net/go/utils/v3/rule-engine/validator`  
 
    - 功能：支持数据类型、长度、格式、内容与高级表达式验证；支持 AND/OR 逻辑组合、通配符字段、CEL/Go/JSONLogic 等表达式类型；内置中文错误提示。  
 
@@ -126,26 +126,26 @@ msg, ok := rule.Validate(map[string]any{"age": 20})
      - lockpolicy（锁定策略管理，session/ip/user，多层锁定与升级链）
      - cors（CORS 策略与预检处理）  
 
-   - 包路径：`github.com/helays/utils/v2/security/...`
+   - 包路径：`helay.net/go/utils/v3/security/...`
 
 
 9. **logger — 日志实现**  
 
-   - 包路径：`github.com/helays/utils/v2/logger`（含 `ulogs`、`zaploger`）  
+   - 包路径：`helay.net/go/utils/v3/logger`（含 `ulogs`、`zaploger`）  
 
    - 功能：日志记录、文件滚动（结合 lumberjack）、HTTP 请求日志中间件等。
 
 
 10. **crypto — 加密工具**  
 
-    - 包路径：`github.com/helays/utils/v2/crypto/aes`  
+    - 包路径：`helay.net/go/utils/v3/crypto/aes`  
 
     - 功能：AES CBC 简单加解密（包含 padding/unpadding，适用于简单场景）。
 
 
 11. **config — 配置与正则常量**  
 
-    - 包路径：`github.com/helays/utils/v2/config`  
+    - 包路径：`helay.net/go/utils/v3/config`  
 
     - 功能：常用正则（手机号、邮箱、页面解析）、YAML 加载器（支持 include 机制）。  
 

@@ -3,8 +3,8 @@ package electMaster
 import (
 	"errors"
 	"github.com/go-zookeeper/zk"
-	"github.com/helays/utils/v2/db/zookeeper"
-	"github.com/helays/utils/v2/logger/ulogs"
+	"helay.net/go/utils/v3/db/zookeeper"
+	"helay.net/go/utils/v3/logger/ulogs"
 	"path"
 	"sort"
 	"strings"

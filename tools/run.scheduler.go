@@ -5,7 +5,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/helays/utils/v2/config"
+	"helay.net/go/utils/v3/config"
 )
 
 // RunSyncFunc 同步运行

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/helays/utils/v2/net/http/route"
-	"github.com/helays/utils/v2/net/http/session"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/net/http/route"
+	"helay.net/go/utils/v3/net/http/session"
 )
 
 type LoginInfo struct {

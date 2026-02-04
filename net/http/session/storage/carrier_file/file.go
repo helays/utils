@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/session"
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/session"
+	"helay.net/go/utils/v3/tools"
 )
 
 type Instance struct {

@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/helays/utils/v2/close/sqlClose"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/response"
 	"gorm.io/gorm"
+	"helay.net/go/utils/v3/close/sqlClose"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/response"
 )
 
 type Stream[T any] struct {

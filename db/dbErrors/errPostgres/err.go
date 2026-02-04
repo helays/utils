@@ -1,6 +1,6 @@
 package errPostgres
 
-import "github.com/helays/utils/v2/db/dbErrors"
+import "helay.net/go/utils/v3/db/dbErrors"
 
 var PgErrorMap = map[string]dbErrors.DbError{
 	// Class 00 — Successful Completion

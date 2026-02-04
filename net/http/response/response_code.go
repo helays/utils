@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/request"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/request"
 )
 
 type RespCode interface {

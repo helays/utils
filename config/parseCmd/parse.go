@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/helays/utils/v2"
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
+	"helay.net/go/utils/v3"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/logger/ulogs"
 )
 
 // Parseparams 解析启动参数

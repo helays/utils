@@ -6,11 +6,11 @@ import (
 	"net/http/pprof"
 	"time"
 
-	"github.com/helays/utils/v2/config"
-	"github.com/helays/utils/v2/logger/ulogs"
-	"github.com/helays/utils/v2/net/http/route/middleware"
-	"github.com/helays/utils/v2/tools"
 	"golang.org/x/net/websocket"
+	"helay.net/go/utils/v3/config"
+	"helay.net/go/utils/v3/logger/ulogs"
+	"helay.net/go/utils/v3/net/http/route/middleware"
+	"helay.net/go/utils/v3/tools"
 )
 
 func (s *Server[T]) setRoutes() {

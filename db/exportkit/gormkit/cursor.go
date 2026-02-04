@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/helays/utils/v2/close/vclose"
-	"github.com/helays/utils/v2/db/exportkit"
 	"github.com/xuri/excelize/v2"
+	"helay.net/go/utils/v3/close/vclose"
+	"helay.net/go/utils/v3/db/exportkit"
 )
 
 func (e *Export) cursor(et exportkit.ExportType, columns []string) error {

@@ -5,9 +5,9 @@ import (
 	"database/sql/driver"
 	"encoding/gob"
 
-	"github.com/helays/utils/v2/tools"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"helay.net/go/utils/v3/tools"
 )
 
 func NewSessionValue(val any) SessionValue {

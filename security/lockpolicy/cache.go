@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/helays/utils/v2/safe"
+	"helay.net/go/utils/v3/safe"
 )
 
 // targetCache 锁定目标缓存

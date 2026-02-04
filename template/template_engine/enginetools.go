@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"time"
 
-	"github.com/helays/utils/v2/tools"
+	"helay.net/go/utils/v3/tools"
 )
 
 func builtinFuncMap() template.FuncMap {

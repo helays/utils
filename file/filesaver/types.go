@@ -3,11 +3,11 @@ package filesaver
 import (
 	"io"
 
-	"github.com/helays/utils/v2/file/filesaver/ftp"
-	"github.com/helays/utils/v2/file/filesaver/hdfs"
-	"github.com/helays/utils/v2/file/filesaver/localfile"
-	"github.com/helays/utils/v2/file/filesaver/minio"
-	"github.com/helays/utils/v2/file/filesaver/sftp"
+	"helay.net/go/utils/v3/file/filesaver/ftp"
+	"helay.net/go/utils/v3/file/filesaver/hdfs"
+	"helay.net/go/utils/v3/file/filesaver/localfile"
+	"helay.net/go/utils/v3/file/filesaver/minio"
+	"helay.net/go/utils/v3/file/filesaver/sftp"
 )
 
 type FileSaver interface {

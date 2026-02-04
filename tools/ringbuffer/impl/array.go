@@ -2,7 +2,7 @@
 package impl
 
 import (
-	"github.com/helays/utils/v2/tools/ringbuffer/calculator"
+	"helay.net/go/utils/v3/tools/ringbuffer/calculator"
 )
 
 // arrayBuffer 基于数组的环形缓冲区实现

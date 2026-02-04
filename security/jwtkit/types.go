@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/helays/utils/v2/dataType"
+	"helay.net/go/utils/v3/dataType"
 )
 
 type Options struct {

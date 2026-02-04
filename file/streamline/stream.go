@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/helays/utils/v2/close/vclose"
+	"helay.net/go/utils/v3/close/vclose"
 )
 
 type StreamingLineRemover struct {
