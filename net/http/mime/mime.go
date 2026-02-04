@@ -1,5 +1,11 @@
 package mime
 
+import (
+	"mime"
+	"strings"
+	"sync"
+)
+
 // MimeMap 文件后缀 mime 类型
 var MimeMap = map[string]string{
 	"html":  "text/html; charset=utf-8",
@@ -117,4 +123,45 @@ var MimeMap = map[string]string{
 	"asf":  "video/x-ms-asf",
 	"wmv":  "video/x-ms-wmv",
 	"avi":  "video/x-msvideo",
+}
+
+var ForceMimeMap = map[string]string{
+	".ts":   "video/mp2t",                // 强制将.ts视为视频类型
+	".text": "text/plain; charset=utf-8", // 示例：强制覆盖.text扩展名
+}
+
+var (
+	once     sync.Once
+	initDone bool
+)
+
+// 注册时记录哪些类型被实际添加了
+var actuallyAdded = make(map[string]string)
+
+func InitMimeTypes() {
+	once.Do(func() {
+		// 1. 首先注册强制覆盖的类型
+		for ext, mimeType := range ForceMimeMap {
+			// 确保扩展名以点开头
+			if !strings.HasPrefix(ext, ".") {
+				ext = "." + ext
+			}
+			_ = mime.AddExtensionType(ext, mimeType)
+		}
+		for ext, mimeType := range MimeMap {
+			dotExt := "." + ext
+			if existing := mime.TypeByExtension(dotExt); existing == "" {
+				if err := mime.AddExtensionType(dotExt, mimeType); err == nil {
+					actuallyAdded[ext] = mimeType
+				}
+			}
+		}
+		initDone = true
+
+	})
+}
+
+// GetAddedMimeTypes 返回实际被添加的MIME类型
+func GetAddedMimeTypes() map[string]string {
+	return actuallyAdded
 }

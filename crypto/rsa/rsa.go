@@ -8,9 +8,9 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
-	"fmt"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/crypto/sha256"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/crypto/sha256"
 )
 
 // RsaVerify 签名验证，用公钥进行验证
@@ -108,7 +108,6 @@ func DecryptWithPrivateKey(privateKey []byte, encryptData string) ([]byte, error
 	}
 	encryptBytes, err := base64.StdEncoding.DecodeString(encryptData)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 	return rsa.DecryptPKCS1v15(rand.Reader, key, encryptBytes)

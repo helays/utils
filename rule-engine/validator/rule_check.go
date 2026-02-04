@@ -2,7 +2,7 @@ package validator
 
 import (
 	"fmt"
-	"github.com/helays/utils/rule-engine/validator/types"
+	"github.com/helays/utils/v2/rule-engine/validator/types"
 )
 
 func (r *Rule) CheckRule(dataTypeMap map[string]string) error {

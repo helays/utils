@@ -1,18 +1,18 @@
 package userDb
 
 import (
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/dataType"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/tools"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
+	"context"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/tools"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 //
@@ -41,6 +41,8 @@ import (
 // Date: 2023/9/1 11:19
 //
 
+const contextGormModel = "contextGormModel"
+
 // Paginate 分页通用部分
 func Paginate(r *http.Request, pageField, pageSizeField string, pageSize int) func(db *gorm.DB) *gorm.DB {
 	if pageField == "" {
@@ -63,14 +65,6 @@ func Paginate(r *http.Request, pageField, pageSizeField string, pageSize int) fu
 		if r.URL.Query().Get("rall") != "1" {
 			tx.Offset((page - 1) * limit).Limit(limit)
 		}
-		_sort := r.URL.Query().Get("sort")
-		if _sort != "" && !config.SpecialChartPreg.MatchString(_sort) {
-			if _sort[0] == '-' {
-				tx.Order(_sort[1:] + " desc")
-			} else {
-				tx.Order(_sort)
-			}
-		}
 		return tx
 	}
 }
@@ -89,11 +83,6 @@ func FilterWhereString(r *http.Request, query string, field string, like bool) f
 	}
 }
 
-type stackItem struct {
-	s     any    // model struct
-	alias string // 设置的别名
-}
-
 var (
 	customTimeType = reflect.TypeOf(dataType.CustomTime{})
 	timeType       = reflect.TypeOf(time.Time{})
@@ -103,83 +92,60 @@ var (
 // 这里是通过 栈的模式，避免函数递归调用
 func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, likes ...map[string]string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		stack := []stackItem{{db.Statement.Model, alias}}
-		query := r.URL.Query()
-		conditions := make([]clause.Expression, 0) // 收集所有查询条件
-		for len(stack) > 0 {
-			item := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
+		fieldsInfo := getModelFields(db.Statement.Model, alias)
+		if fieldsInfo == nil {
+			return db
+		}
+		// 注意这里的模型字段，只能通过req的上下文进行传递，无法用DB。
+		// 这里只能用固定的key传递，其他地方不确定在相同场景下会有同一个key。
+		// 这个数据只能存储在同一个会话中。
+		newReq := r.WithContext(context.WithValue(r.Context(), contextGormModel, fieldsInfo))
+		*r = *newReq
 
-			t := reflect.TypeOf(item.s)
-			if t.Kind() == reflect.Ptr {
-				t = t.Elem()
+		conditions := make([]clause.Expression, 0, len(fieldsInfo.fields)) // 收集所有查询条件
+		query := r.URL.Query()
+
+		for _, field := range fieldsInfo.fields {
+			fieldInfo := fieldsInfo.fieldsMap[field]
+			val, ok := getValFromQuery(query, fieldInfo.jsonTagName, enableDefault, fieldInfo.defaultVal)
+			if !ok {
+				continue
 			}
-			if t.Kind() != reflect.Struct {
+			column := clause.Column{
+				Table: fieldsInfo.tableName,
+				Name:  fieldInfo.fieldName,
+			}
+			switch fieldInfo.kind {
+			case reflect.String:
+				valList := strings.Split(val, ",")
+				if len(valList) == 1 {
+					lastVal := applyLikes(val, fieldInfo.dblike, likes, fieldInfo.fieldName)
+					conditions = append(conditions, clause.Like{Column: column, Value: lastVal})
+				} else {
+					conditions = append(conditions, clause.Eq{Column: column, Value: valList})
+				}
+			case reflect.Int, reflect.Int8, reflect.Int32, reflect.Int64, reflect.Int16, reflect.Float64, reflect.Float32:
+				valList := strings.Split(val, ",")
+				if len(valList) > 1 {
+					conditions = append(conditions, clause.Eq{Column: column, Value: valList})
+				} else {
+					conditions = append(conditions, clause.Eq{Column: column, Value: val})
+				}
+			case customTimeType.Kind(), timeType.Kind():
+				dateRange := strings.Split(val, " - ")
+				if len(dateRange) == 2 {
+					begin := clause.Gt{Column: column, Value: dateRange[0]}
+					end := clause.Lte{Column: column, Value: dateRange[1]}
+					conditions = append(conditions, clause.And(begin, end))
+				} else if len(dateRange) == 1 {
+					conditions = append(conditions, clause.Eq{Column: column, Value: val})
+				}
+			default:
 				continue
 			}
 
-			tableName := item.alias
-			v := reflect.ValueOf(item.s)
-			if tableName == "" {
-				tbName := v.MethodByName("TableName")
-				if tbName.IsValid() {
-					tableName = tbName.Call([]reflect.Value{})[0].String()
-				} else {
-					tableName = tools.SnakeString(t.Name())
-				}
-				item.alias = tableName
-			}
-			if v.Kind() == reflect.Ptr {
-				v = v.Elem()
-			}
-
-			for i := 0; i < t.NumField(); i++ {
-				field := t.Field(i)
-				tagName := field.Tag.Get("json")
-				kind := field.Type.Kind()
-				// 处理嵌套结构体
-				if kind == reflect.Struct && field.Tag.Get("gorm") == "" && tagName == "" {
-					stack = append(stack, stackItem{v.Field(i).Interface(), item.alias})
-					continue
-				}
-				if tagName == "" {
-					continue
-				}
-				val, ok := getValFromQuery(query, tagName, enableDefault, field)
-				if !ok {
-					continue
-				}
-				fieldName := tools.SnakeString(field.Name)
-				// 这里还需要解析出字段本身的名字，去数据库进行查询，通过将结构体转成蛇形方式。
-				column := clause.Column{
-					Table: tableName,
-					Name:  fieldName,
-				}
-				switch kind {
-				case reflect.String:
-					lastVal := applyLikes(val, field.Tag.Get("dblike"), likes, fieldName)
-					conditions = append(conditions, clause.Like{Column: column, Value: lastVal})
-				case reflect.Int, reflect.Int8, reflect.Int32, reflect.Int64, reflect.Int16, reflect.Float64, reflect.Float32:
-					valList := strings.Split(val, ",")
-					if len(valList) > 1 {
-						conditions = append(conditions, clause.Eq{Column: column, Value: valList})
-					} else {
-						conditions = append(conditions, clause.Eq{Column: column, Value: val})
-					}
-				case customTimeType.Kind(), timeType.Kind():
-					dateRange := strings.Split(val, " - ")
-					if len(dateRange) == 2 {
-						begin := clause.Gt{Column: column, Value: dateRange[0]}
-						end := clause.Lte{Column: column, Value: dateRange[1]}
-						conditions = append(conditions, clause.And(begin, end))
-					} else if len(dateRange) == 1 {
-						conditions = append(conditions, clause.Eq{Column: column, Value: val})
-					}
-				default:
-					continue
-				}
-			}
 		}
+
 		// 一次性应用所有查询条件
 		if len(conditions) > 0 {
 			db.Clauses(conditions...)
@@ -188,14 +154,14 @@ func FilterWhereByDbModel(alias string, enableDefault bool, r *http.Request, lik
 	}
 }
 
-func getValFromQuery(query url.Values, tagName string, enableDefault bool, field reflect.StructField) (string, bool) {
+func getValFromQuery(query url.Values, tagName string, enableDefault bool, defaultVal string) (string, bool) {
 	val := query.Get(strings.Split(tagName, ",")[0])
 	if val == "" {
 		if !enableDefault {
 			return "", false
 		}
 		// 如果没有传值，判断是否有默认值
-		if val = field.Tag.Get("default"); val == "" {
+		if val = defaultVal; val == "" {
 			return "", false
 		}
 	}
@@ -389,49 +355,52 @@ func QueryDateTimeRange(r *http.Request, filed ...string) func(db *gorm.DB) *gor
 	}
 }
 
-// AutoCreateTableWithStruct 根据结构体判断是否需要创建表
-func AutoCreateTableWithStruct(db *gorm.DB, tb any, errmsg string) {
-	t := reflect.TypeOf(tb)
-	if t.Kind() != reflect.Struct {
-		return
-	}
-	if !db.Migrator().HasTable(tb) {
-		ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
-	}
-	// 如果表存在，在判断结构体中是否有新增字段，如果有，就自动改变表
-	AutoCreateTableWithColumn(db, tb, errmsg, t)
-}
-
-// AutoCreateTableWithColumn 根据表字段判断是否有数据缺失
-func AutoCreateTableWithColumn(db *gorm.DB, tb any, errmsg string, t reflect.Type) bool {
-	// 如果表存在，在判断结构体中是否有新增字段，如果有，就自动改变表
-	for i := 0; i < t.NumField(); i++ {
-		if t.Field(i).Type.Kind() == reflect.Struct && t.Field(i).Tag.Get("gorm") == "" && t.Field(i).Tag.Get("json") == "" {
-			if AutoCreateTableWithColumn(db, tb, errmsg, t.Field(i).Type) {
-				return true
+func AutoSetSort(r *http.Request, order string, fieldInfoInReq bool, alias ...string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		var fieldsInfo *modelFieldTypes
+		if fieldInfoInReq {
+			if v := r.Context().Value(contextGormModel); v != nil {
+				if _v, ok := v.(*modelFieldTypes); ok {
+					fieldsInfo = _v
+				}
 			}
-			continue
+		} else {
+			fieldsInfo = getModelFields(db.Statement.Model, tools.Ternary(len(alias) > 0, alias[0], ""))
 		}
-		tag := t.Field(i).Tag.Get("gorm")
-		if tag == "" {
-			continue
-		}
-		if tag == "-:all" || tag == "-:migration" || strings.Contains(tag, "-:migration") {
-			continue
-		}
-		column := tools.SnakeString(t.Field(i).Name)
-		for _, item := range strings.Split(tag, ";") {
-			if !strings.HasPrefix(item, "column") {
-				continue
-			}
-			column = item[7:]
+		if fieldsInfo == nil || len(fieldsInfo.fieldsMap) < 1 {
+			return db.Order(order)
 		}
 
-		if !db.Migrator().HasColumn(tb, column) {
-			ulogs.Log("表字段有缺失，正在自动创建表字段：", reflect.TypeOf(tb).String(), column)
-			ulogs.DieCheckerr(db.Debug().AutoMigrate(tb), errmsg)
-			return true // 创建一次就行了
+		orderStr := r.URL.Query().Get("_sort")
+		if orderStr == "" {
+			return db.Order(order)
 		}
+
+		orderLst := strings.Split(orderStr, ",")
+		orders := make([]clause.OrderByColumn, 0, len(orderLst))
+		for _, item := range orderLst {
+			sort := "asc"
+			if strings.HasPrefix(item, "-") {
+				sort = "desc"
+				item = strings.TrimSpace(item[1:])
+				if item == "" {
+					continue
+				}
+			}
+			if _, ok := fieldsInfo.fieldsMap[item]; ok {
+				orders = append(orders, clause.OrderByColumn{
+					Column:  clause.Column{Table: fieldsInfo.tableName, Name: item},
+					Desc:    sort == "desc",
+					Reorder: false,
+				})
+			}
+		}
+
+		if len(orders) > 0 {
+			return db.Clauses(clause.OrderBy{
+				Columns: orders,
+			})
+		}
+		return db.Order(order)
 	}
-	return false
 }

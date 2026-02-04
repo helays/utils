@@ -3,6 +3,7 @@ package dataType
 import (
 	"database/sql/driver"
 	"errors"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -10,6 +11,7 @@ import (
 type Binary []byte
 
 // Scan 实现了 sql.Scanner 接口，用于从数据库读取二进制数据到 BinaryFile 类型
+// noinspection all
 func (bf *Binary) Scan(value interface{}) error {
 	if value == nil {
 		*bf = nil
@@ -25,25 +27,13 @@ func (bf *Binary) Scan(value interface{}) error {
 }
 
 // Value 实现了 driver.Valuer 接口，用于将 BinaryFile 类型的数据写入数据库
+// noinspection all
 func (bf Binary) Value() (driver.Value, error) {
 	return []byte(bf), nil
 }
 
-// GormDataType 返回GORM的数据类型名称
-func (Binary) GormDataType() string {
-	return "binary"
-}
-
 // GormDBDataType 返回数据库特定的数据类型名称
+// noinspection all
 func (Binary) GormDBDataType(db *gorm.DB, field *schema.Field) string {
-	switch db.Dialector.Name() {
-	case "mysql":
-		return "longblob"
-	case "postgres":
-		return "BYTEA"
-	case "sqlite":
-		return "BLOB"
-	default:
-		return "BLOB"
-	}
+	return BlobDbDataType(db, field)
 }

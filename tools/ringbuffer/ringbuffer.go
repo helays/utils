@@ -3,7 +3,7 @@ package ringbuffer
 
 import (
 	"errors"
-	"github.com/helays/utils/tools/ringbuffer/impl"
+	"github.com/helays/utils/v2/tools/ringbuffer/impl"
 	"reflect"
 	"sync"
 	"sync/atomic"

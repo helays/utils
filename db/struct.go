@@ -2,12 +2,13 @@ package db
 
 import (
 	"database/sql/driver"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/dataType"
-	"github.com/helays/utils/logger/zaploger"
+	"time"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/logger/zaploger"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"time"
 )
 
 var (
@@ -64,7 +65,7 @@ func (this *Dbbase) Scan(val interface{}) error {
 }
 
 func (this Dbbase) GormDataType() string {
-	return "json"
+	return "dbbase"
 }
 
 func (Dbbase) GormDBDataType(db *gorm.DB, field *schema.Field) string {
@@ -114,4 +115,41 @@ type TableDefaultUserField struct {
 	CreateUserName string              `json:"create_user_name,omitempty" gorm:"not null;type:varchar(128);default:'';comment:创建人名称" form:"create_user_name"`
 	CreateTime     dataType.CustomTime `json:"create_time,omitempty" gorm:"autoCreateTime:true;not null;index;default:current_timestamp;comment:记录创建时间" form:"-"`
 	UpdateTime     dataType.CustomTime `json:"update_time,omitempty" gorm:"autoUpdateTime:true;index;comment:记录更新时间" form:"-"`
+}
+
+type TableBaseModelAutoIncrement struct {
+	Id dataType.IntString[int64] `json:"id,omitempty" gorm:"primaryKey;autoIncrement;comment:行ID" form:"id"`
+
+	CreateTime *dataType.CustomTime      `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
+	CreateBy   dataType.IntString[int64] `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`
+	UpdateTime *dataType.CustomTime      `json:"update_time,omitempty" gorm:"autoUpdateTime:true;comment:记录更新时间" form:"-"`
+	UpdateBy   dataType.IntString[int64] `json:"update_by,omitempty" gorm:"comment:更新人ID" form:"update_by"`
+}
+
+// TableBaseModelFull 带全字段的通用表结构
+// 包含主键、创建人信息、创建时间、更新时间、更新人信息
+type TableBaseModelFull struct {
+	// 注意，这个ID字段不是自增的，
+	Id dataType.IntString[int64] `json:"id,omitempty" gorm:"primaryKey;autoIncrement:false;comment:行ID" form:"id"`
+
+	CreateTime *dataType.CustomTime      `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
+	CreateBy   dataType.IntString[int64] `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`
+	UpdateTime *dataType.CustomTime      `json:"update_time,omitempty" gorm:"autoUpdateTime:true;comment:记录更新时间" form:"-"`
+	UpdateBy   dataType.IntString[int64] `json:"update_by,omitempty" gorm:"comment:更新人ID" form:"update_by"`
+}
+
+// TableBaseModel 带创建人信息、创建时间、的通用表结构
+type TableBaseModel struct {
+	// 注意，这个ID字段不是自增的，
+	Id dataType.IntString[int64] `json:"id,omitempty" gorm:"primaryKey;autoIncrement:false;comment:行ID" form:"id"`
+
+	CreateTime *dataType.CustomTime      `json:"create_time,omitempty" gorm:"autoCreateTime:true;index;not null;default:current_timestamp;comment:记录创建时间" form:"-"`
+	CreateBy   dataType.IntString[int64] `json:"create_by,omitempty" gorm:"comment:创建人ID" form:"create_by"`
+}
+
+// SoftDeleteModel 带软删除的通用表结构
+type SoftDeleteModel struct {
+	IsDeleted   dataType.Bool             `json:"is_deleted,omitempty" gorm:"not null;index;default:(0);comment:软删除标记 0 正常 1 删除" form:"is_deleted"`
+	DeletedBy   dataType.IntString[int64] `json:"deleted_by,omitempty" gorm:"comment:删除人ID" form:"deleted_by"`
+	DeletedTime *dataType.CustomTime      `json:"deleted_time,omitempty" gorm:"index;comment:删除时间" form:"-"`
 }

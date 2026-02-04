@@ -91,6 +91,7 @@ const (
 	DbTypeMssql      = "mssql"
 	DbTypeOracle     = "oracle"
 	DbTypeSqlserver  = "sqlserver"
+	DbTypeTiDB       = "tidb"
 )
 
 // kv数据库
@@ -158,4 +159,21 @@ const (
 const (
 	ProtocolTCP = "tcp"
 	ProtocolUDP = "udp"
+)
+
+type SortType int
+
+func (s SortType) String() string {
+	switch s {
+	case SortAsc:
+		return "asc"
+	case SortDesc:
+		return "desc"
+	}
+	return ""
+}
+
+const (
+	SortAsc  SortType = iota // 升序
+	SortDesc                 // 降序
 )

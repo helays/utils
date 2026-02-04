@@ -2,7 +2,7 @@ package template_engine
 
 import (
 	"fmt"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"html"
 	"net/url"
 	"time"

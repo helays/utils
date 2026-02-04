@@ -1,9 +1,6 @@
 package whois
 
 import (
-	"github.com/helays/utils/close/netClose"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/worker"
 	"io/ioutil"
 	"net"
 	"net/url"
@@ -11,6 +8,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/helays/utils/v2/close/netClose"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/worker"
 )
 
 var (

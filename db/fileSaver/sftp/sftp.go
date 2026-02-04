@@ -3,10 +3,10 @@ package sftp
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/helays/utils/close/vclose"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/dataType"
-	"github.com/helays/utils/net/checkIp"
+	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/net/checkIp"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"gorm.io/gorm"
@@ -73,7 +73,7 @@ func (this *Config) Scan(val interface{}) error {
 }
 
 func (this Config) GormDataType() string {
-	return "json"
+	return "custom_sftp_config"
 }
 
 func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {

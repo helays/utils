@@ -3,11 +3,11 @@ package ftp
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/helays/utils/close/ftpClose"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/dataType"
-	"github.com/helays/utils/dataType/customWriter"
-	"github.com/helays/utils/net/checkIp"
+	"github.com/helays/utils/v2/close/ftpClose"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/dataType/customWriter"
+	"github.com/helays/utils/v2/net/checkIp"
 	"github.com/jlaffaye/ftp"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -35,7 +35,7 @@ func (this *Config) Scan(val interface{}) error {
 }
 
 func (this Config) GormDataType() string {
-	return "json"
+	return "custom_ftp_config"
 }
 
 func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {

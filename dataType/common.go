@@ -6,22 +6,39 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/helays/utils/config"
+	"reflect"
+	"strconv"
+	"strings"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/tools"
+	"golang.org/x/exp/constraints"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
-	"reflect"
-	"strconv"
-	"strings"
 )
 
-func JsonDbDataType(db *gorm.DB, field *schema.Field) string {
+func BlobDbDataType(db *gorm.DB, _ *schema.Field) string {
+	switch db.Dialector.Name() {
+	case config.DbTypeMysql:
+		return "longblob"
+	case config.DbTypePostgres:
+		return "BYTEA"
+	case config.DbTypeSqlite:
+		return "BLOB"
+	default:
+		return "BLOB"
+	}
+}
+
+func JsonDbDataType(db *gorm.DB, _ *schema.Field) string {
 	switch db.Dialector.Name() {
 	case config.DbTypeSqlite:
 		return "JSON"
 	case config.DbTypeMysql:
-		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
+		v, ok := db.Dialector.(*mysql.Dialector)
+		if ok && CheckVersionSupportsJSON(v.ServerVersion) {
 			return "JSON"
 		}
 		return "LONGTEXT"
@@ -30,7 +47,7 @@ func JsonDbDataType(db *gorm.DB, field *schema.Field) string {
 	case config.DbTypeSqlserver:
 		return "NVARCHAR(MAX)"
 	}
-	return ""
+	return "TEXT"
 }
 
 func DriverValueWithJson(val any) (driver.Value, error) {
@@ -71,10 +88,27 @@ func DriverScanWithJson[T any](val any, dst *T) error {
 	return nil
 }
 
+func DriverScanWithInt[T constraints.Integer](val any, dst *T) error {
+	if val == nil {
+		*dst = *new(T)
+		return nil
+	}
+	v, err := tools.Any2Int[T](val)
+	if err != nil {
+		return err
+	}
+	*dst = v
+	return nil
+
+}
+
 // CheckVersionSupportsJSON 检查版本是否支持JSON
 // mysql版本高于 5.7.8 ，才支持json
 func CheckVersionSupportsJSON(versionStr string) bool {
-	versionParts := strings.Split(strings.TrimSpace(strings.Split("versionStr", "-")[0]), ".")
+	if strings.Contains(strings.ToLower(versionStr), "mariadb") {
+		return true
+	}
+	versionParts := strings.Split(strings.TrimSpace(strings.Split(versionStr, "-")[0]), ".")
 	if len(versionParts) < 3 {
 		return false
 	}
@@ -120,7 +154,7 @@ func arrayScan(m any, val any) error {
 	case string:
 		ba = []byte(v)
 	default:
-		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", val))
+		return fmt.Errorf("unsupported type: %T", val)
 	}
 	rd := bytes.NewReader(ba)
 	decoder := json.NewDecoder(rd)
@@ -130,12 +164,19 @@ func arrayScan(m any, val any) error {
 
 func arrayGormValue(jm any, db *gorm.DB) clause.Expr {
 	data, _ := marshalSlice(jm)
+	return MapGormValue(string(data), db)
+}
+
+// MapGormValue 下面的操作是借鉴的
+// https://github.com/go-gorm/datatypes/blob/master/json_map.go#L94
+func MapGormValue(data string, db *gorm.DB) clause.Expr {
 	switch db.Dialector.Name() {
-	case "mysql":
-		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") && CheckVersionSupportsJSON(v.ServerVersion) {
-			fmt.Println(v.ServerVersion)
-			return gorm.Expr("CAST(? AS JSON)", string(data))
+	case config.DbTypeMysql:
+		// mysql类型数据库需要专门处理，因为mysql的json类型需要用CAST
+		if v, ok := db.Dialector.(*mysql.Dialector); ok && !strings.Contains(v.ServerVersion, "MariaDB") {
+			return gorm.Expr("CAST(? AS JSON)", data)
 		}
 	}
-	return gorm.Expr("?", string(data))
+	// 其他非mysql数据库就直接操作即可。
+	return gorm.Expr("?", data)
 }

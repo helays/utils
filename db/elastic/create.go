@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esutil"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/tools"
 	"log"
 	"sync"
 	"time"

@@ -1,7 +1,7 @@
 package mysqlconnect
 
 import (
-	"github.com/helays/utils/db"
+	"github.com/helays/utils/v2/db"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -17,6 +17,5 @@ func InitDB(c *db.Dbbase) (*gorm.DB, error) {
 		DontSupportRenameColumn:   true,  // 用 `change` 重命名列，MySQL 8 之前的数据库和 MariaDB 不支持重命名列
 		SkipInitializeWithVersion: false, // 根据当前 MySQL 版本自动配置
 	})
-
 	return c.Connect(&dialector)
 }

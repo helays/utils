@@ -3,10 +3,10 @@ package loadJson
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/helays/utils/close/osClose"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/logger/ulogs"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/close/osClose"
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"github.com/helays/utils/v2/tools"
 	"os"
 )
 

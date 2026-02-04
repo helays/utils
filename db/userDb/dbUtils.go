@@ -2,13 +2,15 @@ package userDb
 
 import (
 	"fmt"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/db/dbErrors/errTools"
-	"github.com/helays/utils/logger/ulogs"
+	"strings"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/db/dbErrors/errTools"
+	"github.com/helays/utils/v2/logger/ulogs"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
-	"strings"
 )
 
 var nullSqlConn map[string]*gorm.DB
@@ -80,19 +82,21 @@ func DropSequence(tx *gorm.DB, tableName string, seqFields []string) error {
 func UpdateSeq(utx *gorm.DB, tableName string) {
 	defer func() {
 		if err := recover(); err != nil {
-			ulogs.Error("更新自增序列值失败", err)
+			ulogs.Error("【UpdateSeq】更新表[%s]自增序列值失败", tableName, err)
 		}
 	}()
 	if utx == nil || utx.Dialector == nil || utx.Dialector.Name() != config.DbTypePostgres {
 		return
 	}
+	ulogs.Infof("【UpdateSeq】开始更新表【%s】自增序列", tableName)
 	// 如果自增字段 autoIncrementField不为空，那么再插入完成后，需要使用这句话 SELECT setval(pg_get_serial_sequence('test', 'id'), COALESCE((SELECT MAX(id)+1 FROM test), 1), false) 重置自增字段的值
 	// 如果是pg数据库，这里需要获取当前表的主键字段，并判断其是否是自增主键，如果是自增主键，就将字段查询出来，放入autoIncrementField []string 变量中
 	var autoIncrementField []string
 	const querySeqColumnsSQL = "SELECT column_name FROM information_schema.columns WHERE table_name = ? AND (column_default LIKE 'nextval%' OR is_identity='YES')"
 	if err := utx.Raw(querySeqColumnsSQL, tableName).Scan(&autoIncrementField).Error; err != nil {
-		ulogs.Error(err, "pg数据库查询自增字段失败")
+		ulogs.Errorf("【UpdateSeq】pg数据库查询表[%s]自增字段失败 %v", tableName, err)
 	}
+	ulogs.Infof("【UpdateSeq】表【%s】自增字段为：%v", tableName, autoIncrementField)
 
 	const updateSeqValueSQL = "SELECT setval(pg_get_serial_sequence(?, ?), COALESCE((SELECT MAX(?)+1 FROM ?), 1), false)"
 	for _, field := range autoIncrementField {
@@ -103,7 +107,7 @@ func UpdateSeq(utx *gorm.DB, tableName string) {
 			clause.Column{Name: field},
 			clause.Table{Name: tableName},
 		).Error; err != nil {
-			ulogs.Error(err, "pg数据库重置自增字段失败", tableName)
+			ulogs.Errorf("【UpdateSeq】pg数据库重置表[%s]自增字段[%s]失败 %v", tableName, field, err)
 		}
 	}
 }
@@ -116,7 +120,7 @@ func ResetSequence(tx *gorm.DB, tableName string, seqFields []string) error {
 	for _, field := range seqFields {
 		err := tx.Exec("SELECT setval(pg_get_serial_sequence(?, ?), 1, false)", tableName, field).Error
 		if err != nil && !errTools.IsTableNotExist(err) && !errTools.IsColumnNotExist(err) {
-			ulogs.Error(err, "pg数据库重置自增字段失败", tableName)
+			ulogs.Errorf("【ResetSequence】pg数据库重置表[%s]自增字段[%s]失败 %v", tableName, field, err)
 		}
 	}
 	return nil
@@ -169,4 +173,40 @@ func FindTableWithPrefix(tx *gorm.DB, prefix string) ([]string, error) {
 		return nil, fmt.Errorf("根据前缀查询表清单失败：%s", err.Error())
 	}
 	return tables, nil
+}
+
+func Truncate(tx *gorm.DB, tableName string) error {
+	var sql string
+	dialect := tx.Dialector.Name()
+	switch dialect {
+	case config.DbTypeSqlite:
+		sql = fmt.Sprintf("DELETE FROM %s", tableName)
+	case config.DbTypeMysql:
+		sql = fmt.Sprintf("TRUNCATE TABLE %s", tableName)
+	case config.DbTypePostgres:
+		sql = fmt.Sprintf("TRUNCATE TABLE %s", tableName)
+	default:
+		return fmt.Errorf("不支持的数据库类型：%s", dialect)
+	}
+	err := tx.Exec(sql).Error
+	if err != nil {
+		return fmt.Errorf("清空表失败：%s", err.Error())
+	}
+	if dialect == "sqlite" {
+		if err = tx.Exec(fmt.Sprintf("DELETE FROM sqlite_sequence WHERE name = '%s'", tableName)).Error; err != nil {
+			return fmt.Errorf("sqlite重置序列失败：%s", err.Error())
+		}
+	}
+	return nil
+}
+
+// IsTiDB 判断是否是TiDB数据库
+func IsTiDB(tx *gorm.DB) bool {
+	if tx == nil || tx.Dialector == nil {
+		return false
+	}
+	if driver, ok := tx.Dialector.(*mysql.Dialector); ok {
+		return strings.Contains(strings.ToLower(driver.Config.ServerVersion), "tidb")
+	}
+	return false
 }

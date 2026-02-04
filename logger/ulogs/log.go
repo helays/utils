@@ -6,14 +6,24 @@ import (
 )
 
 const (
-	LogLevelDebug = iota
+	LogLevelTrace = iota
+	LogLevelDebug
 	LogLevelInfo
 	LogLevelWarn
 	LogLevelError
 	LogLevelFatal
 )
 
-var Level = 1
+var (
+	traceLogger = log.New(os.Stdout, "【TRACE】", log.LstdFlags)
+	debugLogger = log.New(os.Stdout, "【DEBUG】", log.LstdFlags)
+	infoLogger  = log.New(os.Stdout, "【INFO】", log.LstdFlags)
+	warnLogger  = log.New(os.Stdout, "【WARN】", log.LstdFlags)
+	errorLogger = log.New(os.Stderr, "【ERROR", log.LstdFlags)
+	fatalLogger = log.New(os.Stderr, "【FATAL】", log.LstdFlags)
+)
+
+var Level = LogLevelInfo
 
 // Recover 捕获系统异常
 func Recover() {
@@ -23,103 +33,93 @@ func Recover() {
 }
 
 // Log 打印正确日志，Info的别名
+// Deprecated: 弃用,请使用 Info
 func Log(i ...interface{}) {
 	Info(i...)
 }
 
-// Debug 用于记录调试信息
-func Debug(i ...any) {
-	if Level > LogLevelDebug {
-		return
+func Trace(i ...any) {
+	if Level <= LogLevelTrace {
+		traceLogger.Println(i...)
 	}
-	log.SetPrefix("【DEBUG】")
-	log.SetOutput(os.Stdout)
-	log.Println(i...)
 }
 
-func Debugf(format string, a ...any) {
-	if Level > LogLevelDebug {
-		return
+// noinspection all
+func Tracef(format string, a ...any) {
+	if Level <= LogLevelTrace {
+		traceLogger.Printf(format, a...)
 	}
-	log.SetPrefix("【DEBUG】")
-	log.SetOutput(os.Stdout)
-	log.Printf(format, a...)
+}
+
+// Debug 用于记录调试信息
+func Debug(i ...any) {
+	if Level <= LogLevelDebug {
+		debugLogger.Println(i...)
+	}
+}
+
+// Debugf
+// noinspection all
+func Debugf(format string, a ...any) {
+	if Level <= LogLevelDebug {
+		debugLogger.Printf(format, a...)
+	}
 }
 
 // Info 用于记录信息
 func Info(i ...interface{}) {
-	if Level > LogLevelInfo {
-		return
+	if Level <= LogLevelInfo {
+		infoLogger.Println(i...)
 	}
-	log.SetPrefix("【INFO】")
-	log.SetOutput(os.Stdout)
-	log.Println(i...)
 }
 
+// noinspection all
 func Infof(format string, a ...any) {
-	if Level > LogLevelInfo {
-		return
+	if Level <= LogLevelInfo {
+		infoLogger.Printf(format, a...)
 	}
-	log.SetPrefix("【INFO】")
-	log.SetOutput(os.Stdout)
-	log.Printf(format, a...)
+
 }
 
 // Warn 用于记录警告信息
 func Warn(i ...interface{}) {
-	if Level > LogLevelWarn {
-		return
+	if Level <= LogLevelWarn {
+		warnLogger.Println(i...)
 	}
-	log.SetPrefix("【WARN】")
-	log.SetOutput(os.Stdout)
-	log.Println(i...)
 }
 
+// noinspection all
 func Warnf(format string, a ...any) {
-	if Level > LogLevelWarn {
-		return
+	if Level <= LogLevelWarn {
+		warnLogger.Printf(format, a...)
 	}
-	log.SetPrefix("【WARN】")
-	log.SetOutput(os.Stdout)
-	log.Printf(format, a...)
 }
 
 // Error 用于记录错误信息
 func Error(i ...interface{}) {
-	if Level > LogLevelError {
-		return
+	if Level <= LogLevelError {
+		errorLogger.Println(i...)
 	}
-	log.SetPrefix("【ERROR】")
-	log.SetOutput(os.Stderr)
-	log.Println(i...)
 }
 
 func Errorf(format string, a ...any) {
-	if Level > LogLevelError {
-		return
+	if Level <= LogLevelError {
+		errorLogger.Printf(format, a...)
 	}
-	log.SetPrefix("【ERROR】")
-	log.SetOutput(os.Stderr)
-	log.Printf(format, a...)
 }
 
 // Fatal 用于记录致命错误信息
 func Fatal(i ...interface{}) {
-	if Level > LogLevelFatal {
-		return
+	if Level <= LogLevelFatal {
+		fatalLogger.Println(i...)
 	}
-	log.SetPrefix("【FATAL】")
-	log.SetOutput(os.Stderr)
-	log.Println(i...)
 }
 
+// noinspection all
 func Fatalf(format string, a ...any) {
-	if Level > LogLevelFatal {
-		return
+	if Level <= LogLevelFatal {
+		fatalLogger.Printf(format, a...)
 	}
-	log.SetPrefix("【FATAL】")
-	log.SetOutput(os.Stderr)
-	log.Printf(format, a...)
 }
 
 // Checkerr 检查错误
@@ -130,12 +130,28 @@ func Checkerr(err error, i ...interface{}) {
 	Error(append(i, err)...)
 }
 
+// CheckErrf 检查错误
+func CheckErrf(err error, format string, a ...any) {
+	if err == nil {
+		return
+	}
+	Errorf(format+" 原始错误 %v", append(a, err)...)
+}
+
 // DieCheckerr 检查错误，打印并输出错误信息
 func DieCheckerr(err error, i ...any) {
 	if err == nil {
 		return
 	}
 	Error(append(i, err)...)
+	os.Exit(1)
+}
+
+func DieCheckErrf(err error, format string, a ...any) {
+	if err == nil {
+		return
+	}
+	Errorf(format+" 原始错误 %v", append(a, err)...)
 	os.Exit(1)
 }
 

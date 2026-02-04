@@ -1,11 +1,11 @@
 package loadAuto
 
 import (
-	"github.com/helays/utils/config"
-	loadIni2 "github.com/helays/utils/config/loadIni"
-	loadJson2 "github.com/helays/utils/config/loadJson"
-	"github.com/helays/utils/config/loadYaml"
-	"github.com/helays/utils/logger/ulogs"
+	"github.com/helays/utils/v2/config"
+	loadIni2 "github.com/helays/utils/v2/config/loadIni"
+	loadJson2 "github.com/helays/utils/v2/config/loadJson"
+	"github.com/helays/utils/v2/config/loadYaml"
+	"github.com/helays/utils/v2/logger/ulogs"
 	"path/filepath"
 )
 

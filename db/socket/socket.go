@@ -3,9 +3,10 @@ package socket
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/dataType"
-	"github.com/helays/utils/net/checkIp"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/dataType"
+	"github.com/helays/utils/v2/net/checkIp"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -25,7 +26,7 @@ func (this *Config) Scan(val interface{}) error {
 }
 
 func (this Config) GormDataType() string {
-	return "json"
+	return "custom_socket_config"
 }
 
 func (Config) GormDBDataType(db *gorm.DB, field *schema.Field) string {

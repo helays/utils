@@ -2,12 +2,14 @@ package router
 
 import (
 	"embed"
-	"github.com/helays/utils/net/http/httpServer/http_types"
-	"github.com/helays/utils/net/http/session"
-	"gorm.io/gorm"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/net/http/route"
+	"github.com/helays/utils/v2/net/http/session"
+	"gorm.io/gorm"
 )
 
 type LoginInfo struct {
@@ -21,16 +23,16 @@ type LoginInfo struct {
 	RsaPublickKey []byte    // rsa 公钥
 }
 
-func (this LoginInfo) QueryIsManage() func(db *gorm.DB) *gorm.DB {
+func (i LoginInfo) QueryIsManage() func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if !this.IsManage {
-			db.Where("user_id=?", this.UserId)
+		if !i.IsManage {
+			db.Where("user_id=?", i.UserId)
 		}
 		return db
 	}
 }
 
-type ErrPageFunc func(w http.ResponseWriter, resp http_types.ErrorResp)
+type ErrPageFunc func(w http.ResponseWriter, resp *route.ErrorResp)
 type Router struct {
 	Default                string `ini:"default" json:"default" yaml:"default"`
 	Root                   string `ini:"root" json:"root" yaml:"root"`
@@ -48,10 +50,9 @@ type Router struct {
 	Error        ErrPageFunc // 错误页面处理函数
 	ErrorWithLog ErrPageFunc // 错误页面处理函数
 
-	dev           bool                 // 开发模式
-	staticEmbedFS map[string]*embed.FS // 静态文件
+	dev           bool                  // 开发模式
+	staticEmbedFS map[string]*embedInfo // 静态文件
 
-	Store                  *session.Store   // session 系统
 	IsLogin                bool             // 是否登录
 	LoginPath              string           // 登录页面
 	HomePage               string           //首页
@@ -63,15 +64,36 @@ type Router struct {
 	DisableLoginPathRegexp []*regexp.Regexp // 登录状态下不能访问的页面正则
 	ManagePage             map[string]bool  // 管理员访问
 	ManagePageRegexp       []*regexp.Regexp
+
+	session *session.Manager
+}
+
+type embedInfo struct {
+	embedFS *embed.FS
+	prefix  string
 }
 
 func (ro *Router) SetDev(dev bool) {
 	ro.dev = dev
 }
 
-func (ro *Router) SetStaticEmbedFs(p string, embedFS *embed.FS) {
+// SetStaticEmbedFs 设置内置 embedFS
+func (ro *Router) SetStaticEmbedFs(p string, embedFS *embed.FS, prefix ...string) {
 	if ro.staticEmbedFS == nil {
-		ro.staticEmbedFS = make(map[string]*embed.FS)
+		ro.staticEmbedFS = make(map[string]*embedInfo)
 	}
-	ro.staticEmbedFS[p] = embedFS
+	ro.staticEmbedFS[p] = &embedInfo{embedFS: embedFS}
+	if len(prefix) > 0 {
+		if !strings.HasPrefix(prefix[0], "/") {
+			prefix[0] = "/" + prefix[0]
+		}
+		ro.staticEmbedFS[p].prefix = prefix[0]
+	}
+}
+
+func (ro *Router) SetSession(sessionManager *session.Manager) {
+	ro.session = sessionManager
+}
+func (ro *Router) GetSession() *session.Manager {
+	return ro.session
 }

@@ -3,13 +3,14 @@ package simpleHttpClient
 import (
 	"context"
 	"crypto/tls"
-	"github.com/helays/utils/tools"
-	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"time"
+
+	"github.com/helays/utils/v2/tools"
+	"golang.org/x/net/proxy"
 )
 
 const (

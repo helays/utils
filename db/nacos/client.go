@@ -1,12 +1,13 @@
 package nacos
 
 import (
-	"github.com/helays/utils/tools"
+	"time"
+
+	"github.com/helays/utils/v2/tools"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-	"time"
 )
 
 type Config struct {

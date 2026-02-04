@@ -6,11 +6,11 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"github.com/helays/utils/close/gzipClose"
-	"github.com/helays/utils/close/httpClose"
-	"github.com/helays/utils/net/http/httpTools"
-	"github.com/helays/utils/tools"
-	"github.com/helays/utils/tools/encodinghelper"
+	"github.com/helays/utils/v2/close/gzipClose"
+	"github.com/helays/utils/v2/close/httpClose"
+	"github.com/helays/utils/v2/net/http/httpkit"
+	"github.com/helays/utils/v2/tools"
+	"github.com/helays/utils/v2/tools/encodinghelper"
 	"io"
 	"net"
 	"net/http"
@@ -208,7 +208,7 @@ func (c *Curl) character(body []byte) ([]byte, error) {
 	if utf8.Valid(body) {
 		return nil, nil
 	}
-	searchre := httpTools.PageCharacterSetPreg.FindStringSubmatch(string(body))
+	searchre := httpkit.PageCharacterSetPreg.FindStringSubmatch(string(body))
 	if len(searchre) < 2 {
 		return nil, errors.New("页面字符编码识别失败 ")
 	}

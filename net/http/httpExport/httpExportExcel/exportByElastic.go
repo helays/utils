@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/helays/utils/db/elastic/elasticModel"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/helays/utils/config"
-	"github.com/helays/utils/excelTools"
-	"github.com/helays/utils/net/http/httpTools"
-	"github.com/helays/utils/tools"
+	"github.com/helays/utils/v2/db/elastic/elasticModel"
+
+	"github.com/helays/utils/v2/config"
+	"github.com/helays/utils/v2/excelTools"
+	"github.com/helays/utils/v2/net/http/httpkit"
+	"github.com/helays/utils/v2/tools"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -51,7 +52,7 @@ func (e *ElasticsearchExport) Response(ctx context.Context, w http.ResponseWrite
 		}
 	} else if e.FileType == config.ExportFileTypeCsv {
 		w.Header().Set("Content-Type", "text/csv")
-		httpTools.SetDisposition(w, e.FileName+".csv")
+		httpkit.SetDisposition(w, e.FileName+".csv")
 		cw = csv.NewWriter(w)
 		defer cw.Flush()
 		// 写入UTF-8 BOM头
@@ -88,7 +89,7 @@ func (e *ElasticsearchExport) Response(ctx context.Context, w http.ResponseWrite
 	// 完成Excel导出
 	if e.FileType == config.ExportFileTypeExcel {
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-		httpTools.SetDisposition(w, e.FileName+".xlsx")
+		httpkit.SetDisposition(w, e.FileName+".xlsx")
 		_ = streamWriter.Flush()
 		_ = f.Write(w)
 	}
@@ -105,7 +106,7 @@ func (e *ElasticsearchExport) writeHeader(columnNames []string, streamWriter *ex
 	}
 
 	if e.FileType == config.ExportFileTypeExcel {
-		if err := streamWriter.SetRow("A1", tools.StrSlice2AnySlice(columnNames)); err != nil {
+		if err := streamWriter.SetRow("A1", tools.SliceToAny(columnNames)); err != nil {
 			return fmt.Errorf("导出excel失败，表头写入失败: %w", err)
 		}
 	} else if e.FileType == config.ExportFileTypeCsv {

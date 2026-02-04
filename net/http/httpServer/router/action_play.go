@@ -1,12 +1,13 @@
 package router
 
 import (
-	"github.com/helays/utils/close/vclose"
-	"github.com/helays/utils/net/http/httpServer/response"
-	"github.com/helays/utils/net/http/httpTools"
-	"github.com/helays/utils/tools"
 	"net/http"
 	"path/filepath"
+
+	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/net/http/httpkit"
+	"github.com/helays/utils/v2/net/http/route"
+	"github.com/helays/utils/v2/tools"
 )
 
 //
@@ -36,25 +37,23 @@ import (
 // Date: 2025/6/15 11:57
 //
 
+// Deprecated: 请使用 route.FilePlay 或者 route.FileDownload
 func (ro *Router) Play(w http.ResponseWriter, r *http.Request, fname string, args ...any) {
-	if r.Method == "POST" {
-		response.MethodNotAllow(w)
-		return
-	}
 	if tools.ContainsDotDot(fname) {
 		http.Error(w, "invalid URL path", http.StatusBadRequest)
 		return
 	}
 	dir, file := filepath.Split(fname)
 	embedFs := http.Dir(dir)
-	f, d, respErr := ro.openEmbedFsFile(embedFs, file)
+
+	f, d, respErr := route.HttpFS(embedFs, file)
 	defer vclose.Close(f)
 	if respErr != nil {
-		ro.error(w, *respErr)
+		route.RenderErrorText(w, respErr)
 		return
 	}
 	if len(args) > 0 && args[0] == "downloader" {
-		httpTools.SetDisposition(w, file)
+		httpkit.SetDisposition(w, file)
 	}
 	http.ServeContent(w, r, d.Name(), d.ModTime(), f)
 }

@@ -1,11 +1,12 @@
 package tableRotate
 
 import (
-	"github.com/helays/utils/tools"
-	"gorm.io/gorm"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/helays/utils/v2/tools"
+	"gorm.io/gorm"
 )
 
 type tableSplit struct {

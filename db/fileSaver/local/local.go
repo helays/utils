@@ -2,11 +2,12 @@ package local
 
 import (
 	"fmt"
-	"github.com/helays/utils/close/vclose"
-	"github.com/helays/utils/tools"
 	"io"
 	"os"
 	"path"
+
+	"github.com/helays/utils/v2/close/vclose"
+	"github.com/helays/utils/v2/tools"
 )
 
 type Local struct{}
@@ -29,6 +30,7 @@ func (this Local) Write(p string, src io.Reader, existIgnores ...bool) (int64, e
 		return 0, fmt.Errorf("创建目录%s失败: %s", dir, err.Error())
 	}
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	defer vclose.Close(file)
 	if err != nil {
 		return 0, fmt.Errorf("打开文件%s失败: %s", filePath, err.Error())
 	}
