@@ -19,7 +19,7 @@ var (
 	debugLogger = log.New(os.Stdout, "【DEBUG】", log.LstdFlags)
 	infoLogger  = log.New(os.Stdout, "【INFO】", log.LstdFlags)
 	warnLogger  = log.New(os.Stdout, "【WARN】", log.LstdFlags)
-	errorLogger = log.New(os.Stderr, "【ERROR", log.LstdFlags)
+	errorLogger = log.New(os.Stderr, "【ERROR】", log.LstdFlags)
 	fatalLogger = log.New(os.Stderr, "【FATAL】", log.LstdFlags)
 )
 
