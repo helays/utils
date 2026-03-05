@@ -1,14 +1,17 @@
 package loadIni
 
 import (
+	"fmt"
+
 	"gopkg.in/ini.v1"
 	"helay.net/go/utils/v3/config"
-	"helay.net/go/utils/v3/logger/ulogs"
 	"helay.net/go/utils/v3/tools"
 )
 
 func LoadIni(i any) {
-	ulogs.DieCheckerr(LoadIniBase(i), "载入配置文件失败")
+	if err := LoadIniBase(i); err != nil {
+		panic(fmt.Errorf("解析配置文件失败 %v", err))
+	}
 }
 
 // LoadIniBase 载入配置基础功能

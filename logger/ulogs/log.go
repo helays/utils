@@ -40,21 +40,32 @@ func Log(i ...interface{}) {
 
 func Trace(i ...any) {
 	if Level <= LogLevelTrace {
-		traceLogger.Println(i...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.traceLogger
+		entry.args = i
+		globalLogger.stdoutChan <- entry
 	}
 }
 
 // noinspection all
 func Tracef(format string, a ...any) {
 	if Level <= LogLevelTrace {
-		traceLogger.Printf(format, a...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.traceLogger
+		entry.isFormatted = true
+		entry.format = format
+		entry.args = a
+		globalLogger.stdoutChan <- entry
 	}
 }
 
 // Debug 用于记录调试信息
 func Debug(i ...any) {
 	if Level <= LogLevelDebug {
-		debugLogger.Println(i...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.debugLogger
+		entry.args = i
+		globalLogger.stdoutChan <- entry
 	}
 }
 
@@ -62,21 +73,34 @@ func Debug(i ...any) {
 // noinspection all
 func Debugf(format string, a ...any) {
 	if Level <= LogLevelDebug {
-		debugLogger.Printf(format, a...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.debugLogger
+		entry.isFormatted = true
+		entry.format = format
+		entry.args = a
+		globalLogger.stdoutChan <- entry
 	}
 }
 
 // Info 用于记录信息
 func Info(i ...interface{}) {
 	if Level <= LogLevelInfo {
-		infoLogger.Println(i...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.infoLogger
+		entry.args = i
+		globalLogger.stdoutChan <- entry
 	}
 }
 
 // noinspection all
 func Infof(format string, a ...any) {
 	if Level <= LogLevelInfo {
-		infoLogger.Printf(format, a...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.infoLogger
+		entry.isFormatted = true
+		entry.format = format
+		entry.args = a
+		globalLogger.stdoutChan <- entry
 	}
 
 }
@@ -84,41 +108,65 @@ func Infof(format string, a ...any) {
 // Warn 用于记录警告信息
 func Warn(i ...interface{}) {
 	if Level <= LogLevelWarn {
-		warnLogger.Println(i...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.warnLogger
+		entry.args = i
+		globalLogger.stderrChan <- entry
 	}
 }
 
 // noinspection all
 func Warnf(format string, a ...any) {
 	if Level <= LogLevelWarn {
-		warnLogger.Printf(format, a...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.warnLogger
+		entry.isFormatted = true
+		entry.format = format
+		entry.args = a
+		globalLogger.stderrChan <- entry
 	}
 }
 
 // Error 用于记录错误信息
 func Error(i ...interface{}) {
 	if Level <= LogLevelError {
-		errorLogger.Println(i...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.errorLogger
+		entry.args = i
+		globalLogger.stderrChan <- entry
 	}
 }
 
 func Errorf(format string, a ...any) {
 	if Level <= LogLevelError {
-		errorLogger.Printf(format, a...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.errorLogger
+		entry.isFormatted = true
+		entry.format = format
+		entry.args = a
+		globalLogger.stderrChan <- entry
 	}
 }
 
 // Fatal 用于记录致命错误信息
 func Fatal(i ...interface{}) {
 	if Level <= LogLevelFatal {
-		fatalLogger.Println(i...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.fatalLogger
+		entry.args = i
+		globalLogger.stderrChan <- entry
 	}
 }
 
 // noinspection all
 func Fatalf(format string, a ...any) {
 	if Level <= LogLevelFatal {
-		fatalLogger.Printf(format, a...)
+		entry := globalLogger.getEntry()
+		entry.logger = globalLogger.fatalLogger
+		entry.isFormatted = true
+		entry.format = format
+		entry.args = a
+		globalLogger.stderrChan <- entry
 	}
 }
 

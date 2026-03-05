@@ -1,12 +1,14 @@
 package loadAuto
 
 import (
+	"fmt"
+	"log"
+	"path/filepath"
+
 	"helay.net/go/utils/v3/config"
 	loadIni2 "helay.net/go/utils/v3/config/loadIni"
 	loadJson2 "helay.net/go/utils/v3/config/loadJson"
 	"helay.net/go/utils/v3/config/loadYaml"
-	"helay.net/go/utils/v3/logger/ulogs"
-	"path/filepath"
 )
 
 var (
@@ -27,7 +29,7 @@ func Load[T any](i T) {
 		if err = loadFirst(i); err == nil {
 			return
 		}
-		ulogs.Error(err, "配置文件默认解析器计息失败，开始尝试其他解析器")
+		log.Printf("默认配置解析器解析失败，尝试其他解析器 %v\n", err)
 	}
 	for _, v := range loadFunc {
 		err = v(i)
@@ -35,5 +37,5 @@ func Load[T any](i T) {
 			return
 		}
 	}
-	ulogs.DieCheckerr(err, "载入配置文件失败")
+	panic(fmt.Errorf("解析配置文件失败 %v", err))
 }

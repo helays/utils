@@ -3,15 +3,17 @@ package loadJson
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"helay.net/go/utils/v3/close/osClose"
 	"helay.net/go/utils/v3/config"
-	"helay.net/go/utils/v3/logger/ulogs"
 	"helay.net/go/utils/v3/tools"
-	"os"
 )
 
 func LoadJson(i any) {
-	ulogs.DieCheckerr(LoadJsonBase(i), "解析配置文件失败")
+	if err := LoadJsonBase(i); err != nil {
+		panic(fmt.Errorf("解析配置文件失败 %v", err))
+	}
 }
 
 func LoadJsonBase(i any) error {
