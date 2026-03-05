@@ -9,13 +9,14 @@ import (
 	"gopkg.in/yaml.v3"
 	"helay.net/go/utils/v3/close/osClose"
 	"helay.net/go/utils/v3/config"
-	"helay.net/go/utils/v3/logger/ulogs"
 	"helay.net/go/utils/v3/tools"
 	"helay.net/go/utils/v3/tools/fileinclude"
 )
 
 func LoadYaml(i any) {
-	ulogs.DieCheckerr(LoadYamlBase(i), "解析配置文件失败")
+	if err := LoadYamlBase(i); err != nil {
+		panic(fmt.Errorf("解析配置文件失败 %v", err))
+	}
 }
 
 func LoadYamlBase(i any) error {

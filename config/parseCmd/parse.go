@@ -3,6 +3,7 @@ package parseCmd
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"helay.net/go/utils/v3"
@@ -57,7 +58,7 @@ func Parseparams(f ...func()) {
 
 	// noinspection all
 	if config.EnableParseParamsLog {
-		fmt.Println("日志级别", logLevel, ulogs.Level)
-		ulogs.Log("运行参数解析完成...")
+		log.Printf("日志级别 %s %d\n", logLevel, ulogs.Level)
+		log.Println("运行参数解析完成...")
 	}
 }
