@@ -1,10 +1,8 @@
 package dataType
 
 import (
-	"bytes"
 	"context"
 	"database/sql/driver"
-	"encoding/json"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -33,28 +31,6 @@ func (AnyArray[T]) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 // noinspection all
 func (a AnyArray[T]) GormValue(ctx context.Context, db *gorm.DB) clause.Expr {
 	return arrayGormValue(a, db)
-}
-
-func (a AnyArray[T]) MarshalJSON() ([]byte, error) {
-	if a == nil {
-		return []byte("null"), nil
-	}
-	return json.Marshal(a)
-}
-
-func (a *AnyArray[T]) UnmarshalJSON(b []byte) error {
-	// 处理 null
-	if bytes.Equal(b, []byte("null")) {
-		*a = nil
-		return nil
-	}
-
-	var tmp []T
-	if err := json.Unmarshal(b, &tmp); err != nil {
-		return err
-	}
-	*a = tmp
-	return nil
 }
 
 // ToSlice 转换为普通切片
