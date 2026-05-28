@@ -130,3 +130,7 @@ func (b *Bool) GobDecode(data []byte) error {
 	b.bool = data[0] != 0
 	return nil
 }
+
+func (b Bool) ToPtr() *Bool {
+	return &b
+}
