@@ -2994,3 +2994,21 @@ func (l *LocalCache) SetIFDNEGet(ctx context.Context, key string, value interfac
 func (l *LocalCache) VRange(ctx context.Context, key string, start string, end string, count int64) *redis.StringSliceCmd {
 	return nil
 }
+
+func (l *LocalCache) ReplicaOf(ctx context.Context, host string, port string) *redis.StatusCmd {
+	return nil
+}
+
+func (l *LocalCache) XCfgSet(ctx context.Context, a *redis.XCfgSetArgs) *redis.StatusCmd {
+	return nil
+}
+func (l *LocalCache) VSimWithArgsWithAttribs(ctx context.Context, key string, val redis.Vector, args *redis.VSimArgs) *redis.VectorAttribSliceCmd {
+	return nil
+}
+func (l *LocalCache) VSimWithArgsWithScoresWithAttribs(ctx context.Context, key string, val redis.Vector, args *redis.VSimArgs) *redis.VectorScoreAttribSliceCmd {
+	return nil
+}
+
+func (l *LocalCache) VIsMember(ctx context.Context, key string, element string) *redis.BoolCmd {
+	return nil
+}
