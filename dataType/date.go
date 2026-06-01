@@ -155,6 +155,20 @@ func (c *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	return err
 }
 
+// UnmarshalParam 从 query string 参数解析
+func (c *CustomTime) UnmarshalParam(param string) error {
+	if param == "" {
+		return nil
+	}
+	tf := formatter.FormatRule[time.Time]{FormatType: "output_date"}
+	_t, err := tf.Format(param)
+	if err != nil {
+		return err
+	}
+	c.Time = _t
+	return nil
+}
+
 // noinspection all
 func (c CustomTime) ToPtr() *CustomTime {
 	return &c
