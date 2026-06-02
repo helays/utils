@@ -51,10 +51,11 @@ func (f FormatRule[T]) dateObjectFormat(_src any) (any, error) {
 		t   time.Time
 		err error
 		ok  bool
-		src = tools.Any2string(_src)
+		src string
 	)
 	// 首先尝试使用 https://github.com/araddon/dateparse 库
 	if t, ok = _src.(time.Time); !ok {
+		src = tools.Any2string(_src)
 		t, err = dateparse.ParseLocal(src)
 	}
 	if err == nil {
