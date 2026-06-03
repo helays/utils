@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -13,48 +14,32 @@ import (
 
 // JSONMap defined JSON data type, need to implements driver.Valuer, sql.Scanner interface
 // noinspection all
-type JSONMap map[string]any
+type JSONMap struct {
+	data map[string]any
+}
 
 // Value return json value, implement driver.Valuer interface
 // noinspection all
 func (m JSONMap) Value() (driver.Value, error) {
-	return DriverValueWithJson(m)
+	return DriverValueWithJson(m.data)
 }
 
 // Scan scan value into Jsonb, implements sql.Scanner interface
 // noinspection all
 func (m *JSONMap) Scan(val any) error {
-	return DriverScanWithJson(val, m) // 这里暂时先用这个版本
-	//if val == nil {
-	//	*m = make(JSONMap)
-	//	return nil
-	//}
-	//var ba []byte
-	//switch v := val.(type) {
-	//case []byte:
-	//	ba = v
-	//case string:
-	//	ba = []byte(v)
-	//default:
-	//	return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", val))
-	//}
-	//t := map[string]any{}
-	//rd := bytes.NewReader(ba)
-	//decoder := json.NewDecoder(rd)
-	//decoder.UseNumber()
-	//err := decoder.Decode(&t)
-	//*m = t
-	//return err
+	if m == nil {
+		return errors.New("JSONMap is nil")
+	}
+	return DriverScanWithJson(val, &m.data) // 这里暂时先用这个版本
 }
 
 // MarshalJSON to output non base64 encoded []byte
 // noinspection all
 func (m JSONMap) MarshalJSON() ([]byte, error) {
-	if m == nil {
+	if m.data == nil {
 		return []byte("null"), nil
 	}
-	t := (map[string]any)(m)
-	return json.Marshal(t)
+	return json.Marshal(m.data)
 }
 
 // UnmarshalJSON to deserialize []byte
@@ -64,10 +49,7 @@ func (m *JSONMap) UnmarshalJSON(b []byte) error {
 	rd := bytes.NewReader(b)
 	decoder := json.NewDecoder(rd)
 	decoder.UseNumber()
-	t := map[string]any{}
-	err := decoder.Decode(&t)
-	*m = t
-	return err
+	return decoder.Decode(&m.data)
 }
 
 // GormDataType gorm common data type
@@ -83,7 +65,33 @@ func (JSONMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 }
 
 // noinspection all
-func (jm JSONMap) GormValue(_ context.Context, db *gorm.DB) clause.Expr {
-	data, _ := jm.MarshalJSON()
+func (m JSONMap) GormValue(_ context.Context, db *gorm.DB) clause.Expr {
+	data, _ := m.MarshalJSON()
 	return MapGormValue(string(data), db)
+}
+
+func (m *JSONMap) Add(k string, v any) {
+	if m == nil {
+		return
+	}
+	if m.data == nil {
+		m.data = make(map[string]any)
+	}
+	m.data[k] = v
+}
+
+func (m *JSONMap) Get(k string) (any, bool) {
+	if m == nil || m.data == nil {
+		return nil, false
+	}
+	v, ok := m.data[k]
+	return v, ok
+}
+
+func (m *JSONMap) Remove(k string) {
+	if m == nil || m.data == nil {
+		return
+	}
+
+	delete(m.data, k)
 }
