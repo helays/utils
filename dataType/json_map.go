@@ -18,6 +18,10 @@ type JSONMap struct {
 	data map[string]any
 }
 
+func NewJSONMap(data map[string]any) JSONMap {
+	return JSONMap{data: data}
+}
+
 // Value return json value, implement driver.Valuer interface
 // noinspection all
 func (m JSONMap) Value() (driver.Value, error) {
