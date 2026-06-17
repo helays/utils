@@ -47,6 +47,42 @@ func (Byte) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return "int"
 }
 
+func (b Byte) ToInt() int {
+	return int(b)
+}
+
+func (b Byte) ToInt64() int64 {
+	return int64(b)
+}
+
+func (b Byte) ToUint64() uint64 {
+	return uint64(b)
+}
+
+func (b Byte) ToFloat64() float64 {
+	return float64(b)
+}
+
+func (b Byte) ToString() string {
+	return fmt.Sprintf("%d", b)
+}
+
+func (b Byte) ToBool() bool {
+	return b != 0
+}
+
+func (b Byte) ToInt32() int32 {
+	return int32(b)
+}
+
+func (b Byte) ToInt16() int16 {
+	return int16(b)
+}
+
+func (b Byte) ToByte() byte {
+	return byte(b)
+}
+
 type Uint64 struct {
 	uint64
 }
