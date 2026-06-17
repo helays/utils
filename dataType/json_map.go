@@ -99,3 +99,7 @@ func (m *JSONMap) Remove(k string) {
 
 	delete(m.data, k)
 }
+
+func (m *JSONMap) ToMap() map[string]any {
+	return m.data
+}
