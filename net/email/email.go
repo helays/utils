@@ -10,15 +10,35 @@ import (
 )
 
 type EmailSender struct {
-	SmtpSenderMail  string          `json:"smtp_sender_mail" yaml:"smtp_sender_mail"`
-	SmtpSenderAlias string          `json:"smtp_sender_alias" yaml:"smtp_sender_alias"`
-	SmtpSenderTo    []string        `json:"smtp_sender_to" yaml:"smtp_sender_to"`
-	SmtpSenderAddr  string          `json:"smtp_sender_addr" yaml:"smtp_sender_addr"`
-	SmtpSenderPort  int             `json:"smtp_sender_port" yaml:"smtp_sender_port"`
-	Account         string          `json:"account" yaml:"account"`
-	Password        string          `json:"password" yaml:"password"`
-	Proxy           cfg_proxy.Proxy `json:"proxy" yaml:"proxy"`
-	TLS             *cfg_tls.TLS    `json:"tls" yaml:"tls"`
+	SmtpSenderMail   string   `json:"smtp_sender_mail" yaml:"smtp_sender_mail"`
+	SmtpSenderAlias  string   `json:"smtp_sender_alias" yaml:"smtp_sender_alias"`
+	EnableExternalTo bool     `json:"enable_external_to" yaml:"enable_external_to"` // 是否启用外部邮件接收人，可用在调用层，是否决定重写 SmtpSenderTo
+	SmtpSenderTo     []string `json:"smtp_sender_to" yaml:"smtp_sender_to"`
+	SmtpSenderAddr   string   `json:"smtp_sender_addr" yaml:"smtp_sender_addr"`
+	SmtpSenderPort   int      `json:"smtp_sender_port" yaml:"smtp_sender_port"`
+	Account          string   `json:"account" yaml:"account"`
+	Password         string   `json:"password" yaml:"password"`
+
+	Proxy cfg_proxy.Proxy `json:"proxy" yaml:"proxy"`
+	TLS   *cfg_tls.TLS    `json:"tls" yaml:"tls"`
+}
+
+func (e *EmailSender) Clone(dst []string) *EmailSender {
+	out := &EmailSender{
+		SmtpSenderMail:  e.SmtpSenderMail,
+		SmtpSenderAlias: e.SmtpSenderAlias,
+		SmtpSenderTo:    e.SmtpSenderTo,
+		SmtpSenderPort:  e.SmtpSenderPort,
+		SmtpSenderAddr:  e.SmtpSenderAddr,
+		Account:         e.Account,
+		Password:        e.Password,
+		Proxy:           e.Proxy,
+		TLS:             e.TLS,
+	}
+	if len(dst) > 0 {
+		out.SmtpSenderTo = dst
+	}
+	return out
 }
 
 func (e *EmailSender) NewDialer() (*gomail.Dialer, error) {

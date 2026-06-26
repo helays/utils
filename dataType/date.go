@@ -1,7 +1,6 @@
 package dataType
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"strings"
 	"time"
@@ -13,6 +12,16 @@ import (
 	"helay.net/go/utils/v3/tools"
 )
 
+var timeFormat = formatter.FormatRule[time.Time]{
+	FormatType: "output_date",
+	InputRules: []string{
+		"timestamp",
+		"2006-01-02",
+		"2006-01-02 15",
+		"2006-01-02 15:04",
+	},
+}
+
 type CustomDate struct {
 	time.Time
 }
@@ -23,10 +32,15 @@ func (c CustomDate) String() string {
 }
 
 // noinspection all
-func (c *CustomDate) Scan(value interface{}) (err error) {
-	nullTime := &sql.NullTime{}
-	err = nullTime.Scan(value)
-	c.Time = nullTime.Time
+func (c *CustomDate) Scan(value any) (err error) {
+	if value == nil {
+		return nil
+	}
+	t, err := timeFormat.Format(value)
+	if err != nil {
+		return err
+	}
+	c.Time = t
 	return
 }
 
@@ -70,8 +84,7 @@ func (c *CustomDate) UnmarshalJSON(b []byte) (err error) {
 		//*this = CustomTime{}
 		return nil
 	}
-	tf := formatter.FormatRule[time.Time]{FormatType: "output_date"}
-	_t, err := tf.Format(s)
+	_t, err := timeFormat.Format(s)
 	if err != nil {
 		return err
 	}
@@ -98,9 +111,14 @@ func (c CustomTime) String() string {
 
 // noinspection all
 func (c *CustomTime) Scan(value interface{}) (err error) {
-	nullTime := &sql.NullTime{}
-	err = nullTime.Scan(value)
-	c.Time = nullTime.Time
+	if value == nil {
+		return nil
+	}
+	t, err := timeFormat.Format(value)
+	if err != nil {
+		return err
+	}
+	c.Time = t
 	return
 }
 
@@ -153,6 +171,20 @@ func (c *CustomTime) UnmarshalJSON(b []byte) (err error) {
 	}
 	c.Time = _t
 	return err
+}
+
+// UnmarshalParam 从 query string 参数解析
+func (c *CustomTime) UnmarshalParam(param string) error {
+	if param == "" {
+		return nil
+	}
+	tf := formatter.FormatRule[time.Time]{FormatType: "output_date"}
+	_t, err := tf.Format(param)
+	if err != nil {
+		return err
+	}
+	c.Time = _t
+	return nil
 }
 
 // noinspection all

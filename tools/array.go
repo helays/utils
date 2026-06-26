@@ -373,6 +373,16 @@ func AnySlice2StrSlice(slice []any) []string {
 	return out
 }
 
+// ToStrings 将实现了 fmt.Stringer 接口的元素切片转换为字符串切片
+// slice: 任意实现了 String() string 的元素类型切片
+func ToStrings[T fmt.Stringer](slice []T) []string {
+	out := make([]string, len(slice))
+	for i, v := range slice {
+		out[i] = v.String()
+	}
+	return out
+}
+
 // AnySlice2Str 将任意切片转成字符串
 func AnySlice2Str(slice []any, _sep ...string) string {
 	var builder strings.Builder

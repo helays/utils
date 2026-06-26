@@ -1,6 +1,7 @@
 package safe
 
 import (
+	"fmt"
 	"time"
 	"unsafe"
 
@@ -27,6 +28,11 @@ type OnExpired[K comparable] func(key []K) // 过期回调
 // Hasher 编译时确定的哈希函数
 type Hasher[K comparable] interface {
 	Hash(K) uint64
+}
+type GenericStringHasher[T fmt.Stringer] struct{}
+
+func (h GenericStringHasher[T]) Hash(k T) uint64 {
+	return xxhash.Sum64String(k.String())
 }
 
 // IntegerHasher 整数哈希器
