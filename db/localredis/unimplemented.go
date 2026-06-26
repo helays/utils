@@ -2721,13 +2721,13 @@ func (l *LocalCache) VInfo(ctx context.Context, key string) *redis.MapStringInte
 
 // VLinks
 // noinspection all
-func (l *LocalCache) VLinks(ctx context.Context, key, element string) *redis.StringSliceCmd {
+func (l *LocalCache) VLinks(ctx context.Context, key string, element string) *redis.StringSliceSliceCmd {
 	return nil
 }
 
 // VLinksWithScores
 // noinspection all
-func (l *LocalCache) VLinksWithScores(ctx context.Context, key, element string) *redis.VectorScoreSliceCmd {
+func (l *LocalCache) VLinksWithScores(ctx context.Context, key, element string) *redis.VectorScoreSliceSliceCmd {
 	return nil
 }
 
@@ -3010,5 +3010,131 @@ func (l *LocalCache) VSimWithArgsWithScoresWithAttribs(ctx context.Context, key 
 }
 
 func (l *LocalCache) VIsMember(ctx context.Context, key string, element string) *redis.BoolCmd {
+	return nil
+}
+
+func (l *LocalCache) ARSet(ctx context.Context, key string, index uint64, values ...string) *redis.IntCmd {
+	return nil
+}
+func (l *LocalCache) ARGet(ctx context.Context, key string, index uint64) *redis.StringCmd {
+	return nil
+}
+func (l *LocalCache) ARGetRange(ctx context.Context, key string, start uint64, end uint64) *redis.SliceCmd {
+	return nil
+}
+
+func (l *LocalCache) ARMGet(ctx context.Context, key string, indexes ...uint64) *redis.SliceCmd {
+	return nil
+}
+func (l *LocalCache) ARMSet(ctx context.Context, key string, members ...redis.AREntry) *redis.IntCmd {
+	return nil
+}
+func (l *LocalCache) ARInsert(ctx context.Context, key string, values ...string) *redis.UintCmd {
+	return nil
+}
+
+func (l *LocalCache) ARDel(ctx context.Context, key string, indexes ...uint64) *redis.IntCmd {
+	return nil
+}
+func (l *LocalCache) ARDelRange(ctx context.Context, key string, ranges ...redis.ARRange) *redis.UintCmd {
+	return nil
+}
+func (l *LocalCache) ARLen(ctx context.Context, key string) *redis.UintCmd {
+	return nil
+}
+
+func (l *LocalCache) ARCount(ctx context.Context, key string) *redis.UintCmd {
+	return nil
+}
+func (l *LocalCache) ARNext(ctx context.Context, key string) *redis.UintCmd {
+	return nil
+}
+func (l *LocalCache) ARSeek(ctx context.Context, key string, index uint64) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) ARInfo(ctx context.Context, key string) *redis.MapStringInterfaceCmd {
+	return nil
+}
+func (l *LocalCache) ARInfoFull(ctx context.Context, key string) *redis.MapStringInterfaceCmd {
+	return nil
+}
+func (l *LocalCache) ARScan(ctx context.Context, key string, start uint64, end uint64, args *redis.ARScanArgs) *redis.AREntrySliceCmd {
+	return nil
+}
+
+func (l *LocalCache) AROpSum(ctx context.Context, key string, start, end uint64) *redis.StringCmd {
+	return nil
+}
+
+func (l *LocalCache) AROpMin(ctx context.Context, key string, start, end uint64) *redis.StringCmd {
+	return nil
+}
+
+func (l *LocalCache) AROpMax(ctx context.Context, key string, start, end uint64) *redis.StringCmd {
+	return nil
+}
+
+func (l *LocalCache) AROpAnd(ctx context.Context, key string, start, end uint64) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) AROpOr(ctx context.Context, key string, start, end uint64) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) AROpXor(ctx context.Context, key string, start, end uint64) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) AROpMatch(ctx context.Context, key string, start, end uint64, value string) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) AROpUsed(ctx context.Context, key string, start, end uint64) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) ARGrep(ctx context.Context, key string, start, end string, args *redis.ARGrepArgs) *redis.UintSliceCmd {
+	return nil
+}
+
+func (l *LocalCache) ARGrepWithValues(ctx context.Context, key string, start, end string, args *redis.ARGrepArgs) *redis.AREntrySliceCmd {
+	return nil
+}
+
+func (l *LocalCache) ARRing(ctx context.Context, key string, size uint64, values ...string) *redis.UintCmd {
+	return nil
+}
+
+func (l *LocalCache) ARLastItems(ctx context.Context, key string, count uint64, rev bool) *redis.SliceCmd {
+	return nil
+}
+
+func (l *LocalCache) GetToBuffer(ctx context.Context, key string, buf []byte) *redis.ZeroCopyStringCmd {
+	return nil
+}
+
+func (l *LocalCache) IncrEXInt(ctx context.Context, key string, args redis.IncrEXIntArgs) *redis.IncrEXIntCmd {
+	return nil
+}
+
+func (l *LocalCache) IncrEXFloat(ctx context.Context, key string, args redis.IncrEXFloatArgs) *redis.IncrEXFloatCmd {
+	return nil
+}
+
+func (l *LocalCache) SetFromBuffer(ctx context.Context, key string, buf []byte) *redis.StatusCmd {
+	return nil
+}
+
+func (l *LocalCache) XNack(ctx context.Context, a *redis.XNackArgs) *redis.IntCmd {
+	return nil
+}
+
+func (l *LocalCache) XAutoClaimWithDeleted(ctx context.Context, a *redis.XAutoClaimArgs) *redis.XAutoClaimWithDeletedCmd {
+	return nil
+}
+
+func (l *LocalCache) JSONSetWithArgs(ctx context.Context, key, path string, value interface{}, options *redis.JSONSetArgsOptions) *redis.StatusCmd {
 	return nil
 }
