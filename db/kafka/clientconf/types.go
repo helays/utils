@@ -265,6 +265,8 @@ type Fetch struct {
 	// 类似于 JVM 的 `fetch.message.max.bytes`。
 	// 全局 `sarama.MaxResponseSize` 仍然适用。
 	Max int32 `yaml:"max" json:"max"`
+
+	MaxBytes int32 `yaml:"max_bytes" json:"max_bytes"`
 }
 
 type AutoCommit struct {
