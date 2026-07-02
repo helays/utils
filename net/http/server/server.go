@@ -72,6 +72,12 @@ func (s *Server[T]) httpServer() {
 		IdleTimeout:                  tools.AutoTimeDuration(s.opt.IdleTimeout, time.Second),
 		MaxHeaderBytes:               s.opt.MaxHeaderBytes,
 	}
+
+	if s.opt.LogFilter.SuppressAllServerErrors || s.opt.LogFilter.SuppressClientDisconnect || s.opt.LogFilter.SuppressTLSHandshakeError {
+		filteringLogger := NewFilteringLogger(s.opt.LogFilter)
+		s.server.ErrorLog = filteringLogger.GetErrorLog()
+	}
+
 }
 
 // http3 配置处理
