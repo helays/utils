@@ -212,6 +212,7 @@ func (c *Config) toConsumer(cfg *sarama.Config) error {
 	cfg.Consumer.Fetch.Min = tools.Ternary(c.Consumer.Fetch.Min < 1, 1, c.Consumer.Fetch.Min)
 	cfg.Consumer.Fetch.Default = tools.Ternary(c.Consumer.Fetch.Default < 1, 1024*1024, c.Consumer.Fetch.Default)
 	cfg.Consumer.Fetch.Max = c.Consumer.Fetch.Max
+	cfg.Consumer.Fetch.MaxBytes = tools.Ternary(c.Consumer.Fetch.MaxBytes < 1, 1024*1024*50, c.Consumer.Fetch.MaxBytes)
 
 	cfg.Consumer.MaxWaitTime = tools.AutoTimeDuration(c.Consumer.MaxWaitTime, time.Millisecond, 500*time.Millisecond)
 	cfg.Consumer.MaxProcessingTime = tools.AutoTimeDuration(c.Consumer.MaxProcessingTime, time.Millisecond, 100*time.Millisecond)

@@ -25,8 +25,7 @@ func (e *JsonDecodeError) Unwrap() error {
 }
 
 func ReadErrRaw(err error) []byte {
-	var jsonErr *JsonDecodeError
-	if errors.As(err, &jsonErr) {
+	if jsonErr, ok := errors.AsType[*JsonDecodeError](err); ok {
 		return jsonErr.Raw.Bytes()
 	}
 	return nil

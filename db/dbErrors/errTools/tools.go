@@ -3,11 +3,12 @@ package errTools
 import (
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/jackc/pgx/v5/pgconn"
 	"helay.net/go/utils/v3/db/dbErrors"
 	"helay.net/go/utils/v3/db/dbErrors/errPostgres"
-	"strings"
 )
 
 func Error(err error) error {
@@ -38,14 +39,12 @@ func IsTableNotExist(err error) bool {
 		return false
 	}
 	// 检查 PostgresSQL 错误
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		return pgErr.Code == "42P01" // PostgreSQL 表不存在的错误码
 	}
 
 	// 检查 MySQL 错误
-	var myErr *mysql.MySQLError
-	if errors.As(err, &myErr) {
+	if myErr, ok := errors.AsType[*mysql.MySQLError](err); ok {
 		return myErr.Number == 1146 // MySQL 表不存在的错误码 (ER_NO_SUCH_TABLE)
 	}
 	errStr := err.Error()
@@ -67,14 +66,12 @@ func IsColumnNotExist(err error) bool {
 	}
 
 	// 检查 PostgreSQL 错误
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		return pgErr.Code == "42703" // PostgreSQL 列不存在的错误码
 	}
 
 	// 检查 MySQL 错误
-	var myErr *mysql.MySQLError
-	if errors.As(err, &myErr) {
+	if myErr, ok := errors.AsType[*mysql.MySQLError](err); ok {
 		return myErr.Number == 1054 // MySQL 列不存在的错误码 (ER_BAD_FIELD_ERROR)
 	}
 
@@ -100,8 +97,7 @@ func IsDuplicateKeyError(err error) int {
 	errStr := err.Error()
 
 	// 检查 PostgreSQL 错误
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		if pgErr.Code == "23505" { // 唯一约束违反
 			if strings.Contains(pgErr.ConstraintName, "pkey") || strings.Contains(pgErr.Message, "primary key") {
 				return 1 // 主键重复
@@ -112,8 +108,7 @@ func IsDuplicateKeyError(err error) int {
 	}
 
 	// 检查 MySQL 错误
-	var myErr *mysql.MySQLError
-	if errors.As(err, &myErr) {
+	if myErr, ok := errors.AsType[*mysql.MySQLError](err); ok {
 		if myErr.Number == 1062 { // ER_DUP_ENTRY
 			if strings.Contains(myErr.Message, "PRIMARY") || strings.Contains(myErr.Message, "primary key") {
 				return 1 // 主键重复

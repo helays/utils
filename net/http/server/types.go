@@ -36,9 +36,12 @@ type Config struct {
 
 	Security    SecurityConfig               `ini:"security" json:"security" yaml:"security"` // 安全配置
 	Compression middleware.CompressionConfig `json:"compression" yaml:"compression"`          // 压缩配置
-	Logger      zaploger.Config              `json:"logger" yaml:"logger"`                    // 日志配置
+
+	Logger zaploger.Config `json:"logger" yaml:"logger"` // 日志配置
 
 	Route route.Config `json:"route" yaml:"route"` // 路由配置
+	// 新增：日志过滤配置
+	LogFilter LogFilterConfig `json:"log_filter" yaml:"log_filter"`
 }
 
 type SecurityConfig struct {
@@ -52,6 +55,18 @@ type IPAccessConfig struct {
 	Allow  *ipmatch.Config `ini:"allow" json:"allow" yaml:"allow"` // 允许的IP
 	Deny   *ipmatch.Config `ini:"deny" json:"deny" yaml:"deny"`    // 屏蔽的IP
 	Debug  *ipmatch.Config `ini:"debug" json:"debug" yaml:"debug"` // 调试允许的IP
+}
+
+// LogFilterConfig 日志过滤配置
+type LogFilterConfig struct {
+	// 是否屏蔽 TLS 握手错误日志（如 HTTP 请求发到 HTTPS 端口）
+	SuppressTLSHandshakeError bool `json:"suppress_tls_handshake_error" yaml:"suppress_tls_handshake_error"`
+
+	// 是否屏蔽客户端主动断开连接的错误（可选）
+	SuppressClientDisconnect bool `json:"suppress_client_disconnect" yaml:"suppress_client_disconnect"`
+
+	// 是否屏蔽所有 HTTP 服务器内部错误日志（慎用）
+	SuppressAllServerErrors bool `json:"suppress_all_server_errors" yaml:"suppress_all_server_errors"`
 }
 
 type Server[T any] struct {

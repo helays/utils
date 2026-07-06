@@ -46,8 +46,7 @@ func (h IntegerHasher[T]) Hash(key T) uint64 {
 type FloatHasher[T constraints.Float] struct{}
 
 func (h FloatHasher[T]) Hash(key T) uint64 {
-	f64 := float64(key)
-	return xxhash.Sum64(unsafe.Slice((*byte)(unsafe.Pointer(&f64)), 8))
+	return xxhash.Sum64(unsafe.Slice((*byte)(unsafe.Pointer(new(float64(key)))), 8))
 }
 
 // StringHasher 字符串哈希器
