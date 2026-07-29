@@ -735,7 +735,11 @@ func Float64tostring(f float64) string {
 	if f == math.Trunc(f) {
 		return strconv.FormatInt(int64(f), 10)
 	}
-	return strconv.FormatFloat(f, 'f', 6, 64)
+	// 用 15 位精度，然后用 TrimRight 去零
+	s := strconv.FormatFloat(f, 'f', 15, 64)
+	s = strings.TrimRight(s, "0")
+	s = strings.TrimRight(s, ".")
+	return s
 }
 
 // StrToFloat64 字符串转 float 64

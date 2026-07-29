@@ -466,3 +466,14 @@ func MapKeys[K comparable, V any](m map[K]V) []K {
 	}
 	return keys
 }
+
+func Pluck[T any, R any](slice []T, extractor func(T) R) []R {
+	if len(slice) == 0 {
+		return []R{} // 返回空切片而非 nil，避免 nil 检查
+	}
+	result := make([]R, len(slice))
+	for i, item := range slice {
+		result[i] = extractor(item)
+	}
+	return result
+}
