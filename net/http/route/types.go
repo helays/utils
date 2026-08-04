@@ -52,6 +52,13 @@ type ErrorResp struct {
 	Error error
 }
 
+// EmbedInfo 使用方式
+//
+//	.AddEmbed(&route.EmbedInfo{
+//				Search: "/",
+//				Prefix: "build",
+//				FS:     &html.HTMLFS,
+//			})
 type EmbedInfo struct {
 	Search string // 用search 去匹配请求path的前面部分，看是否包含 string.HasPrefix(path,search)
 
