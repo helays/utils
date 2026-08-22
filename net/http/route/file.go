@@ -171,13 +171,10 @@ func (ro *Route) loadFile(path string) (http.FileSystem, bool) {
 		hfs         http.FileSystem
 		enableEmbed = false
 	)
-
 	for _, cache := range ro.embed {
 		if strings.HasPrefix(path, cache.Search) {
-			if cache.Prefix != "" {
-				path = filepath.Join(cache.Prefix, path)
-			}
-			hfs = http.FS(cache.FS)
+			_hfs, _ := fs.Sub(cache.FS, cache.Prefix)
+			hfs = http.FS(_hfs)
 			enableEmbed = true
 			break
 		}
