@@ -44,5 +44,3 @@ mkdir runtime\.go\cache runtime\.go\tmp runtime\.go\mod 2>nul && set GOCACHE=%cd
 ### 注意事项
 - 清理缓存：`rm -rf runtime/.go`（Bash）或 `Remove-Item -Recurse -Force runtime\.go`（PowerShell）
 - `GOTOOLCHAIN=local` 三种 shell 均需设置；换新机器或升级 Go 后首次编译如报“go.mod requires go >= x.x”，请升级本机 Go 而非移除此变量
-
-其他规范，就查看CLAUDE.md文件。
