@@ -477,3 +477,14 @@ func Pluck[T any, R any](slice []T, extractor func(T) R) []R {
 	}
 	return result
 }
+
+// SplitString 把字符串按分隔符拆成切片，并自动 trim 两端空白
+// 空字符串返回 nil（与 strings.Split 行为一致）
+// 与原 hndx.callback.task 中 parsePhones 的处理一致
+func SplitString(s, sep string) []string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, sep)
+}

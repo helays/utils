@@ -1,8 +1,10 @@
 package dataType
 
 import (
+	"bytes"
 	"database/sql/driver"
 	"encoding/json"
+	"strconv"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -105,11 +107,37 @@ func (b Bool) MarshalJSON() ([]byte, error) {
 }
 
 func (b *Bool) UnmarshalJSON(data []byte) error {
-	var val bool
-	if err := json.Unmarshal(data, &val); err != nil {
-		return err
+	ds := bytes.TrimSpace(data)
+	if len(ds) == 0 || bytes.Equal(ds, []byte("null")) {
+		b.bool = false
+		return nil
 	}
-	b.bool = val
+	switch ds[0] {
+	case '"': // JSON 字符串
+		s, err := strconv.Unquote(string(ds))
+		if err != nil {
+			return err
+		}
+		ok, err := tools.Any2bool(s)
+		if err != nil {
+			return err
+		}
+		b.bool = ok
+	case 't': // true
+		b.bool = true
+	case 'f': // false
+		b.bool = false
+	default: // JSON 数字
+		f, err := strconv.ParseFloat(string(ds), 64)
+		if err != nil {
+			return err
+		}
+		ok, err := tools.Any2bool(f)
+		if err != nil {
+			return err
+		}
+		b.bool = ok
+	}
 	return nil
 }
 
