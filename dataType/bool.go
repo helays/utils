@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -162,3 +163,27 @@ func (b *Bool) GobDecode(data []byte) error {
 func (b Bool) ToPtr() *Bool {
 	return &b
 }
+
+// UnmarshalParam 实现 gin binding.BindUnmarshaler（query/form 参数绑定）。
+//
+// 目的：让 query/form 里的布尔原生解析（"true"/"false"/"1"/"0"/"yes"/"no"…），
+// 不再落到 gin 的 Struct 分支 json.Unmarshal（其遇空串会报 unexpected end of JSON input）。
+//
+// 注意：gin 对**显式空值**（?x=）仍判定为"已设置"（trySetCustom 恒返回 isSet=true），
+// 因此 *Bool（指针）字段会被赋成零值 false；若某筛选参数要求"空 = 未传 = nil"，
+// 请由前端不发送空串（现状如此），或该 DTO 改用值类型 dataType.Bool。
+func (b *Bool) UnmarshalParam(src string) error {
+	s := strings.TrimSpace(src)
+	if s == "" {
+		return nil
+	}
+	ok, err := tools.Any2bool(s)
+	if err != nil {
+		return err
+	}
+	b.bool = ok
+	return nil
+}
+
+// UnmarshalText 兼容 encoding.TextUnmarshaler（部分三方解码器/框架偏好它）
+func (b *Bool) UnmarshalText(text []byte) error { return b.UnmarshalParam(string(text)) }
