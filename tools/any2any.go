@@ -32,7 +32,7 @@ func Map2Struct(dst any, src map[string]any, customConvert map[string]func(dst a
 		// 如果这个字段是一个匿名结构体，还需要递归处理
 		if field.Type.Kind() == reflect.Struct && field.Anonymous {
 			// 递归处理嵌套结构体，注意这里不能使用field
-			if err := Map2Struct(val.Field(i).Addr().Interface(), src, customConvert); err != nil {
+			if err = Map2Struct(val.Field(i).Addr().Interface(), src, customConvert); err != nil {
 				return err
 			}
 			continue
@@ -146,7 +146,7 @@ func Any2string(v any) string {
 		// 使用反射处理更多类型
 		rv := reflect.ValueOf(v)
 		// 处理指针类型
-		if rv.Kind() == reflect.Ptr {
+		if rv.Kind() == reflect.Pointer {
 			if rv.IsNil() {
 				return ""
 			}
@@ -316,7 +316,7 @@ func Any2float64(_v any) (float64, error) {
 		// 使用反射处理更多类型
 		rv := reflect.ValueOf(v)
 		// 处理指针类型
-		if rv.Kind() == reflect.Ptr {
+		if rv.Kind() == reflect.Pointer {
 			if rv.IsNil() {
 				return 0, nil
 			}
@@ -421,7 +421,7 @@ func Any2bool(_v any) (bool, error) {
 		// 使用反射处理更多类型
 		rv := reflect.ValueOf(v)
 		// 处理指针类型
-		if rv.Kind() == reflect.Ptr {
+		if rv.Kind() == reflect.Pointer {
 			if rv.IsNil() {
 				return false, nil
 			}
@@ -517,7 +517,7 @@ func Any2Map(src any) (any, error) {
 		switch val.Kind() {
 		case reflect.Map, reflect.Struct, reflect.Slice, reflect.Array:
 			return _src, nil
-		case reflect.Ptr:
+		case reflect.Pointer:
 			// 解引用指针
 			if val.IsNil() {
 				return nil, nil
@@ -613,7 +613,7 @@ func tryConvertOtherMap(input any) (map[string]any, bool) {
 // 尝试将结构体转换为 map
 func tryConvertStruct(input any) (map[string]any, bool) {
 	val := reflect.ValueOf(input)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 
@@ -663,9 +663,9 @@ func tryConvertStruct(input any) (map[string]any, bool) {
 
 // 预定义常见类型，减少反射调用
 var (
-	mapStringInterfaceType = reflect.TypeOf(map[string]any(nil))
-	sliceInterfaceType     = reflect.TypeOf([]any(nil))
-	timeType               = reflect.TypeOf(time.Time{})
+	mapStringInterfaceType = reflect.TypeFor[map[string]any]()
+	sliceInterfaceType     = reflect.TypeFor[[]any]()
+	timeType               = reflect.TypeFor[time.Time]()
 )
 
 // CheckIsObject 检查给定的值是否是一个对象（map、slice、struct、指针）
@@ -689,7 +689,7 @@ func CheckIsObject(v any) bool {
 		return false // nil 不需要序列化
 	}
 	// 检查是否是指针
-	if typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Pointer {
 		if reflect.ValueOf(v).IsNil() {
 			return false // nil 指针不需要序列化
 		}
