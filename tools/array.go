@@ -25,12 +25,9 @@ func ArrayChunk[T any](slice []T, size int) [][]T {
 	chunkCount := (length + size - 1) / size
 	chunks := make([][]T, chunkCount)
 
-	for i := 0; i < chunkCount; i++ {
+	for i := range chunkCount {
 		start := i * size
-		end := start + size
-		if end > length {
-			end = length
-		}
+		end := min(start+size, length)
 		// 直接引用原切片的底层数组，避免额外内存分配
 		chunks[i] = slice[start:end:end] // 使用完整切片表达式限制容量
 	}
@@ -54,12 +51,9 @@ func ArrayChunkCopy[T any](slice []T, size int) [][]T {
 	chunkCount := (length + size - 1) / size
 	chunks := make([][]T, chunkCount)
 
-	for i := 0; i < chunkCount; i++ {
+	for i := range chunkCount {
 		start := i * size
-		end := start + size
-		if end > length {
-			end = length
-		}
+		end := min(start+size, length)
 		chunk := make([]T, end-start)
 		copy(chunk, slice[start:end])
 		chunks[i] = chunk
@@ -282,9 +276,9 @@ func CutStrSlice2Slice(s []string, key string, direct int) []string {
 		if v == key {
 			if idx+direct < len(s) {
 				return s[idx+direct:]
-			} else {
-				return []string{} // 索引越界时返回空切片
 			}
+
+			return []string{} // 索引越界时返回空切片
 		}
 	}
 	return []string{}
@@ -436,11 +430,11 @@ func Slice2MapWithHeader(rows any, header []string) map[string]any {
 	// 获取 rows 的反射值
 	rowsValue := reflect.ValueOf(rows)
 	// 检查 rows 是否为切片类型
-	if rowsValue.Kind() != reflect.Slice && rowsValue.Kind() != reflect.Ptr {
+	if rowsValue.Kind() != reflect.Slice && rowsValue.Kind() != reflect.Pointer {
 		return nil
 	}
 	// 如果 rows 是切片的指针，则获取指向的切片
-	if rowsValue.Kind() == reflect.Ptr {
+	if rowsValue.Kind() == reflect.Pointer {
 		if rowsValue.IsNil() {
 			return nil
 		}
