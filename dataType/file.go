@@ -21,8 +21,10 @@ func (bf *Binary) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-
-	*bf = bytes
+	// 必须复制：database/sql 会把驱动返回的 []byte 原样交给 Scanner，
+	// 而 go-sql-driver/mysql 的结果切片指向连接读缓冲，后续任何查询都会覆盖它。
+	// 直接持有（*bf = src）会导致读出的 BLOB 在下一次查询后变成另一行的内容。
+	*bf = append([]byte(nil), bytes...)
 	return nil
 }
 
