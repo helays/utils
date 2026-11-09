@@ -364,6 +364,49 @@ func (m *Map[K, V]) store(sd *shard[K, V], key K, k uint64, val V, duration ...t
 	}
 }
 
+// Update 原子读取并更新键值：fn 在分片写锁内执行，返回新值与是否续期。
+//
+// 语义：
+//   - 键不存在或已过期：返回零值与 false，不会创建新键；已过期条目顺带删除。
+//   - 键存在：以旧值调用 fn，写回返回值并返回 newV 与 true。
+//   - fn 为 nil：视为空操作，原值不变，返回当前值与 true。
+//   - refresh=true 时续期，规则同 Refresh：传 duration 则改用该 TTL，
+//     未传沿用条目原 TTL，ttl<=0 表示不续期（永不过期）；
+//     仅在启用自动清理（enableCleanup）时生效，与 LoadAndRefresh/Refresh 一致。
+//
+// 注意：fn 在分片写锁内执行，必须快速返回，且不得在 fn 内调用本 Map 的任何方法
+// （同一分片自锁会死锁）；V 为指针类型时，fn 修改指向内容不受本方法保护。
+func (m *Map[K, V]) Update(key K, fn func(old V) (newV V, refresh bool), duration ...time.Duration) (V, bool) {
+	sd, _, k := m.getShard(key)
+	sd.mu.Lock()
+	defer sd.mu.Unlock()
+	val, item, ok, existed := m.load(sd, key, k)
+	if !ok {
+		if existed {
+			m.delete(sd, key, k)
+		}
+		var zero V
+		return zero, false
+	}
+	if fn == nil {
+		return val, true
+	}
+	newVal, refresh := fn(val)
+	item.val = newVal
+	if refresh && m.enableCleanup {
+		if len(duration) > 0 {
+			item.ttl = duration[0]
+		}
+		item.heartbeat = time.Now()
+		if item.ttl <= 0 {
+			item.expire = 0
+		} else {
+			item.expire = time.Now().Add(item.ttl).UnixNano()
+		}
+	}
+	return newVal, true
+}
+
 // Delete 移除键的值。
 func (m *Map[K, V]) Delete(key K) {
 	sd, _, k := m.getShard(key)
