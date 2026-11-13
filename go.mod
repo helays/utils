@@ -27,6 +27,7 @@ require (
 	github.com/minio/minio-go/v7 v7.4.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.6
 	github.com/natefinch/lumberjack v2.0.0+incompatible
+	github.com/ncruces/go-sqlite3/gormlite v0.34.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.12
 	github.com/quic-go/quic-go v0.65.0
@@ -50,7 +51,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/postgres v1.6.3
-	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
 
@@ -126,6 +126,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/ncruces/go-sqlite3 v0.34.0 // indirect
+	github.com/ncruces/go-sqlite3-wasm/v2 v2.1.35300 // indirect
+	github.com/ncruces/julianday v1.0.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b // indirect
 	github.com/orcaman/concurrent-map v1.0.0 // indirect
 	github.com/pandatix/go-abnf v0.5.5 // indirect
